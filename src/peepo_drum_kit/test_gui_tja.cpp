@@ -114,6 +114,12 @@ namespace PeepoDrumKit
 	{
 		WasTJAEditedThisFrame = false;
 
+		if (IsFirstFrame)
+		{
+			LoadedTJAFile.Parsed.Courses.emplace_back();
+			IsFirstFrame = false;
+		}
+
 		if (LoadTJAFuture.valid() && LoadTJAFuture._Is_ready())
 		{
 			LoadedTJAFile = LoadTJAFuture.get();
@@ -135,9 +141,6 @@ namespace PeepoDrumKit
 
 		DrawGuiFileContentWindow(isOpen);
 		DrawGuiTokensWindow(isOpen);
-#if 0
-		DrawGuiConvertedWindow(isOpen);
-#endif
 		DrawGuiParsedWindow(isOpen);
 	}
 
@@ -325,7 +328,6 @@ namespace PeepoDrumKit
 			}
 			Gui::EndChild();
 
-			//Gui::BeginChild("CourseChild", Gui::GetContentRegionAvail(), true);
 			if (Gui::BeginTabBar("CourseTabBar", ImGuiTabBarFlags_None))
 			{
 				for (size_t courseIndex = 0; courseIndex < LoadedTJAFile.Parsed.Courses.size(); courseIndex++)
@@ -456,98 +458,6 @@ namespace PeepoDrumKit
 							}
 
 							Gui::EndTable();
-						}
-						Gui::EndChild();
-						Gui::EndTabItem();
-					}
-					Gui::PopID();
-				}
-				Gui::EndTabBar();
-			}
-			//Gui::EndChild();
-		}
-		Gui::End();
-	}
-
-	void TJATestWindows::DrawGuiConvertedWindow(bool* isOpen)
-	{
-		if (Gui::Begin("TJA Test - Converted", isOpen, ImGuiWindowFlags_None))
-		{
-			if (Gui::BeginTabBar("CourseTabBar", ImGuiTabBarFlags_None))
-			{
-				for (size_t courseIndex = 0; courseIndex < LoadedTJAFile.ConvertedCourses.size(); courseIndex++)
-				{
-					const TJA::ConvertedCourse& course = LoadedTJAFile.ConvertedCourses[courseIndex];
-
-					char tabNameBuffer[64];
-					sprintf_s(tabNameBuffer, "%s x%d (%s)###ConvertedCourse[%zu]",
-						TJADifficultyTypeNames[EnumToIndex(course.CourseMetadata.COURSE)],
-						course.CourseMetadata.LEVEL,
-						TJAStyleModeNames[EnumToIndex(course.CourseMetadata.STYLE)],
-						courseIndex);
-
-					static constexpr f32 rowHeight = 36.0f;
-
-					Gui::PushID(&course);
-					if (Gui::BeginTabItem(tabNameBuffer))
-					{
-						Gui::BeginChild("Inner", Gui::GetContentRegionAvail(), true);
-						{
-							auto* windowDrawList = Gui::GetWindowDrawList();
-							const Rect windowRectWithOverdraw = Rect::FromTLSize(vec2(Gui::GetWindowPos()) - vec2(0.0f, rowHeight), vec2(Gui::GetWindowSize()) + vec2(0.0f, rowHeight * 2));
-
-							const f32 xPadding = Min(Gui::GetContentRegionAvail().x / 2.0f, 8.0f);
-							Rect rowRect = Rect::FromTLSize(vec2(Gui::GetCursorScreenPos()) + vec2(xPadding, 0.0f), vec2(Max(1.0f, Gui::GetContentRegionAvail().x - (xPadding * 2.0f)), rowHeight));
-
-							Gui::InvisibleButton("Dummy", vec2(rowRect.GetWidth(), static_cast<f32>(course.Measures.size()) * rowHeight));
-
-							i32 maxBeatsInMeasure = 1;
-							for (const TJA::ConvertedMeasure& measure : course.Measures)
-								maxBeatsInMeasure = Max(maxBeatsInMeasure, measure.TimeSignature.GetBeatsPerBar());
-
-							const f32 screenSpaceXPerBeat = Floor(rowRect.GetWidth() / static_cast<f32>(maxBeatsInMeasure));
-							auto beatToScreenSpaceX = [&](Beat beat) -> f32 { return static_cast<f32>(beat.BeatsFraction() * screenSpaceXPerBeat); };
-
-							// TODO: Also draw temo changes etc.
-							for (const TJA::ConvertedMeasure& measure : course.Measures)
-							{
-								const i32 beatsInMeasure = measure.TimeSignature.GetBeatsPerBar();
-								rowRect.BR.x = rowRect.TL.x + (screenSpaceXPerBeat * static_cast<f32>(beatsInMeasure));
-
-								if (windowRectWithOverdraw.Contains(rowRect))
-								{
-									const Beat measureDuration = measure.TimeSignature.GetDurationPerBar();
-									for (const auto& gogoRange : course.GoGoRanges)
-									{
-										// BUG: DOES NOT CORRECTLY HANDLE SUB-MEASURE GOGO RANGES 
-										//		(half functional without this if branch but still applies to the wrong measure..?)
-										// if (measure.StartTime >= gogoRange.StartTime && (measure.StartTime + measureDuration) <= gogoRange.EndTime)
-										{
-											const Beat startTimeWithinMeasure = Clamp(gogoRange.StartTime - measure.StartTime, Beat::Zero(), measureDuration);
-											const Beat endTimeWithinMeasure = Clamp(gogoRange.EndTime - measure.StartTime, Beat::Zero(), measureDuration);
-											if (endTimeWithinMeasure == startTimeWithinMeasure)
-												continue;
-
-											const f32 startX = beatToScreenSpaceX(startTimeWithinMeasure);
-											const f32 endX = beatToScreenSpaceX(endTimeWithinMeasure);
-											windowDrawList->AddRectFilled(rowRect.GetTL() + vec2(startX, 1.0f), rowRect.GetBL() + vec2(endX, -1.0f), TJADrawUtil::GoGoBackground);
-										}
-									}
-
-									for (i32 beatLine = 0; beatLine <= beatsInMeasure; beatLine++)
-									{
-										const f32 x = beatToScreenSpaceX(Beat::FromBeats(beatLine));
-										windowDrawList->AddLine(rowRect.GetTL() + vec2(x, 0.0f), rowRect.GetBL() + vec2(x, 0.0f), Gui::GetColorU32(ImGuiCol_Separator, 0.5f));
-									}
-									windowDrawList->AddRect(rowRect.TL, rowRect.BR, Gui::GetColorU32(ImGuiCol_Separator));
-
-									for (const TJA::ConvertedNote& note : measure.Notes)
-										TJADrawUtil::DrawNote(windowDrawList, rowRect.TL + vec2(beatToScreenSpaceX(note.TimeWithinMeasure), rowRect.GetHeight() / 2.0f), rowHeight, note.Type);
-								}
-
-								rowRect.TL.y += rowHeight;
-								rowRect.BR.y += rowHeight;
-							}
 						}
 						Gui::EndChild();
 						Gui::EndTabItem();
