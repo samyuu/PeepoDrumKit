@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{D017138E-11C7-478C-9BD9-A154CA00EACE}</ProjectGuid>
+    <RootNamespace>PeepoDrumKitGui</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)build\bin\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\bin-int\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
+    <TargetName>PeepoDrumKit_Debug</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)build\bin\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\bin-int\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
+    <TargetName>PeepoDrumKit</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)src</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>-D_HAS_EXCEPTIONS=0 -D_STATIC_CPPLIB %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>PEEPO_DEBUG=1;PEEPO_RELEASE=0;PEEPO_WIN32=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>Shlwapi.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/pdbaltpath:%_PDB% %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)src</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>-D_HAS_EXCEPTIONS=0 -D_STATIC_CPPLIB %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>PEEPO_DEBUG=0;PEEPO_RELEASE=1;PEEPO_WIN32=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>Shlwapi.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/pdbaltpath:%_PDB% %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\audio\3rdparty\stb_vorbis.c">
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+    </ClCompile>
+    <ClCompile Include="src\audio\audio_common.cpp" />
+    <ClCompile Include="src\audio\audio_engine.cpp" />
+    <ClCompile Include="src\audio\audio_file_formats.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+    </ClCompile>
+    <ClCompile Include="src\audio\backend\audio_impl_wasapi.cpp" />
+    <ClCompile Include="src\core_io.cpp" />
+    <ClCompile Include="src\core_string.cpp" />
+    <ClCompile Include="src\core_beat.cpp" />
+    <ClCompile Include="src\core_types.cpp" />
+    <ClCompile Include="src\core_undo.cpp" />
+    <ClCompile Include="src\fumen_file_format.cpp" />
+    <ClCompile Include="src\imgui\3rdparty\imgui.cpp" />
+    <ClCompile Include="src\imgui\3rdparty\imgui_demo.cpp" />
+    <ClCompile Include="src\imgui\3rdparty\imgui_draw.cpp" />
+    <ClCompile Include="src\imgui\3rdparty\imgui_tables.cpp" />
+    <ClCompile Include="src\imgui\3rdparty\imgui_widgets.cpp" />
+    <ClCompile Include="src\imgui\3rdparty_extension\ImGuiColorTextEdit\TextEditor.cpp" />
+    <ClCompile Include="src\imgui\backend\imgui_application_host.cpp" />
+    <ClCompile Include="src\imgui\backend\imgui_impl_d3d11.cpp" />
+    <ClCompile Include="src\imgui\backend\imgui_impl_win32.cpp" />
+    <ClCompile Include="src\imgui\extension\imgui_common.cpp" />
+    <ClCompile Include="src\imgui\extension\imgui_input_binding.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_editor.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_game_preview.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_sound_effects.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\main.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_timeline.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\test_gui_audio.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\test_gui_tja.cpp" />
+    <ClCompile Include="src\tja_file_format.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src_res\resource.h" />
+    <ClInclude Include="src\audio\3rdparty\dr_flac.h" />
+    <ClInclude Include="src\audio\3rdparty\dr_mp3.h" />
+    <ClInclude Include="src\audio\3rdparty\dr_wav.h" />
+    <ClInclude Include="src\audio\audio_common.h" />
+    <ClInclude Include="src\audio\audio_engine.h" />
+    <ClInclude Include="src\audio\audio_file_formats.h" />
+    <ClInclude Include="src\audio\audio_waveform.h" />
+    <ClInclude Include="src\audio\backend\audio_backend.h" />
+    <ClInclude Include="src\core_build_info.h" />
+    <ClInclude Include="src\core_io.h" />
+    <ClInclude Include="src\core_string.h" />
+    <ClInclude Include="src\core_beat.h" />
+    <ClInclude Include="src\core_types.h" />
+    <ClInclude Include="src\fumen_file_format.h" />
+    <ClInclude Include="src\imgui\3rdparty\imconfig.h" />
+    <ClInclude Include="src\imgui\3rdparty\imgui.h" />
+    <ClInclude Include="src\imgui\3rdparty\imgui_internal.h" />
+    <ClInclude Include="src\imgui\3rdparty\imstb_rectpack.h" />
+    <ClInclude Include="src\imgui\3rdparty\imstb_textedit.h" />
+    <ClInclude Include="src\imgui\3rdparty\imstb_truetype.h" />
+    <ClInclude Include="src\imgui\3rdparty_extension\ImGuiColorTextEdit\TextEditor.h" />
+    <ClInclude Include="src\imgui\backend\imgui_application_host.h" />
+    <ClInclude Include="src\imgui\backend\imgui_impl_d3d11.h" />
+    <ClInclude Include="src\imgui\backend\imgui_impl_win32.h" />
+    <ClInclude Include="src\imgui\extension\imgui_common.h" />
+    <ClInclude Include="src\imgui\extension\imgui_input_binding.h" />
+    <ClInclude Include="src\imgui\imgui_include.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_draw_common.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_context.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_game_preview.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_sound_effects.h" />
+    <ClInclude Include="src\peepo_drum_kit\test_gui_audio.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_editor.h" />
+    <ClInclude Include="src\peepo_drum_kit\main_settings.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_timeline.h" />
+    <ClInclude Include="src\peepo_drum_kit\test_gui_tja.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_undo_commands.h" />
+    <ClInclude Include="src\core_undo.h" />
+    <ClInclude Include="src\tja_file_format.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="src_res\Resource.rc">
+      <Culture Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">0x0411</Culture>
+      <Culture Condition="'$(Configuration)|$(Platform)'=='Release|x64'">0x0411</Culture>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src_res\Resource.aps" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
