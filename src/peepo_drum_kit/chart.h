@@ -8,7 +8,7 @@
 namespace PeepoDrumKit
 {
 	// DEBUG: Save and automatically load a separate copy so to never overwrite the original .tja (due to conversion data loss)
-	static constexpr std::string_view DEBUG_EXPORTED_PEEPODRUMKIT_FILE_SUFFIX = " (PeepoDrumKit)";
+	constexpr std::string_view DEBUG_EXPORTED_PEEPODRUMKIT_FILE_SUFFIX = " (PeepoDrumKit)";
 
 	// NOTE: Stable ID to be used by for example undoable commands to keeps references instead of indices / pointers
 	enum class StableID : u32 { Null = 0 };

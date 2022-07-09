@@ -17,7 +17,7 @@ struct InputBinding
 	struct
 	{
 		ImGuiKey Key = ImGuiKey_None;
-		ImGuiKeyModFlags Modifiers = ImGuiKeyModFlags_None;
+		ImGuiModFlags Modifiers = ImGuiModFlags_None;
 	} Keyboard = {};
 	struct
 	{
@@ -25,7 +25,7 @@ struct InputBinding
 	} Mouse = {};
 
 	constexpr InputBinding() = default;
-	explicit constexpr InputBinding(ImGuiKey key, ImGuiKeyModFlags modifiers) : Type(InputBindingType::Keyboard), Keyboard({ key, modifiers }) {}
+	explicit constexpr InputBinding(ImGuiKey key, ImGuiModFlags modifiers) : Type(InputBindingType::Keyboard), Keyboard({ key, modifiers }) {}
 	explicit constexpr InputBinding(ImGuiMouseButton mouseButton) : Type(InputBindingType::Mouse), Mouse({ mouseButton }) {}
 
 	constexpr bool operator!=(const InputBinding& other) const { return !(*this == other); }
@@ -65,7 +65,7 @@ enum class InputModifierBehavior
 struct InputFormatBuffer { char Data[128]; };
 // NOTE: Specifically to be displayed inside menu items
 InputFormatBuffer ToShortcutString(ImGuiKey key);
-InputFormatBuffer ToShortcutString(ImGuiKey key, ImGuiKeyModFlags modifiers);
+InputFormatBuffer ToShortcutString(ImGuiKey key, ImGuiModFlags modifiers);
 InputFormatBuffer ToShortcutString(const InputBinding& binding);
 InputFormatBuffer ToShortcutString(const MultiInputBinding& binding);
 
@@ -75,8 +75,8 @@ void ImGui_UpdateInternalInputExtraDataAtEndOfFrame();
 
 namespace ImGui
 {
-	bool AreAllModifiersDown(ImGuiKeyModFlags modifiers);
-	bool AreOnlyModifiersDown(ImGuiKeyModFlags modifiers);
+	bool AreAllModifiersDown(ImGuiModFlags modifiers);
+	bool AreOnlyModifiersDown(ImGuiModFlags modifiers);
 
 	bool IsDown(const InputBinding& binding, InputModifierBehavior behavior = InputModifierBehavior::Strict);
 	bool IsPressed(const InputBinding& binding, bool repeat = true, InputModifierBehavior behavior = InputModifierBehavior::Strict);

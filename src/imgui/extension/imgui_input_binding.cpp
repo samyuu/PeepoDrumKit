@@ -117,28 +117,28 @@ static constexpr ImGuiKeyInfo NamedImGuiKeyInfoTable[] =
 
 	{ ImGuiKey_GamepadStart,		"Gamepad Start", },        // Menu (Xbox)          + (Switch)   Start/Options (PS) // --
 	{ ImGuiKey_GamepadBack,			"Gamepad Back", },         // View (Xbox)          - (Switch)   Share (PS)         // --
-	{ ImGuiKey_GamepadFaceUp,		"Gamepad Face Up", },      // Y (Xbox)             X (Switch)   Triangle (PS)      // -> ImGuiNavInput_Input
-	{ ImGuiKey_GamepadFaceDown,		"Gamepad Face Down", },    // A (Xbox)             B (Switch)   Cross (PS)         // -> ImGuiNavInput_Activate
 	{ ImGuiKey_GamepadFaceLeft,		"Gamepad Face Left", },    // X (Xbox)             Y (Switch)   Square (PS)        // -> ImGuiNavInput_Menu
 	{ ImGuiKey_GamepadFaceRight,	"Gamepad Face Right", },   // B (Xbox)             A (Switch)   Circle (PS)        // -> ImGuiNavInput_Cancel
-	{ ImGuiKey_GamepadDpadUp,		"Gamepad Dpad Up", },      // D-pad Up                                             // -> ImGuiNavInput_DpadUp
-	{ ImGuiKey_GamepadDpadDown,		"Gamepad Dpad Down", },    // D-pad Down                                           // -> ImGuiNavInput_DpadDown
+	{ ImGuiKey_GamepadFaceUp,		"Gamepad Face Up", },      // Y (Xbox)             X (Switch)   Triangle (PS)      // -> ImGuiNavInput_Input
+	{ ImGuiKey_GamepadFaceDown,		"Gamepad Face Down", },    // A (Xbox)             B (Switch)   Cross (PS)         // -> ImGuiNavInput_Activate
 	{ ImGuiKey_GamepadDpadLeft,		"Gamepad Dpad Left", },    // D-pad Left                                           // -> ImGuiNavInput_DpadLeft
 	{ ImGuiKey_GamepadDpadRight,	"Gamepad Dpad Right", },   // D-pad Right                                          // -> ImGuiNavInput_DpadRight
+	{ ImGuiKey_GamepadDpadUp,		"Gamepad Dpad Up", },      // D-pad Up                                             // -> ImGuiNavInput_DpadUp
+	{ ImGuiKey_GamepadDpadDown,		"Gamepad Dpad Down", },    // D-pad Down                                           // -> ImGuiNavInput_DpadDown
 	{ ImGuiKey_GamepadL1,			"Gamepad L1", },           // L Bumper (Xbox)      L (Switch)   L1 (PS)             // -> ImGuiNavInput_FocusPrev + ImGuiNavInput_TweakSlow
 	{ ImGuiKey_GamepadR1,			"Gamepad R1", },           // R Bumper (Xbox)      R (Switch)   R1 (PS)             // -> ImGuiNavInput_FocusNext + ImGuiNavInput_TweakFast
 	{ ImGuiKey_GamepadL2,			"Gamepad L2", },           // L Trigger (Xbox)     ZL (Switch)  L2 (PS) [Analog]
 	{ ImGuiKey_GamepadR2,			"Gamepad R2", },           // R Trigger (Xbox)     ZR (Switch)  R2 (PS) [Analog]
 	{ ImGuiKey_GamepadL3,			"Gamepad L3", },           // L Thumbstick (Xbox)  L3 (Switch)  L3 (PS)
 	{ ImGuiKey_GamepadR3,			"Gamepad R3", },           // R Thumbstick (Xbox)  R3 (Switch)  R3 (PS)
-	{ ImGuiKey_GamepadLStickUp,		"Gamepad LStick Up", },    // [Analog]                                             // -> ImGuiNavInput_LStickUp
-	{ ImGuiKey_GamepadLStickDown,	"Gamepad LStick Down", },  // [Analog]                                             // -> ImGuiNavInput_LStickDown
 	{ ImGuiKey_GamepadLStickLeft,	"Gamepad LStick Left", },  // [Analog]                                             // -> ImGuiNavInput_LStickLeft
 	{ ImGuiKey_GamepadLStickRight,	"Gamepad LStick Right", }, // [Analog]                                             // -> ImGuiNavInput_LStickRight
-	{ ImGuiKey_GamepadRStickUp,		"Gamepad RStick Up", },    // [Analog]
-	{ ImGuiKey_GamepadRStickDown,	"Gamepad RStick Down", },  // [Analog]
+	{ ImGuiKey_GamepadLStickUp,		"Gamepad LStick Up", },    // [Analog]                                             // -> ImGuiNavInput_LStickUp
+	{ ImGuiKey_GamepadLStickDown,	"Gamepad LStick Down", },  // [Analog]                                             // -> ImGuiNavInput_LStickDown
 	{ ImGuiKey_GamepadRStickLeft,	"Gamepad RStick Left", },  // [Analog]
 	{ ImGuiKey_GamepadRStickRight,	"Gamepad RStick Right", }, // [Analog]
+	{ ImGuiKey_GamepadRStickUp,		"Gamepad RStick Up", },    // [Analog]
+	{ ImGuiKey_GamepadRStickDown,	"Gamepad RStick Down", },  // [Analog]
 
 	{ ImGuiKey_ModCtrl,  "Ctrl", "Control", },
 	{ ImGuiKey_ModShift, "Shift", },
@@ -185,11 +185,11 @@ static constexpr const char* ImGuiMouseButtonToCString(ImGuiMouseButton button)
 }
 
 template <typename Func>
-static constexpr void ForEachImGuiKeyInKeyModFlags(ImGuiKeyModFlags modifiers, Func func)
+static constexpr void ForEachImGuiKeyInKeyModFlags(ImGuiModFlags modifiers, Func func)
 {
-	if (modifiers & ImGuiKeyModFlags_Ctrl) func(ImGuiKey_ModCtrl);
-	if (modifiers & ImGuiKeyModFlags_Shift) func(ImGuiKey_ModShift);
-	if (modifiers & ImGuiKeyModFlags_Alt) func(ImGuiKey_ModAlt);
+	if (modifiers & ImGuiModFlags_Ctrl) func(ImGuiKey_ModCtrl);
+	if (modifiers & ImGuiModFlags_Shift) func(ImGuiKey_ModShift);
+	if (modifiers & ImGuiModFlags_Alt) func(ImGuiKey_ModAlt);
 }
 
 InputFormatBuffer ToShortcutString(ImGuiKey key)
@@ -200,7 +200,7 @@ InputFormatBuffer ToShortcutString(ImGuiKey key)
 	return out;
 }
 
-InputFormatBuffer ToShortcutString(ImGuiKey key, ImGuiKeyModFlags modifiers)
+InputFormatBuffer ToShortcutString(ImGuiKey key, ImGuiModFlags modifiers)
 {
 	InputFormatBuffer out {};
 	char* bufferWriteHead = out.Data;
@@ -217,7 +217,7 @@ InputFormatBuffer ToShortcutString(ImGuiKey key, ImGuiKeyModFlags modifiers)
 		}
 	};
 
-	if (modifiers != ImGuiKeyModFlags_None)
+	if (modifiers != ImGuiModFlags_None)
 		ForEachImGuiKeyInKeyModFlags(modifiers, [&](ImGuiKey modifierKey) { append(GetImGuikeyInfo(modifierKey).DisplayName); append(" + "); });
 	append(GetImGuikeyInfo(key).DisplayName);
 
@@ -248,7 +248,7 @@ InputFormatBuffer ToShortcutString(const MultiInputBinding& binding)
 
 struct InternalInputExtraFrameData
 {
-	ImGuiKeyModFlags ModifiersDown;
+	ImGuiModFlags ModifiersDown;
 	f32 TimeSinceLastModifiersChange;
 };
 
@@ -279,7 +279,7 @@ namespace ImGui
 		return ThisFrameInputExData.TimeSinceLastModifiersChange >= keyDuration;
 	}
 
-	static bool Internal_AreModifiersDownFirst(ImGuiKey key, ImGuiKeyModFlags modifiers)
+	static bool Internal_AreModifiersDownFirst(ImGuiKey key, ImGuiModFlags modifiers)
 	{
 		const f32 keyDuration = ImGui::IsNamedKey(key) ? ImGui::GetKeyData(key)->DownDuration : 0.0f;
 		bool allLonger = true;
@@ -287,12 +287,12 @@ namespace ImGui
 		return allLonger;
 	}
 
-	bool AreAllModifiersDown(ImGuiKeyModFlags modifiers)
+	bool AreAllModifiersDown(ImGuiModFlags modifiers)
 	{
 		return ((GImGui->IO.KeyMods & modifiers) == modifiers);
 	}
 
-	bool AreOnlyModifiersDown(ImGuiKeyModFlags modifiers)
+	bool AreOnlyModifiersDown(ImGuiModFlags modifiers)
 	{
 		return (GImGui->IO.KeyMods == modifiers);
 	}

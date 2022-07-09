@@ -33,38 +33,38 @@ namespace PeepoDrumKit
 
 		struct InputData
 		{
-			MultiInputBinding Dialog_YesOrOk = { InputBinding(ImGuiKey_Enter, ImGuiKeyModFlags_None) };
-			MultiInputBinding Dialog_No = { InputBinding(ImGuiKey_Backspace, ImGuiKeyModFlags_None) };
-			MultiInputBinding Dialog_Cancel = { InputBinding(ImGuiKey_Escape, ImGuiKeyModFlags_None) };
-			MultiInputBinding Dialog_SelectNextTab = { InputBinding(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl) };
-			MultiInputBinding Dialog_SelectPreviousTab = { InputBinding(ImGuiKey_Tab, ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift) };
+			MultiInputBinding Dialog_YesOrOk = { InputBinding(ImGuiKey_Enter, ImGuiModFlags_None) };
+			MultiInputBinding Dialog_No = { InputBinding(ImGuiKey_Backspace, ImGuiModFlags_None) };
+			MultiInputBinding Dialog_Cancel = { InputBinding(ImGuiKey_Escape, ImGuiModFlags_None) };
+			MultiInputBinding Dialog_SelectNextTab = { InputBinding(ImGuiKey_Tab, ImGuiModFlags_Ctrl) };
+			MultiInputBinding Dialog_SelectPreviousTab = { InputBinding(ImGuiKey_Tab, ImGuiModFlags_Ctrl | ImGuiModFlags_Shift) };
 
-			MultiInputBinding Editor_ToggleFullscreen = { InputBinding(ImGuiKey_F11, ImGuiKeyModFlags_None), InputBinding(ImGuiKey_Enter, ImGuiKeyModFlags_Alt) };
-			MultiInputBinding Editor_Undo = { InputBinding(ImGuiKey_Z, ImGuiKeyModFlags_Ctrl) };
-			MultiInputBinding Editor_Redo = { InputBinding(ImGuiKey_Y, ImGuiKeyModFlags_Ctrl) };
-			MultiInputBinding Editor_ChartNew = { InputBinding(ImGuiKey_N, ImGuiKeyModFlags_Ctrl) };
-			MultiInputBinding Editor_ChartOpen = { InputBinding(ImGuiKey_O, ImGuiKeyModFlags_Ctrl) };
+			MultiInputBinding Editor_ToggleFullscreen = { InputBinding(ImGuiKey_F11, ImGuiModFlags_None), InputBinding(ImGuiKey_Enter, ImGuiModFlags_Alt) };
+			MultiInputBinding Editor_Undo = { InputBinding(ImGuiKey_Z, ImGuiModFlags_Ctrl) };
+			MultiInputBinding Editor_Redo = { InputBinding(ImGuiKey_Y, ImGuiModFlags_Ctrl) };
+			MultiInputBinding Editor_ChartNew = { InputBinding(ImGuiKey_N, ImGuiModFlags_Ctrl) };
+			MultiInputBinding Editor_ChartOpen = { InputBinding(ImGuiKey_O, ImGuiModFlags_Ctrl) };
 			MultiInputBinding Editor_ChartOpenDirectory = {};
-			MultiInputBinding Editor_ChartSave = { InputBinding(ImGuiKey_S, ImGuiKeyModFlags_Ctrl) };
-			MultiInputBinding Editor_ChartSaveAs = { InputBinding(ImGuiKey_S, ImGuiKeyModFlags_Ctrl | ImGuiKeyModFlags_Shift) };
+			MultiInputBinding Editor_ChartSave = { InputBinding(ImGuiKey_S, ImGuiModFlags_Ctrl) };
+			MultiInputBinding Editor_ChartSaveAs = { InputBinding(ImGuiKey_S, ImGuiModFlags_Ctrl | ImGuiModFlags_Shift) };
 
-			MultiInputBinding Timeline_PlaceNoteDon = { InputBinding(ImGuiKey_F, ImGuiKeyModFlags_None), InputBinding(ImGuiKey_J, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_PlaceNoteKa = { InputBinding(ImGuiKey_D, ImGuiKeyModFlags_None), InputBinding(ImGuiKey_K, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_PlaceNoteBalloon = { InputBinding(ImGuiKey_E, ImGuiKeyModFlags_None), InputBinding(ImGuiKey_I, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_PlaceNoteDrumroll = { InputBinding(ImGuiKey_R, ImGuiKeyModFlags_None), InputBinding(ImGuiKey_U, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_Cut = { InputBinding(ImGuiKey_X, ImGuiKeyModFlags_Ctrl) };
-			MultiInputBinding Timeline_Copy = { InputBinding(ImGuiKey_C, ImGuiKeyModFlags_Ctrl) };
-			MultiInputBinding Timeline_Paste = { InputBinding(ImGuiKey_V, ImGuiKeyModFlags_Ctrl) };
-			MultiInputBinding Timeline_DeleteSelection = { InputBinding(ImGuiKey_Delete, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_StartEndRangeSelection = { InputBinding(ImGuiKey_Tab, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_StepCursorLeft = { InputBinding(ImGuiKey_LeftArrow, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_StepCursorRight = { InputBinding(ImGuiKey_RightArrow, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_IncreaseGridDivision = { InputBinding(ImGuiKey_UpArrow, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_DecreaseGridDivision = { InputBinding(ImGuiKey_DownArrow, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_IncreasePlaybackSpeed = { InputBinding(ImGuiKey_C, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_DecreasePlaybackSpeed = { InputBinding(ImGuiKey_Z, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_TogglePlayback = { InputBinding(ImGuiKey_Space, ImGuiKeyModFlags_None) };
-			MultiInputBinding Timeline_ToggleMetronome = { InputBinding(ImGuiKey_F1, ImGuiKeyModFlags_None) };
+			MultiInputBinding Timeline_PlaceNoteDon = { InputBinding(ImGuiKey_F, ImGuiModFlags_None), InputBinding(ImGuiKey_J, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_PlaceNoteKa = { InputBinding(ImGuiKey_D, ImGuiModFlags_None), InputBinding(ImGuiKey_K, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_PlaceNoteBalloon = { InputBinding(ImGuiKey_E, ImGuiModFlags_None), InputBinding(ImGuiKey_I, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_PlaceNoteDrumroll = { InputBinding(ImGuiKey_R, ImGuiModFlags_None), InputBinding(ImGuiKey_U, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_Cut = { InputBinding(ImGuiKey_X, ImGuiModFlags_Ctrl) };
+			MultiInputBinding Timeline_Copy = { InputBinding(ImGuiKey_C, ImGuiModFlags_Ctrl) };
+			MultiInputBinding Timeline_Paste = { InputBinding(ImGuiKey_V, ImGuiModFlags_Ctrl) };
+			MultiInputBinding Timeline_DeleteSelection = { InputBinding(ImGuiKey_Delete, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_StartEndRangeSelection = { InputBinding(ImGuiKey_Tab, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_StepCursorLeft = { InputBinding(ImGuiKey_LeftArrow, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_StepCursorRight = { InputBinding(ImGuiKey_RightArrow, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_IncreaseGridDivision = { InputBinding(ImGuiKey_UpArrow, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_DecreaseGridDivision = { InputBinding(ImGuiKey_DownArrow, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_IncreasePlaybackSpeed = { InputBinding(ImGuiKey_C, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_DecreasePlaybackSpeed = { InputBinding(ImGuiKey_Z, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_TogglePlayback = { InputBinding(ImGuiKey_Space, ImGuiModFlags_None) };
+			MultiInputBinding Timeline_ToggleMetronome = { InputBinding(ImGuiKey_F1, ImGuiModFlags_None) };
 		} Input;
 
 #if 0  // TODO: (Should probably partially be inside TJA namespace)

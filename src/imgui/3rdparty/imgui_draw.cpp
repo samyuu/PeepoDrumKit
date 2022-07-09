@@ -3555,6 +3555,11 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, const ImVec2& pos, Im
     // Align to be pixel perfect
     float x = IM_FLOOR(pos.x);
     float y = IM_FLOOR(pos.y);
+    if (IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING)
+    {
+        x = pos.x;
+        y = pos.y;
+    }
     if (y > clip_rect.w)
         return;
 

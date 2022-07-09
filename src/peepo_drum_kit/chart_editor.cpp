@@ -49,7 +49,7 @@ namespace PeepoDrumKit
 				if (Gui::MenuItem("Save", ToShortcutString(GlobalSettings.Input.Editor_ChartSave).Data)) { TrySaveChartOrOpenSaveAsDialog(context); }
 				if (Gui::MenuItem("Save As...", ToShortcutString(GlobalSettings.Input.Editor_ChartSaveAs).Data)) { OpenChartSaveAsDialog(context); }
 				Gui::Separator();
-				if (Gui::MenuItem("Exit", ToShortcutString(InputBinding(ImGuiKey_F4, ImGuiKeyModFlags_Alt)).Data))
+				if (Gui::MenuItem("Exit", ToShortcutString(InputBinding(ImGuiKey_F4, ImGuiModFlags_Alt)).Data))
 					tryToCloseApplicationOnNextFrame = true;
 				Gui::EndMenu();
 			}
