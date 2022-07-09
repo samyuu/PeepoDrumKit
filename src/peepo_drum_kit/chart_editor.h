@@ -3,6 +3,7 @@
 #include "core_string.h"
 #include "chart.h"
 #include "chart_editor_context.h"
+#include "chart_editor_widgets.h"
 #include "chart_timeline.h"
 #include "chart_game_preview.h"
 #include "imgui/imgui_include.h"
@@ -33,17 +34,6 @@ namespace PeepoDrumKit
 		std::string SongFilePath;
 		Audio::PCMSampleBuffer SampleBuffer;
 		Audio::WaveformMipChain WaveformL, WaveformR;
-	};
-
-	struct LoadingTextAnimationData
-	{
-		static constexpr const char* TextFrames[] = { "Loading o....", "Loading .o...", "Loading ..o..", "Loading ...o.", "Loading ....o", "Loading ...o.", "Loading ..o..", "Loading .o..." };
-		static constexpr f32 FrameIntervalSec = (1.0f / 12.0f);
-		bool WasLoadingLastFrame = false;
-		i16 RingIndex = 0;
-		f32 AccumulatedTimeSec = 0.0f;
-
-		const char* UpdateFrameAndGetText(bool isLoadingThisFrame, f32 deltaTimeSec);
 	};
 
 	struct ChartEditor
@@ -87,15 +77,14 @@ namespace PeepoDrumKit
 		std::future<AsyncLoadSongResult> loadSongFuture {};
 		CPUStopwatch loadSongStopwatch = {};
 
-		std::string lyricInputBuffer;
-		std::string songFileNameInputBuffer;
-		LoadingTextAnimationData songLoadingTextAnimation {};
-
 		bool tryToCloseApplicationOnNextFrame = false;
-
-		bool difficultySliderStarsFitOnScreenLastFrame = false;
-		bool difficultySliderStarsWasHoveredLastFrame = false;
 		bool showHelpWindow = false;
+
+		ChartHelpWindow helpWindow = {};
+		ChartUndoHistoryWindow undoHistoryWindow = {};
+		ChartPropertiesWindow propertiesWindow = {};
+		ChartTempoWindow tempoWindow = {};
+		ChartLyricsWindow lyricsWindow = {};
 
 		struct SaveConfirmationPopupData
 		{

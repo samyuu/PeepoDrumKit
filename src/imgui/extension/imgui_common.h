@@ -65,6 +65,7 @@ namespace ImGui
 	struct PathInputTextWithBrowserButtonResult { bool InputTextEdited; bool BrowseButtonClicked; };
 	PathInputTextWithBrowserButtonResult PathInputTextWithHintAndBrowserDialogButton(const char* label, const char* hint, std::string* str, ImGuiInputTextFlags flags = 0);
 
+	// NOTE: As noted in https://github.com/ocornut/imgui/issues/3556
 	inline bool IsItemBeingEditedAsText() { return ImGui::IsItemActive() && ImGui::TempInputIsActive(ImGui::GetActiveID()); }
 	inline void SetDragScalarMouseCursor() { if (!IsItemBeingEditedAsText() && (ImGui::IsItemActive() || ImGui::IsItemHovered())) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW); }
 
