@@ -261,6 +261,10 @@ namespace PeepoDrumKit
 	static constexpr f32 MaxVolumeSoftLimit = 1.0f;
 	static constexpr f32 MaxVolumeHardLimit = 4.0f;
 
+	// TODO: Maybe this should be a user setting (?)
+	static constexpr f32 MinBPM = 30.0f;
+	static constexpr f32 MaxBPM = 960.0f;
+
 	static constexpr std::string_view UntitledChartFileName = "Untitled Chart.tja";
 
 	// DEBUG: Save and automatically load a separate copy so to never overwrite the original .tja (due to conversion data loss)
@@ -940,14 +944,14 @@ namespace PeepoDrumKit
 					Gui::Property::Property([&]
 					{
 						Gui::SetNextItemWidth(-1.0f);
-						if (f32 v = tempoChangeAtCursor.Tempo.BPM; GuiDragFloatLabel("Tempo##DragFloatLabel", &v, 1.0f, Tempo::MinBPM, Tempo::MaxBPM, "%g", ImGuiSliderFlags_AlwaysClamp))
+						if (f32 v = tempoChangeAtCursor.Tempo.BPM; GuiDragFloatLabel("Tempo##DragFloatLabel", &v, 1.0f, MinBPM, MaxBPM, "%g", ImGuiSliderFlags_AlwaysClamp))
 							insertOrUpdateCursorTempoChange(Tempo(v));
 					});
 					Gui::Property::Value([&]
 					{
 						Gui::SetNextItemWidth(-1.0f);
 						if (f32 v = tempoChangeAtCursor.Tempo.BPM; Gui::InputFloat("##TempoAtCursor", &v, 1.0f, 10.0f, "%g BPM", ImGuiInputTextFlags_None))
-							insertOrUpdateCursorTempoChange(Tempo(Clamp(v, 1.0f, Tempo::MaxBPM)));
+							insertOrUpdateCursorTempoChange(Tempo(Clamp(v, MinBPM, MaxBPM)));
 
 						if (Gui::Button("Remove##TempoAtCursor", vec2(-1.0f, 0.0f)))
 						{
@@ -993,7 +997,7 @@ namespace PeepoDrumKit
 							else
 							{
 								if (f32 v = tempoChangeAtCursor.Tempo.BPM * ((scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed);
-									Gui::DragFloat("##ScrollTempoAtCursor", &v, 1.0f, Tempo::MinBPM, Tempo::MaxBPM, "%g BPM", ImGuiSliderFlags_NoRoundToFormat))
+									Gui::DragFloat("##ScrollTempoAtCursor", &v, 1.0f, MinBPM, MaxBPM, "%g BPM", ImGuiSliderFlags_NoRoundToFormat))
 									newScrollSpeed = (v / tempoChangeAtCursor.Tempo.BPM);
 							}
 							return false;

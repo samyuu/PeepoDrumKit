@@ -20,24 +20,24 @@ struct Beat
 	static constexpr Beat FromBars(i32 bars, i32 beatsPerBar = 4) { return FromBeats(bars * beatsPerBar); }
 	static constexpr Beat FromBeatsFraction(f64 fraction) { return FromTicks(static_cast<i32>(Round(fraction * static_cast<f64>(TicksPerBeat)))); }
 
-	constexpr bool operator==(const Beat other) const { return Ticks == other.Ticks; }
-	constexpr bool operator!=(const Beat other) const { return Ticks != other.Ticks; }
-	constexpr bool operator<=(const Beat other) const { return Ticks <= other.Ticks; }
-	constexpr bool operator>=(const Beat other) const { return Ticks >= other.Ticks; }
-	constexpr bool operator<(const Beat other) const { return Ticks < other.Ticks; }
-	constexpr bool operator>(const Beat other) const { return Ticks > other.Ticks; }
+	constexpr bool operator==(const Beat& other) const { return Ticks == other.Ticks; }
+	constexpr bool operator!=(const Beat& other) const { return Ticks != other.Ticks; }
+	constexpr bool operator<=(const Beat& other) const { return Ticks <= other.Ticks; }
+	constexpr bool operator>=(const Beat& other) const { return Ticks >= other.Ticks; }
+	constexpr bool operator<(const Beat& other) const { return Ticks < other.Ticks; }
+	constexpr bool operator>(const Beat& other) const { return Ticks > other.Ticks; }
 
-	constexpr Beat operator+(const Beat other) const { return Beat(Ticks + other.Ticks); }
-	constexpr Beat operator-(const Beat other) const { return Beat(Ticks - other.Ticks); }
+	constexpr Beat operator+(const Beat& other) const { return Beat(Ticks + other.Ticks); }
+	constexpr Beat operator-(const Beat& other) const { return Beat(Ticks - other.Ticks); }
 	constexpr Beat operator*(const i32 ticks) const { return Beat(Ticks * ticks); }
 	constexpr Beat operator/(const i32 ticks) const { return Beat(Ticks / ticks); }
-	constexpr Beat operator%(const Beat other) const { return Beat(Ticks % other.Ticks); }
+	constexpr Beat operator%(const Beat& other) const { return Beat(Ticks % other.Ticks); }
 
-	constexpr Beat& operator+=(const Beat other) { (Ticks += other.Ticks); return *this; }
-	constexpr Beat& operator-=(const Beat other) { (Ticks -= other.Ticks); return *this; }
+	constexpr Beat& operator+=(const Beat& other) { (Ticks += other.Ticks); return *this; }
+	constexpr Beat& operator-=(const Beat& other) { (Ticks -= other.Ticks); return *this; }
 	constexpr Beat& operator*=(const i32 ticks) { (Ticks *= ticks); return *this; }
 	constexpr Beat& operator/=(const i32 ticks) { (Ticks *= ticks); return *this; }
-	constexpr Beat& operator%=(const Beat other) { (Ticks %= other.Ticks); return *this; }
+	constexpr Beat& operator%=(const Beat& other) { (Ticks %= other.Ticks); return *this; }
 
 	constexpr Beat operator-() const { return Beat(-Ticks); }
 };
@@ -50,22 +50,19 @@ constexpr auto IsTupletBarDivision(i32 gridBarDivision) -> bool { return (gridBa
 
 struct Tempo
 {
-	static constexpr f32 MinBPM = 30.0f;
-	static constexpr f32 MaxBPM = 960.0f;
+	f32 BPM = 0.0f;
 
-	f32 BPM;
-
-	Tempo() = default;
+	constexpr Tempo() = default;
 	constexpr explicit Tempo(f32 bpm) : BPM(bpm) {}
 };
 
 struct TimeSignature
 {
-	i16 Numerator = 4;
-	i16 Denominator = 4;
+	i32 Numerator = 4;
+	i32 Denominator = 4;
 
 	constexpr TimeSignature() = default;
-	constexpr TimeSignature(i16 numerator, i16 denominator) : Numerator(numerator), Denominator(denominator) {}
+	constexpr TimeSignature(i32 numerator, i32 denominator) : Numerator(numerator), Denominator(denominator) {}
 
 	constexpr i32 GetBeatsPerBar() const { return Numerator; }
 	constexpr Beat GetDurationPerBeat() const { return Beat::FromBars(1) / Denominator; }
@@ -82,6 +79,7 @@ struct TempoChange
 	static constexpr Tempo Default = Tempo(160.0);
 	constexpr TempoChange() = default;
 	constexpr TempoChange(Beat beat, Tempo tempo) : Beat(beat), Tempo(tempo) {}
+
 	Beat Beat = {};
 	Tempo Tempo = {};
 };
@@ -125,16 +123,15 @@ struct BeatSortedForwardIterator
 
 struct TempoMapAccelerationStructure
 {
+	// NOTE: Pre calculated beat times up to the last tempo change
+	std::vector<Time> BeatTickToTimes;
+	f64 FirstTempoBPM = 0.0, LastTempoBPM = 0.0;
+
 	Time ConvertBeatToTimeUsingLookupTableIndexing(Beat beat) const;
 	Beat ConvertTimeToBeatUsingLookupTableBinarySearch(Time time) const;
 
 	Time GetLastCalculatedTime() const;
 	void Rebuild(const std::vector<TempoChange>& tempoChanges);
-
-private:
-	// NOTE: Pre calculated beat times up to the last tempo change
-	std::vector<Time> beatTickToTimes;
-	f64 firstTempoBPM = 0.0, lastTempoBPM = 0.0;
 };
 
 struct SortedTempoMap
