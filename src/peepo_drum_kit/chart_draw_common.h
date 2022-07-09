@@ -159,9 +159,9 @@ namespace PeepoDrumKit
 		const vec2 textSize = font->CalcTextSizeA(fontSize, F32Max, -1.0f, Gui::StringViewStart(text), Gui::StringViewEnd(text));
 		const vec2 textPosition = (center - (textSize * 0.5f)) - vec2(0.0f, 1.0f);
 
-		IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = true;
+		Gui::DisableFontPixelSnap(true);
 		Gui::AddTextWithDropShadow(drawList, font, fontSize, textPosition, NoteBalloonTextColor, text, 0.0f, nullptr, NoteBalloonTextColorShadow);
-		IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+		Gui::DisableFontPixelSnap(false);
 	}
 
 	struct DrawTimelineRectBaseParam { vec2 TL, BR; f32 TriScaleL, TriScaleR; u32 ColorBorder, ColorOuter, ColorInner; };

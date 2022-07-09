@@ -17,6 +17,11 @@
 // HACK: Non pixel aligned text rendering https://github.com/ocornut/imgui/issues/2291
 inline bool IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
 
+namespace ImGui
+{
+	inline void DisableFontPixelSnap(bool disabled) { IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = disabled; }
+}
+
 // HACK: Because the X buttons aren't defined by default :/
 typedef int ImGuiMouseButton;
 enum ImGuiMouseButtonEx_ : ImGuiMouseButton
@@ -103,8 +108,8 @@ enum ImGuiMouseButtonEx_ : ImGuiMouseButton
 
 /*
 #define IM_VEC4_CLASS_EXTRA                                                     \
-        constexpr ImVec4(const MyVec4& f) : x(f.x), y(f.y), z(f.z), w(f.w) {}   \
-        operator MyVec4() const { return MyVec4(x,y,z,w); }
+		constexpr ImVec4(const MyVec4& f) : x(f.x), y(f.y), z(f.z), w(f.w) {}   \
+		operator MyVec4() const { return MyVec4(x,y,z,w); }
 */
 
 //---- Use 32-bit vertex indices (default is 16-bit) is one way to allow large meshes with more than 64K vertices.
@@ -136,6 +141,6 @@ enum ImGuiMouseButtonEx_ : ImGuiMouseButton
 /*
 namespace ImGui
 {
-    void MyFunction(const char* name, const MyMatrix44& v);
+	void MyFunction(const char* name, const MyMatrix44& v);
 }
 */

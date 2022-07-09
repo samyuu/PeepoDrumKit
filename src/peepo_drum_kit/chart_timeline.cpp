@@ -1581,7 +1581,7 @@ namespace PeepoDrumKit
 					// TODO: Fix overlapping text when zoomed out really far (while still keeping the grid lines)
 					if (gridIt.IsBar)
 					{
-						IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = true;
+						Gui::DisableFontPixelSnap(true);
 						static constexpr f32 textPaddingX = 4.0f;
 
 						char buffer[32];
@@ -1591,7 +1591,7 @@ namespace PeepoDrumKit
 							gridIt.Time.ToString().Data);
 
 						lastDrawnScreenSpaceTextTL = headerScreenSpaceTL;
-						IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+						Gui::DisableFontPixelSnap(false);
 					}
 				}
 			});
@@ -1683,9 +1683,9 @@ namespace PeepoDrumKit
 					// HACK: Use TextDisable for now to make it clear that these aren't really implemented yet
 					const bool isThisRowImplemented = !(rowIt.RowType == TimelineRowType::Notes_Expert || rowIt.RowType == TimelineRowType::Notes_Master);
 
-					IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = true;
+					Gui::DisableFontPixelSnap(true);
 					DrawListSidebar->AddText(screenSpaceTextPosition, Gui::GetColorU32(isThisRowImplemented ? ImGuiCol_Text : ImGuiCol_TextDisabled), Gui::StringViewStart(rowIt.Label), Gui::StringViewEnd(rowIt.Label));
-					IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+					Gui::DisableFontPixelSnap(false);
 				}
 
 				{
@@ -1713,14 +1713,14 @@ namespace PeepoDrumKit
 							const f32 textHeight = Gui::GetFontSize();
 							const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(3.0f, textHeight * -0.5f));
 
-							IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = true;
+							Gui::DisableFontPixelSnap(true);
 							char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, useCompactFormat ? "%.0f BPM" : "%g BPM", tempoChange.Tempo.BPM));
 							const vec2 textSize = Gui::CalcTextSize(text);
 							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
 
 							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), TimelineTempoChangeLineColor);
 							Gui::AddTextWithDropShadow(DrawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
-							IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+							Gui::DisableFontPixelSnap(false);
 						}
 					} break;
 
@@ -1739,14 +1739,14 @@ namespace PeepoDrumKit
 							const f32 textHeight = Gui::GetFontSize();
 							const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(3.0f, textHeight * -0.5f));
 
-							IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = true;
+							Gui::DisableFontPixelSnap(true);
 							char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, "%d/%d", signatureChange.Signature.Numerator, signatureChange.Signature.Denominator));
 							const vec2 textSize = Gui::CalcTextSize(text);
 							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
 
 							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), TimelineSignatureChangeLineColor);
 							Gui::AddTextWithDropShadow(DrawListContent, textPosition, IsTimeSignatureSupported(signatureChange.Signature) ? TimelineItemTextColor : TimelineItemTextColorWarning, text, TimelineItemTextColorShadow);
-							IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+							Gui::DisableFontPixelSnap(false);
 						}
 					} break;
 
@@ -1854,13 +1854,13 @@ namespace PeepoDrumKit
 							const f32 textHeight = Gui::GetFontSize();
 							const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(3.0f, textHeight * -0.5f));
 
-							IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = true;
+							Gui::DisableFontPixelSnap(true);
 							char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, "%gx", scroll.ScrollSpeed));
 							const vec2 textSize = Gui::CalcTextSize(text);
 							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
 							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), TimelineScrollChangeLineColor);
 							Gui::AddTextWithDropShadow(DrawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
-							IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+							Gui::DisableFontPixelSnap(false);
 						}
 					} break;
 
@@ -1879,13 +1879,13 @@ namespace PeepoDrumKit
 							const f32 textHeight = Gui::GetFontSize();
 							const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(3.0f, textHeight * -0.5f));
 
-							IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = true;
+							Gui::DisableFontPixelSnap(true);
 							const std::string_view text = barLine.IsVisible ? "On" : "Off";
 							const vec2 textSize = Gui::CalcTextSize(text);
 							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
 							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), TimelineBarLineChangeLineColor);
 							Gui::AddTextWithDropShadow(DrawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
-							IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+							Gui::DisableFontPixelSnap(false);
 						}
 					} break;
 
@@ -1933,7 +1933,7 @@ namespace PeepoDrumKit
 								const f32 textHeight = Gui::GetFontSize();
 								const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(4.0f, textHeight * -0.5f));
 
-								IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = true;
+								Gui::DisableFontPixelSnap(true);
 								{
 									const Rect lyricsBarRect = Rect(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBR));
 									DrawTimelineLyricsBackground(DrawListContent, lyricsBarRect.TL, lyricsBarRect.BR);
@@ -1944,7 +1944,7 @@ namespace PeepoDrumKit
 									if (Absolute(clipRect.z - clipRect.x) > (borderLeft + borderRight))
 										Gui::AddTextWithDropShadow(DrawListContent, nullptr, 0.0f, textPosition, TimelineLyricsTextColor, thisLyric.Lyric, 0.0f, &clipRect, TimelineLyricsTextColorShadow);
 								}
-								IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+								Gui::DisableFontPixelSnap(false);
 							}
 							Gui::PopFont();
 						}
@@ -2000,7 +2000,7 @@ namespace PeepoDrumKit
 
 			if (BoxSelection.Action != BoxSelectionAction::Clear)
 			{
-				IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = true;
+				Gui::DisableFontPixelSnap(true);
 				const vec2 center = LocalToScreenSpace(Camera.WorldToLocalSpace(BoxSelection.WorldSpaceRect.TL));
 				DrawListContent->AddCircleFilled(center, TimelineBoxSelectionRadius, TimelineBoxSelectionFillColor);
 				DrawListContent->AddCircle(center, TimelineBoxSelectionRadius, TimelineBoxSelectionBorderColor);
@@ -2011,7 +2011,7 @@ namespace PeepoDrumKit
 					if (BoxSelection.Action == BoxSelectionAction::Add)
 						DrawListContent->AddRectFilled(vertical.TL, vertical.BR, TimelineBoxSelectionInnerColor);
 				}
-				IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+				Gui::DisableFontPixelSnap(false);
 			}
 		}
 	}
