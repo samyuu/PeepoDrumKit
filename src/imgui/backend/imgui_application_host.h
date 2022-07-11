@@ -14,9 +14,11 @@ namespace ApplicationHost
 {
 	struct StartupParam
 	{
-		std::string_view WindowTitle;
-		std::optional<ivec2> WindowPosition;
-		std::optional<ivec2> WindowSize;
+		std::string_view WindowTitle = {};
+		std::optional<ivec2> WindowPosition = {};
+		std::optional<ivec2> WindowSize = {};
+		bool WaitableSwapChain = true;
+		bool AllowSwapChainTearing = false;
 	};
 
 	struct State

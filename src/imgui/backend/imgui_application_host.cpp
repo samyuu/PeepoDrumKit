@@ -10,7 +10,7 @@
 #include "../src_res/resource.h"
 
 #include <d3d11.h>
-#include <tchar.h>
+#include <dxgi1_3.h>
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -48,6 +48,7 @@ namespace ApplicationHost
 	static ID3D11Device*            GlobalD3D11Device = nullptr;
 	static ID3D11DeviceContext*     GlobalD3D11DeviceContext = nullptr;
 	static IDXGISwapChain*          GlobalSwapChain = nullptr;
+	static DXGI_SWAP_CHAIN_DESC		GlobalSwapChainCreationDesc = {};
 	static ID3D11RenderTargetView*  GlobalMainRenderTargetView = nullptr;
 	static UpdateFunc				GlobalOnUserUpdate = nullptr;
 	static WindowCloseRequestFunc	GlobalOnUserWindowCloseRequest = nullptr;
@@ -55,14 +56,18 @@ namespace ApplicationHost
 	static bool						GlobalIsWindowMinimized = false;
 	static bool						GlobalIsWindowBeingDragged = false;
 	static UINT_PTR					GlobalWindowRedrawTimerID = {};
+	static HANDLE					GlobalSwapChainWaitableObject = NULL;
 
-	static bool CreateGlobalD3D11(HWND hWnd);
+	static bool CreateGlobalD3D11(const StartupParam& startupParam, HWND hWnd);
 	static void CleanupGlobalD3D11();
 	static void CreateGlobalD3D11SwapchainRenderTarget();
 	static void CleanupGlobalD3D11SwapchainRenderTarget();
 
 	static void ImGuiAndUserUpdateThenRenderAndPresentFrame()
 	{
+		if (!GlobalIsWindowMinimized && GlobalSwapChainWaitableObject != NULL)
+			::WaitForSingleObjectEx(GlobalSwapChainWaitableObject, 1000, true);
+
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
@@ -96,10 +101,10 @@ namespace ApplicationHost
 		}
 
 		// TODO: Maybe handle this better somehow, not sure...
-		if (GlobalIsWindowMinimized)
-			::Sleep(33);
-		else
+		if (!GlobalIsWindowMinimized)
 			GlobalSwapChain->Present(GlobalState.SwapInterval, 0);
+		else
+			::Sleep(33);
 	}
 
 	i32 EnterProgramLoop(const StartupParam& startupParam, UserCallbacks userCallbacks)
@@ -125,7 +130,7 @@ namespace ApplicationHost
 		GlobalState.NativeWindowHandle = hwnd;
 		GlobalState.WindowTitle = startupParam.WindowTitle;
 
-		if (!CreateGlobalD3D11(hwnd))
+		if (!CreateGlobalD3D11(startupParam, hwnd))
 		{
 			CleanupGlobalD3D11();
 			::UnregisterClassW(windowClass.lpszClassName, windowClass.hInstance);
@@ -305,27 +310,42 @@ namespace ApplicationHost
 		return 0;
 	}
 
-	static bool CreateGlobalD3D11(HWND hWnd)
+	static bool CreateGlobalD3D11(const StartupParam& startupParam, HWND hWnd)
 	{
 		DXGI_SWAP_CHAIN_DESC sd = {};
 		sd.BufferCount = 2;
 		sd.BufferDesc.Width = 0;
 		sd.BufferDesc.Height = 0;
 		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		sd.OutputWindow = hWnd;
 		sd.SampleDesc.Count = 1;
 		sd.SampleDesc.Quality = 0;
-		sd.Windowed = TRUE;
-		sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+		sd.Windowed = true;
+		sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+		sd.Flags = 0;
 
-		UINT createDeviceFlags = 0;
-		// createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-		D3D_FEATURE_LEVEL featureLevel;
-		const D3D_FEATURE_LEVEL featureLevelArray[2] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_0, };
-		if (::D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &GlobalSwapChain, &GlobalD3D11Device, &featureLevel, &GlobalD3D11DeviceContext) != S_OK)
-			return false;
+		if (startupParam.WaitableSwapChain)
+			sd.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+		if (startupParam.AllowSwapChainTearing)
+			sd.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
+		static constexpr UINT deviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED | (PEEPO_DEBUG ? D3D11_CREATE_DEVICE_DEBUG : 0);
+		static constexpr D3D_FEATURE_LEVEL inFeatureLevels[2] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_0, };
+		D3D_FEATURE_LEVEL outFeatureLevel = {};
+
+		HRESULT hr = S_OK;
+		if (FAILED(hr = ::D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, deviceFlags, inFeatureLevels, ArrayCountI32(inFeatureLevels), D3D11_SDK_VERSION, &sd, &GlobalSwapChain, &GlobalD3D11Device, &outFeatureLevel, &GlobalD3D11DeviceContext)))
+		{
+			// NOTE: In case FLIP_DISCARD and or FRAME_LATENCY_WAITABLE_OBJECT aren't supported (<= win7?) try again using the regular bitblt model.
+			//		 For windows 8.1 specifically it might be better to first check for FLIP_SEQUENTIAL but whatever
+			sd.BufferCount = 1;
+			sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+			sd.Flags = 0;
+
+			if (FAILED(hr = ::D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, deviceFlags, inFeatureLevels, ArrayCountI32(inFeatureLevels), D3D11_SDK_VERSION, &sd, &GlobalSwapChain, &GlobalD3D11Device, &outFeatureLevel, &GlobalD3D11DeviceContext)))
+				return false;
+		}
 
 		// NOTE: Disable silly ALT+ENTER fullscreen toggle default behavior
 		{
@@ -333,7 +353,6 @@ namespace ApplicationHost
 			IDXGIAdapter* dxgiAdapter = nullptr;
 			IDXGIFactory* dxgiFactory = nullptr;
 
-			HRESULT hr = S_OK;
 			hr = GlobalD3D11Device ? GlobalD3D11Device->QueryInterface(IID_PPV_ARGS(&dxgiDevice)) : E_INVALIDARG;
 			hr = dxgiDevice ? dxgiDevice->GetAdapter(&dxgiAdapter) : hr;
 			hr = dxgiAdapter ? dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory)) : hr;
@@ -344,6 +363,19 @@ namespace ApplicationHost
 			if (dxgiDevice) { dxgiDevice->Release(); dxgiDevice = nullptr; }
 		}
 
+		if (sd.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
+		{
+			IDXGISwapChain2* swapChain2 = nullptr;
+			hr = GlobalSwapChain->QueryInterface(IID_PPV_ARGS(&swapChain2));
+			if (swapChain2 != nullptr)
+			{
+				GlobalSwapChainWaitableObject = swapChain2->GetFrameLatencyWaitableObject();
+				hr = swapChain2->SetMaximumFrameLatency(1);
+				hr = swapChain2->Release();
+			}
+		}
+
+		GlobalSwapChainCreationDesc = sd;
 		CreateGlobalD3D11SwapchainRenderTarget();
 		return true;
 	}
@@ -351,6 +383,7 @@ namespace ApplicationHost
 	static void CleanupGlobalD3D11()
 	{
 		CleanupGlobalD3D11SwapchainRenderTarget();
+		if (GlobalSwapChainWaitableObject) { ::CloseHandle(GlobalSwapChainWaitableObject); GlobalSwapChainWaitableObject = NULL; }
 		if (GlobalSwapChain) { GlobalSwapChain->Release(); GlobalSwapChain = nullptr; }
 		if (GlobalD3D11DeviceContext) { GlobalD3D11DeviceContext->Release(); GlobalD3D11DeviceContext = nullptr; }
 		if (GlobalD3D11Device) { GlobalD3D11Device->Release(); GlobalD3D11Device = nullptr; }
@@ -415,7 +448,8 @@ namespace ApplicationHost
 				GlobalState.WindowSize = ivec2(static_cast<i32>(LOWORD(lParam)), static_cast<i32>(HIWORD(lParam)));
 
 				CleanupGlobalD3D11SwapchainRenderTarget();
-				GlobalSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
+
+				GlobalSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, GlobalSwapChainCreationDesc.Flags);
 				CreateGlobalD3D11SwapchainRenderTarget();
 
 				// HACK: Rendering during a resize is far from perfect but should still be much better than freezing completely
