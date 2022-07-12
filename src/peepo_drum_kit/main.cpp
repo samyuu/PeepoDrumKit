@@ -26,7 +26,7 @@ namespace PeepoDrumKit
 			style.WindowMenuButtonPosition = ImGuiDir_None;
 
 			// TODO: Improve button color and remove green from sliders and maybe some other widgets too
-			GuiStyleColorNiceLimeGreen(&style);
+			GuiStyleColorPeepoDrumKit(&style);
 		}
 
 		void OnUpdate()

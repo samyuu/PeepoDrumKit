@@ -111,6 +111,9 @@
     <ClCompile Include="src\peepo_drum_kit\chart_editor_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\peepo_drum_kit\main_settings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\imgui\3rdparty\imconfig.h">

@@ -41,13 +41,13 @@ namespace PeepoDrumKit
 		{
 			if (Gui::BeginMenu("File"))
 			{
-				if (Gui::MenuItem("New Chart", ToShortcutString(GlobalSettings.Input.Editor_ChartNew).Data)) { CheckOpenSaveConfirmationPopupThenCall([&] { CreateNewChart(context); }); }
-				if (Gui::MenuItem("Open...", ToShortcutString(GlobalSettings.Input.Editor_ChartOpen).Data)) { CheckOpenSaveConfirmationPopupThenCall([&] { OpenLoadChartFileDialog(context); }); }
+				if (Gui::MenuItem("New Chart", ToShortcutString(*Settings.Input.Editor_ChartNew).Data)) { CheckOpenSaveConfirmationPopupThenCall([&] { CreateNewChart(context); }); }
+				if (Gui::MenuItem("Open...", ToShortcutString(*Settings.Input.Editor_ChartOpen).Data)) { CheckOpenSaveConfirmationPopupThenCall([&] { OpenLoadChartFileDialog(context); }); }
 				if (Gui::MenuItem("Open Recent", "(TODO)", nullptr, false)) { /* // TODO: ...*/ }
-				if (Gui::MenuItem("Open Chart Directory...", ToShortcutString(GlobalSettings.Input.Editor_ChartOpenDirectory).Data, nullptr, CanOpenChartDirectoryInFileExplorer(context))) { OpenChartDirectoryInFileExplorer(context); }
+				if (Gui::MenuItem("Open Chart Directory...", ToShortcutString(*Settings.Input.Editor_ChartOpenDirectory).Data, nullptr, CanOpenChartDirectoryInFileExplorer(context))) { OpenChartDirectoryInFileExplorer(context); }
 				Gui::Separator();
-				if (Gui::MenuItem("Save", ToShortcutString(GlobalSettings.Input.Editor_ChartSave).Data)) { TrySaveChartOrOpenSaveAsDialog(context); }
-				if (Gui::MenuItem("Save As...", ToShortcutString(GlobalSettings.Input.Editor_ChartSaveAs).Data)) { OpenChartSaveAsDialog(context); }
+				if (Gui::MenuItem("Save", ToShortcutString(*Settings.Input.Editor_ChartSave).Data)) { TrySaveChartOrOpenSaveAsDialog(context); }
+				if (Gui::MenuItem("Save As...", ToShortcutString(*Settings.Input.Editor_ChartSaveAs).Data)) { OpenChartSaveAsDialog(context); }
 				Gui::Separator();
 				if (Gui::MenuItem("Exit", ToShortcutString(InputBinding(ImGuiKey_F4, ImGuiModFlags_Alt)).Data))
 					tryToCloseApplicationOnNextFrame = true;
@@ -56,8 +56,8 @@ namespace PeepoDrumKit
 
 			if (Gui::BeginMenu("Edit"))
 			{
-				if (Gui::MenuItem("Undo", ToShortcutString(GlobalSettings.Input.Editor_Undo).Data, nullptr, context.Undo.CanUndo())) { context.Undo.Undo(); }
-				if (Gui::MenuItem("Redo", ToShortcutString(GlobalSettings.Input.Editor_Redo).Data, nullptr, context.Undo.CanRedo())) { context.Undo.Redo(); }
+				if (Gui::MenuItem("Undo", ToShortcutString(*Settings.Input.Editor_Undo).Data, nullptr, context.Undo.CanUndo())) { context.Undo.Undo(); }
+				if (Gui::MenuItem("Redo", ToShortcutString(*Settings.Input.Editor_Redo).Data, nullptr, context.Undo.CanRedo())) { context.Undo.Redo(); }
 				Gui::Separator();
 				if (Gui::MenuItem("Settings...", "(TODO)", nullptr, false)) { /* // TODO: ...*/ }
 				Gui::EndMenu();
@@ -65,15 +65,11 @@ namespace PeepoDrumKit
 
 			if (Gui::BeginMenu("Window"))
 			{
-				if (Gui::MenuItem("Toggle Fullscreen", ToShortcutString(GlobalSettings.Input.Editor_ToggleFullscreen).Data))
-					ApplicationHost::GlobalState.SetBorderlessFullscreenNextFrame = !ApplicationHost::GlobalState.IsBorderlessFullscreen;
+				if (bool v = (ApplicationHost::GlobalState.SwapInterval != 0); Gui::MenuItem("Toggle VSync", ToShortcutString(*Settings.Input.Editor_ToggleVSync).Data, &v))
+					ApplicationHost::GlobalState.SwapInterval = v ? 1 : 0;
 
-				if (Gui::BeginMenu("Swap Interval"))
-				{
-					if (Gui::MenuItem("Swap Interval 0 - Unlimited", nullptr, (ApplicationHost::GlobalState.SwapInterval == 0))) ApplicationHost::GlobalState.SwapInterval = 0;
-					if (Gui::MenuItem("Swap Interval 1 - VSync", nullptr, (ApplicationHost::GlobalState.SwapInterval == 1))) ApplicationHost::GlobalState.SwapInterval = 1;
-					Gui::EndMenu();
-				}
+				if (Gui::MenuItem("Toggle Fullscreen", ToShortcutString(*Settings.Input.Editor_ToggleFullscreen).Data, ApplicationHost::GlobalState.IsBorderlessFullscreen))
+					ApplicationHost::GlobalState.SetBorderlessFullscreenNextFrame = !ApplicationHost::GlobalState.IsBorderlessFullscreen;
 
 				if (Gui::BeginMenu("Resize"))
 				{
@@ -119,7 +115,7 @@ namespace PeepoDrumKit
 				Gui::MenuItem("Show ImGui Style Editor", " ", &test.ShowImGuiStyleEditor);
 				Gui::Separator();
 				if (Gui::MenuItem("Reset Style Colors", " "))
-					GuiStyleColorNiceLimeGreen();
+					GuiStyleColorPeepoDrumKit();
 #endif
 				Gui::EndMenu();
 			}
@@ -324,15 +320,8 @@ namespace PeepoDrumKit
 		// NOTE: Drag and drop handling
 		for (const std::string& droppedFilePath : ApplicationHost::GlobalState.FilePathsDroppedThisFrame)
 		{
-			// BUG: Should also unload song instantly when dropping a new audio file..?
 			if (Path::HasAnyExtension(droppedFilePath, TJA::Extension)) { CheckOpenSaveConfirmationPopupThenCall([this, pathCopy = droppedFilePath] { StartAsyncImportingChartFile(pathCopy); }); break; }
 			if (Path::HasAnyExtension(droppedFilePath, Audio::SupportedFileFormatExtensionsPacked)) { SetAndStartLoadingChartSongFileName(droppedFilePath, context.Undo); break; }
-			// HACK: To allow quickly dropping folders from songs directory without manually selecting tja within (should probably iterate directory for first tja instead)
-			if (Path::IsDirectory(droppedFilePath))
-			{
-				std::string tjaPath = std::string(droppedFilePath).append("/").append(Path::GetFileName(droppedFilePath)).append(TJA::Extension);
-				if (File::Exists(tjaPath)) { CheckOpenSaveConfirmationPopupThenCall([this, pathCopy = std::move(tjaPath)] { StartAsyncImportingChartFile(pathCopy); }); break; }
-			}
 		}
 
 		// NOTE: Global input bindings
@@ -343,28 +332,31 @@ namespace PeepoDrumKit
 				// HACK: Not quite sure about this one yet but seems reasonable..?
 				if (Gui::GetCurrentContext()->OpenPopupStack.Size <= 0)
 				{
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Editor_ToggleFullscreen, false))
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_ToggleFullscreen, false))
 						ApplicationHost::GlobalState.SetBorderlessFullscreenNextFrame = !ApplicationHost::GlobalState.IsBorderlessFullscreen;
 
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Editor_Undo, true))
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_ToggleVSync, false))
+						ApplicationHost::GlobalState.SwapInterval = !ApplicationHost::GlobalState.SwapInterval;
+
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_Undo, true))
 						context.Undo.Undo();
 
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Editor_Redo, true))
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_Redo, true))
 						context.Undo.Redo();
 
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Editor_ChartNew, false))
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_ChartNew, false))
 						CheckOpenSaveConfirmationPopupThenCall([&] { CreateNewChart(context); });
 
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Editor_ChartOpen, false))
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_ChartOpen, false))
 						CheckOpenSaveConfirmationPopupThenCall([&] { OpenLoadChartFileDialog(context); });
 
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Editor_ChartOpenDirectory, false) && CanOpenChartDirectoryInFileExplorer(context))
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_ChartOpenDirectory, false) && CanOpenChartDirectoryInFileExplorer(context))
 						OpenChartDirectoryInFileExplorer(context);
 
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Editor_ChartSave, false))
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_ChartSave, false))
 						TrySaveChartOrOpenSaveAsDialog(context);
 
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Editor_ChartSaveAs, false))
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_ChartSaveAs, false))
 						OpenChartSaveAsDialog(context);
 				}
 			}
@@ -506,11 +498,11 @@ namespace PeepoDrumKit
 				// TODO: Improve button appearance (?)
 				//Gui::PushStyleColor(ImGuiCol_Button, Gui::GetStyleColorVec4(ImGuiCol_FrameBg));
 				static constexpr vec2 buttonSize = vec2(120.0f, 0.0f);
-				const bool clickedYes = Gui::Button("Save Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(GlobalSettings.Input.Dialog_YesOrOk, false));
+				const bool clickedYes = Gui::Button("Save Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_YesOrOk, false));
 				Gui::SameLine();
-				const bool clickedNo = Gui::Button("Discard Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(GlobalSettings.Input.Dialog_No, false));
+				const bool clickedNo = Gui::Button("Discard Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_No, false));
 				Gui::SameLine();
-				const bool clickedCancel = Gui::Button("Cancel", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(GlobalSettings.Input.Dialog_Cancel, false));
+				const bool clickedCancel = Gui::Button("Cancel", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_Cancel, false));
 				//Gui::PopStyleColor(1);
 
 				if (clickedYes || clickedNo || clickedCancel)

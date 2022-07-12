@@ -278,35 +278,35 @@ namespace PeepoDrumKit
 					row([] { Gui::Text("Fast (Action)"); }, [] { Gui::Text("Shift + { Action }"); });
 					row([] { Gui::Text("Slow (Action)"); }, [] { Gui::Text("Alt + { Action }"); });
 					rowSeparator();
-					row([] { Gui::Text("Play / pause"); }, [] { Gui::Text(ToShortcutString(GlobalSettings.Input.Timeline_TogglePlayback).Data); });
+					row([] { Gui::Text("Play / pause"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_TogglePlayback).Data); });
 					row([] { Gui::Text("Add / remove note"); }, []
 					{
-						assert(GlobalSettings.Input.Timeline_PlaceNoteKa.Count == 2 && GlobalSettings.Input.Timeline_PlaceNoteDon.Count == 2);
+						assert(Settings.Input.Timeline_PlaceNoteKa->Count == 2 && Settings.Input.Timeline_PlaceNoteDon->Count == 2);
 						Gui::Text("%s / %s / %s / %s",
-							ToShortcutString(GlobalSettings.Input.Timeline_PlaceNoteKa.Slots[0]).Data, ToShortcutString(GlobalSettings.Input.Timeline_PlaceNoteDon.Slots[0]).Data,
-							ToShortcutString(GlobalSettings.Input.Timeline_PlaceNoteDon.Slots[1]).Data, ToShortcutString(GlobalSettings.Input.Timeline_PlaceNoteKa.Slots[1]).Data);
+							ToShortcutString(Settings.Input.Timeline_PlaceNoteKa->Slots[0]).Data, ToShortcutString(Settings.Input.Timeline_PlaceNoteDon->Slots[0]).Data,
+							ToShortcutString(Settings.Input.Timeline_PlaceNoteDon->Slots[1]).Data, ToShortcutString(Settings.Input.Timeline_PlaceNoteKa->Slots[1]).Data);
 					});
 					row([] { Gui::Text("Add long note"); }, []
 					{
-						assert(GlobalSettings.Input.Timeline_PlaceNoteBalloon.Count == 2 && GlobalSettings.Input.Timeline_PlaceNoteDrumroll.Count == 2);
+						assert(Settings.Input.Timeline_PlaceNoteBalloon->Count == 2 && Settings.Input.Timeline_PlaceNoteDrumroll->Count == 2);
 						Gui::Text("%s / %s / %s / %s",
-							ToShortcutString(GlobalSettings.Input.Timeline_PlaceNoteBalloon.Slots[0]).Data, ToShortcutString(GlobalSettings.Input.Timeline_PlaceNoteDrumroll.Slots[0]).Data,
-							ToShortcutString(GlobalSettings.Input.Timeline_PlaceNoteDrumroll.Slots[1]).Data, ToShortcutString(GlobalSettings.Input.Timeline_PlaceNoteBalloon.Slots[1]).Data);
+							ToShortcutString(Settings.Input.Timeline_PlaceNoteBalloon->Slots[0]).Data, ToShortcutString(Settings.Input.Timeline_PlaceNoteDrumroll->Slots[0]).Data,
+							ToShortcutString(Settings.Input.Timeline_PlaceNoteDrumroll->Slots[1]).Data, ToShortcutString(Settings.Input.Timeline_PlaceNoteBalloon->Slots[1]).Data);
 					});
 					row([] { Gui::Text("Add big note"); }, [] { Gui::Text("Alt + { Note }"); });
 					row([] { Gui::Text("Fill range-selection with notes"); }, [] { Gui::Text("Shift + { Note }"); });
-					row([] { Gui::Text("Start / end range-selection"); }, [] { Gui::Text(ToShortcutString(GlobalSettings.Input.Timeline_StartEndRangeSelection).Data); });
-					row([] { Gui::Text("Grid division"); }, [] { Gui::Text("Mouse [X1/X2] / [%s/%s]", ToShortcutString(GlobalSettings.Input.Timeline_IncreaseGridDivision).Data, ToShortcutString(GlobalSettings.Input.Timeline_DecreaseGridDivision).Data); });
-					row([] { Gui::Text("Step cursor"); }, [] { Gui::Text("%s / %s", ToShortcutString(GlobalSettings.Input.Timeline_StepCursorLeft).Data, ToShortcutString(GlobalSettings.Input.Timeline_StepCursorRight).Data); });
+					row([] { Gui::Text("Start / end range-selection"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_StartEndRangeSelection).Data); });
+					row([] { Gui::Text("Grid division"); }, [] { Gui::Text("Mouse [X1/X2] / [%s/%s]", ToShortcutString(*Settings.Input.Timeline_IncreaseGridDivision).Data, ToShortcutString(*Settings.Input.Timeline_DecreaseGridDivision).Data); });
+					row([] { Gui::Text("Step cursor"); }, [] { Gui::Text("%s / %s", ToShortcutString(*Settings.Input.Timeline_StepCursorLeft).Data, ToShortcutString(*Settings.Input.Timeline_StepCursorRight).Data); });
 					rowSeparator();
 					row([] { Gui::Text("Move selected notes"); }, [] { Gui::Text("Mouse Left (Hover)"); });
-					row([] { Gui::Text("Cut selected notes"); }, [] { Gui::Text(ToShortcutString(GlobalSettings.Input.Timeline_Cut).Data); });
-					row([] { Gui::Text("Copy selected notes"); }, [] { Gui::Text(ToShortcutString(GlobalSettings.Input.Timeline_Copy).Data); });
-					row([] { Gui::Text("Paste selected notes"); }, [] { Gui::Text(ToShortcutString(GlobalSettings.Input.Timeline_Paste).Data); });
-					row([] { Gui::Text("Delete selected notes"); }, [] { Gui::Text(ToShortcutString(GlobalSettings.Input.Timeline_DeleteSelection).Data); });
+					row([] { Gui::Text("Cut selected notes"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_Cut).Data); });
+					row([] { Gui::Text("Copy selected notes"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_Copy).Data); });
+					row([] { Gui::Text("Paste selected notes"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_Paste).Data); });
+					row([] { Gui::Text("Delete selected notes"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_DeleteSelection).Data); });
 					rowSeparator();
-					row([] { Gui::Text("Playback speed"); }, [] { Gui::Text("%s / %s", ToShortcutString(GlobalSettings.Input.Timeline_DecreasePlaybackSpeed).Data, ToShortcutString(GlobalSettings.Input.Timeline_IncreasePlaybackSpeed).Data); });
-					row([] { Gui::Text("Toggle metronome"); }, [] { Gui::Text(ToShortcutString(GlobalSettings.Input.Timeline_ToggleMetronome).Data); });
+					row([] { Gui::Text("Playback speed"); }, [] { Gui::Text("%s / %s", ToShortcutString(*Settings.Input.Timeline_DecreasePlaybackSpeed).Data, ToShortcutString(*Settings.Input.Timeline_IncreasePlaybackSpeed).Data); });
+					row([] { Gui::Text("Toggle metronome"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_ToggleMetronome).Data); });
 
 					Gui::EndTable();
 				}

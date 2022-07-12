@@ -217,12 +217,12 @@ namespace PeepoDrumKit
 				{
 					Gui::Property::PropertyTextValueFunc(label, [&] { Gui::SetNextItemWidth(-1.0f); Gui::DragFloat(label, inOutSpeed, 0.1f, 0.0f, 100.0f); });
 				};
-				animationSpeed("TimelineSmoothScrollAnimationSpeed", &GlobalSettings.TimelineSmoothScrollAnimationSpeed);
-				animationSpeed("TimelineWaveformFadeAnimationSpeed", &GlobalSettings.TimelineWaveformFadeAnimationSpeed);
-				animationSpeed("TimelineRangeSelectionExpansionAnimationSpeed", &GlobalSettings.TimelineRangeSelectionExpansionAnimationSpeed);
-				animationSpeed("TimelineWorldSpaceCursorXAnimationSpeed", &GlobalSettings.TimelineWorldSpaceCursorXAnimationSpeed);
-				animationSpeed("TimelineGridSnapLineAnimationSpeed", &GlobalSettings.TimelineGridSnapLineAnimationSpeed);
-				animationSpeed("TimelineGoGoRangeExpansionAnimationSpeed", &GlobalSettings.TimelineGoGoRangeExpansionAnimationSpeed);
+				animationSpeed("TimelineSmoothScrollAnimationSpeed", &Settings.TimelineSmoothScrollAnimationSpeed.Value);
+				animationSpeed("TimelineWaveformFadeAnimationSpeed", &Settings.TimelineWaveformFadeAnimationSpeed.Value);
+				animationSpeed("TimelineRangeSelectionExpansionAnimationSpeed", &Settings.TimelineRangeSelectionExpansionAnimationSpeed.Value);
+				animationSpeed("TimelineWorldSpaceCursorXAnimationSpeed", &Settings.TimelineWorldSpaceCursorXAnimationSpeed.Value);
+				animationSpeed("TimelineGridSnapLineAnimationSpeed", &Settings.TimelineGridSnapLineAnimationSpeed.Value);
+				animationSpeed("TimelineGoGoRangeExpansionAnimationSpeed", &Settings.TimelineGoGoRangeExpansionAnimationSpeed.Value);
 				Gui::Property::EndTable();
 			}
 		}
@@ -467,7 +467,7 @@ namespace PeepoDrumKit
 					}
 					else
 					{
-						for (Beat subBeat = Beat::Zero(); subBeat <= note.BeatDuration; subBeat += GlobalSettings.DrumrollHitBeatInterval)
+						for (Beat subBeat = Beat::Zero(); subBeat <= note.BeatDuration; subBeat += *Settings.DrumrollHitBeatInterval)
 							checkAndPlayNoteSound(context.BeatToTime(note.BeatTime + subBeat) + note.TimeOffset, note.Type);
 					}
 				}
@@ -602,11 +602,11 @@ namespace PeepoDrumKit
 	{
 		// BUG: Freaks out when zoomed in too far / the timeline is too long (16min song for example) float precision issue (?)
 		Camera.UpdateAnimations();
-		Gui::AnimateExponential(&context.SongWaveformFadeAnimationCurrent, context.SongWaveformFadeAnimationTarget, GlobalSettings.TimelineWaveformFadeAnimationSpeed);
-		Gui::AnimateExponential(&RangeSelectionExpansionAnimationCurrent, RangeSelectionExpansionAnimationTarget, GlobalSettings.TimelineRangeSelectionExpansionAnimationSpeed);
+		Gui::AnimateExponential(&context.SongWaveformFadeAnimationCurrent, context.SongWaveformFadeAnimationTarget, *Settings.TimelineWaveformFadeAnimationSpeed);
+		Gui::AnimateExponential(&RangeSelectionExpansionAnimationCurrent, RangeSelectionExpansionAnimationTarget, *Settings.TimelineRangeSelectionExpansionAnimationSpeed);
 
 		const f32 worldSpaceCursorXAnimationTarget = Camera.TimeToWorldSpaceX(context.GetCursorTime());
-		Gui::AnimateExponential(&WorldSpaceCursorXAnimationCurrent, worldSpaceCursorXAnimationTarget, GlobalSettings.TimelineWorldSpaceCursorXAnimationSpeed);
+		Gui::AnimateExponential(&WorldSpaceCursorXAnimationCurrent, worldSpaceCursorXAnimationTarget, *Settings.TimelineWorldSpaceCursorXAnimationSpeed);
 
 		const f32 elapsedAnimationTimeSec = Gui::DeltaTime();
 		for (size_t i = 0; i < EnumCount<BranchType>; i++)
@@ -623,7 +623,7 @@ namespace PeepoDrumKit
 		}
 
 		for (auto& gogo : context.ChartSelectedCourse->GoGoRanges)
-			Gui::AnimateExponential(&gogo.ExpansionAnimationCurrent, gogo.ExpansionAnimationTarget, GlobalSettings.TimelineGoGoRangeExpansionAnimationSpeed);
+			Gui::AnimateExponential(&gogo.ExpansionAnimationCurrent, gogo.ExpansionAnimationTarget, *Settings.TimelineGoGoRangeExpansionAnimationSpeed);
 
 		UpdateInputAtStartOfFrame(context);
 
@@ -1145,8 +1145,8 @@ namespace PeepoDrumKit
 					const Beat oldCursorBeat = context.GetCursorBeat();
 					const Beat newCursorBeat = context.TimeToBeat(mouseCursorTime);
 
-					const f32 threshold = GlobalSettings.TimelineScrubAutoScrollPixelThreshold;
-					const f32 speedMin = GlobalSettings.TimelineScrubAutoScrollSpeedMin, speedMax = GlobalSettings.TimelineScrubAutoScrollSpeedMax;
+					const f32 threshold = *Settings.TimelineScrubAutoScrollPixelThreshold;
+					const f32 speedMin = *Settings.TimelineScrubAutoScrollSpeedMin, speedMax = *Settings.TimelineScrubAutoScrollSpeedMax;
 
 					const f32 modifier = Gui::GetIO().KeyAlt ? 0.25f : Gui::GetIO().KeyShift ? 2.0f : 1.0f;
 					if (const f32 left = threshold; mouseLocalSpaceX < left)
@@ -1175,10 +1175,10 @@ namespace PeepoDrumKit
 			{
 				if (Gui::GetActiveID() == 0)
 				{
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Timeline_Cut, false)) ExecuteClipboardAction(context, ClipboardAction::Cut);
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Timeline_Copy, false)) ExecuteClipboardAction(context, ClipboardAction::Copy);
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Timeline_Paste, false)) ExecuteClipboardAction(context, ClipboardAction::Paste);
-					if (Gui::IsAnyPressed(GlobalSettings.Input.Timeline_DeleteSelection, false)) ExecuteClipboardAction(context, ClipboardAction::Delete);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_Cut, false)) ExecuteClipboardAction(context, ClipboardAction::Cut);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_Copy, false)) ExecuteClipboardAction(context, ClipboardAction::Copy);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_Paste, false)) ExecuteClipboardAction(context, ClipboardAction::Paste);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_DeleteSelection, false)) ExecuteClipboardAction(context, ClipboardAction::Delete);
 				}
 
 				if (const auto& io = Gui::GetIO(); !io.KeyCtrl)
@@ -1208,17 +1208,17 @@ namespace PeepoDrumKit
 						(io.KeyShift ? Beat::FromBeats(1) : GetGridBeatSnap(CurrentGridBarDivision));
 
 					// NOTE: Separate down checks for right priority, although ideally the *last held* binding should probably be prioritized instead (which would be a bit tricky)
-					if (Gui::IsAnyDown(GlobalSettings.Input.Timeline_StepCursorRight, InputModifierBehavior::Relaxed))
+					if (Gui::IsAnyDown(*Settings.Input.Timeline_StepCursorRight, InputModifierBehavior::Relaxed))
 					{
-						if (Gui::IsAnyPressed(GlobalSettings.Input.Timeline_StepCursorRight, true, InputModifierBehavior::Relaxed)) { stepCursorByBeat(cursorStepKeyDistance * +1); }
+						if (Gui::IsAnyPressed(*Settings.Input.Timeline_StepCursorRight, true, InputModifierBehavior::Relaxed)) { stepCursorByBeat(cursorStepKeyDistance * +1); }
 					}
-					else if (Gui::IsAnyDown(GlobalSettings.Input.Timeline_StepCursorLeft, InputModifierBehavior::Relaxed))
+					else if (Gui::IsAnyDown(*Settings.Input.Timeline_StepCursorLeft, InputModifierBehavior::Relaxed))
 					{
-						if (Gui::IsAnyPressed(GlobalSettings.Input.Timeline_StepCursorLeft, true, InputModifierBehavior::Relaxed)) { stepCursorByBeat(cursorStepKeyDistance * -1); }
+						if (Gui::IsAnyPressed(*Settings.Input.Timeline_StepCursorLeft, true, InputModifierBehavior::Relaxed)) { stepCursorByBeat(cursorStepKeyDistance * -1); }
 					}
 				}
 
-				if (Gui::IsAnyPressed(GlobalSettings.Input.Timeline_StartEndRangeSelection, false))
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_StartEndRangeSelection, false))
 				{
 					if (!RangeSelection.IsActive || RangeSelection.HasEnd)
 					{
@@ -1245,8 +1245,8 @@ namespace PeepoDrumKit
 				i32 currentGridDivisionIndex = 0;
 				for (const i32& it : AllowedGridBarDivisions) if (it == CurrentGridBarDivision) currentGridDivisionIndex = ArrayItToIndexI32(&it, &AllowedGridBarDivisions[0]);
 
-				const bool increaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X2, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(GlobalSettings.Input.Timeline_IncreaseGridDivision, true, InputModifierBehavior::Relaxed));
-				const bool decreaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X1, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(GlobalSettings.Input.Timeline_DecreaseGridDivision, true, InputModifierBehavior::Relaxed));
+				const bool increaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X2, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_IncreaseGridDivision, true, InputModifierBehavior::Relaxed));
+				const bool decreaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X1, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_DecreaseGridDivision, true, InputModifierBehavior::Relaxed));
 				if (increaseGrid) CurrentGridBarDivision = AllowedGridBarDivisions[Clamp(currentGridDivisionIndex + 1, 0, ArrayCountI32(AllowedGridBarDivisions) - 1)];
 				if (decreaseGrid) CurrentGridBarDivision = AllowedGridBarDivisions[Clamp(currentGridDivisionIndex - 1, 0, ArrayCountI32(AllowedGridBarDivisions) - 1)];
 			}
@@ -1260,11 +1260,11 @@ namespace PeepoDrumKit
 				const f32 currentPlaybackSpeed = context.GetPlaybackSpeed();
 				for (const f32& it : speeds) if (it >= currentPlaybackSpeed) closetPlaybackSpeedIndex = ArrayItToIndexI32(&it, &speeds.V[0]);
 
-				if (Gui::IsAnyPressed(GlobalSettings.Input.Timeline_IncreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex - 1, 0, speeds.Count - 1)]);
-				if (Gui::IsAnyPressed(GlobalSettings.Input.Timeline_DecreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex + 1, 0, speeds.Count - 1)]);
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_IncreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex - 1, 0, speeds.Count - 1)]);
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_DecreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex + 1, 0, speeds.Count - 1)]);
 			}
 
-			if (HasKeyboardFocus() && Gui::IsAnyPressed(GlobalSettings.Input.Timeline_TogglePlayback, false, InputModifierBehavior::Relaxed))
+			if (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_TogglePlayback, false, InputModifierBehavior::Relaxed))
 			{
 				if (context.GetIsPlayback())
 				{
@@ -1355,13 +1355,13 @@ namespace PeepoDrumKit
 			};
 
 			PlaceBalloonBindingDownLastFrame = PlaceBalloonBindingDownThisFrame;
-			PlaceBalloonBindingDownThisFrame = HasKeyboardFocus() && Gui::IsAnyDown(GlobalSettings.Input.Timeline_PlaceNoteBalloon, InputModifierBehavior::Relaxed);
+			PlaceBalloonBindingDownThisFrame = HasKeyboardFocus() && Gui::IsAnyDown(*Settings.Input.Timeline_PlaceNoteBalloon, InputModifierBehavior::Relaxed);
 			PlaceDrumrollBindingDownLastFrame = PlaceDrumrollBindingDownThisFrame;
-			PlaceDrumrollBindingDownThisFrame = HasKeyboardFocus() && Gui::IsAnyDown(GlobalSettings.Input.Timeline_PlaceNoteDrumroll, InputModifierBehavior::Relaxed);
+			PlaceDrumrollBindingDownThisFrame = HasKeyboardFocus() && Gui::IsAnyDown(*Settings.Input.Timeline_PlaceNoteDrumroll, InputModifierBehavior::Relaxed);
 			if (HasKeyboardFocus())
 			{
-				updateNotePlacementBinding(GlobalSettings.Input.Timeline_PlaceNoteDon, ToBigNoteIf(NoteType::Don, Gui::GetIO().KeyAlt));
-				updateNotePlacementBinding(GlobalSettings.Input.Timeline_PlaceNoteKa, ToBigNoteIf(NoteType::Ka, Gui::GetIO().KeyAlt));
+				updateNotePlacementBinding(*Settings.Input.Timeline_PlaceNoteDon, ToBigNoteIf(NoteType::Don, Gui::GetIO().KeyAlt));
+				updateNotePlacementBinding(*Settings.Input.Timeline_PlaceNoteKa, ToBigNoteIf(NoteType::Ka, Gui::GetIO().KeyAlt));
 
 				if (PlaceBalloonBindingDownThisFrame || PlaceDrumrollBindingDownThisFrame)
 				{
@@ -1410,7 +1410,7 @@ namespace PeepoDrumKit
 			if (PlaceDrumrollBindingDownLastFrame && !PlaceDrumrollBindingDownThisFrame) { if (activeFocusedAndHasLength) placeLongNoteOnBindingRelease(LongNotePlacement.NoteType); LongNotePlacement = {}; }
 		}
 
-		if (HasKeyboardFocus() && Gui::IsAnyPressed(GlobalSettings.Input.Timeline_ToggleMetronome))
+		if (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_ToggleMetronome))
 		{
 			Metronome.IsEnabled ^= true;
 			if (!context.GetIsPlayback())
@@ -1602,7 +1602,7 @@ namespace PeepoDrumKit
 		{
 			static constexpr f32 maxZoomLevelAtWhichToFadeOutGridBeatSnapLines = 0.5f;
 			const f32 gridBeatSnapLineAnimationTarget = (Camera.ZoomCurrent.x <= maxZoomLevelAtWhichToFadeOutGridBeatSnapLines) ? 0.0f : 1.0f;
-			Gui::AnimateExponential(&GridSnapLineAnimationCurrent, gridBeatSnapLineAnimationTarget, GlobalSettings.TimelineGridSnapLineAnimationSpeed);
+			Gui::AnimateExponential(&GridSnapLineAnimationCurrent, gridBeatSnapLineAnimationTarget, *Settings.TimelineGridSnapLineAnimationSpeed);
 			GridSnapLineAnimationCurrent = Clamp(GridSnapLineAnimationCurrent, 0.0f, 1.0f);
 
 			if (GridSnapLineAnimationCurrent > 0.0f)

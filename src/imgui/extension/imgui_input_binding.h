@@ -37,6 +37,10 @@ struct InputBinding
 	}
 };
 
+// NOTE: Separate "constructor-functions" beacuse a default ImGuiModFlags can't be used inside the constructor itself due to non "class enum" type ambiguity between ImGuiKey and ImGuiMouseButton
+constexpr InputBinding KeyBinding(ImGuiKey key, ImGuiModFlags modifiers = ImGuiModFlags_None) { return InputBinding(key, modifiers); }
+constexpr InputBinding MouseBinding(ImGuiMouseButton mouseButton) { return InputBinding(mouseButton); }
+
 struct MultiInputBinding
 {
 	static constexpr size_t MaxCount = 8;
@@ -47,6 +51,8 @@ struct MultiInputBinding
 	constexpr MultiInputBinding() {}
 	constexpr MultiInputBinding(InputBinding primary) : Count(1), Slots { primary } {}
 	constexpr MultiInputBinding(InputBinding primary, InputBinding secondary) : Count(2), Slots { primary, secondary } {}
+	constexpr MultiInputBinding(InputBinding a, InputBinding b, InputBinding c) : Count(3), Slots { a, b, c } {}
+	constexpr MultiInputBinding(InputBinding a, InputBinding b, InputBinding c, InputBinding d) : Count(4), Slots { a, b, c, d } {}
 
 	constexpr auto begin() const { return Slots; }
 	constexpr auto end() const { return Slots + Count; }

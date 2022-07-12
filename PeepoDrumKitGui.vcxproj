@@ -134,6 +134,7 @@
     <ClCompile Include="src\peepo_drum_kit\chart_sound_effects.cpp" />
     <ClCompile Include="src\peepo_drum_kit\main.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart_timeline.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\main_settings.cpp" />
     <ClCompile Include="src\peepo_drum_kit\test_gui_audio.cpp" />
     <ClCompile Include="src\peepo_drum_kit\test_gui_tja.cpp" />
     <ClCompile Include="src\tja_file_format.cpp" />
