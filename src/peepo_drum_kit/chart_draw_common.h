@@ -131,9 +131,11 @@ namespace PeepoDrumKit
 		return ((tempo.BPM * scrollSpeed) / 60.0f) * static_cast<f32>((noteTime - cursorTime).TotalSeconds()) * GameRefLaneDistancePerBeat;
 	}
 
+	inline NoteRadii GuiScaleNoteRadii(NoteRadii radii) { return NoteRadii { GuiScale(radii.BlackOuter), GuiScale(radii.WhiteInner), GuiScale(radii.ColorInner) }; }
+
 	inline void DrawTimelineNote(ImDrawList* drawList, vec2 center, f32 scale, NoteType noteType, f32 alpha = 1.0f)
 	{
-		const auto radii = IsBigNote(noteType) ? TimelineNoteRadiiBig : TimelineNoteRadiiSmall;
+		const auto radii = GuiScaleNoteRadii(IsBigNote(noteType) ? TimelineNoteRadiiBig : TimelineNoteRadiiSmall);
 		drawList->AddCircleFilled(center, scale * radii.BlackOuter, Gui::ColorU32WithAlpha(NoteColorBlack, alpha));
 		drawList->AddCircleFilled(center, scale * radii.WhiteInner, Gui::ColorU32WithAlpha(NoteColorWhite, alpha));
 		drawList->AddCircleFilled(center, scale * radii.ColorInner, Gui::ColorU32WithAlpha(*NoteTypeToColorMap[EnumToIndex(noteType)], alpha));
@@ -143,7 +145,7 @@ namespace PeepoDrumKit
 	inline void DrawTimelineNoteDuration(ImDrawList* drawList, vec2 centerHead, vec2 centerTail, NoteType noteType, f32 alpha = 1.0f)
 	{
 		// BUG: Ugly full-circle clipping when zoomed out and not drawing a regular head note to cover it up
-		const auto radii = IsBigNote(noteType) ? TimelineNoteRadiiBig : TimelineNoteRadiiSmall;
+		const auto radii = GuiScaleNoteRadii(IsBigNote(noteType) ? TimelineNoteRadiiBig : TimelineNoteRadiiSmall);
 		DrawTimelineNote(drawList, centerHead, 1.0f, noteType, alpha);
 		DrawTimelineNote(drawList, centerTail, 1.0f, noteType, alpha);
 		drawList->AddRectFilled(centerHead - vec2(0.0f, radii.BlackOuter), centerTail + vec2(0.0f, radii.BlackOuter), Gui::ColorU32WithAlpha(NoteColorBlack, alpha));
@@ -154,7 +156,7 @@ namespace PeepoDrumKit
 	inline void DrawTimelineNoteBalloonPopCount(ImDrawList* drawList, vec2 center, f32 scale, i32 popCount)
 	{
 		char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, "%d", popCount));
-		const ImFont* font = FontLarge_EN; // Gui::GetFont();
+		const ImFont* font = FontLarge_EN;
 		const f32 fontSize = (font->FontSize * scale);
 		const vec2 textSize = font->CalcTextSizeA(fontSize, F32Max, -1.0f, Gui::StringViewStart(text), Gui::StringViewEnd(text));
 		const vec2 textPosition = (center - (textSize * 0.5f)) - vec2(0.0f, 1.0f);
@@ -167,7 +169,8 @@ namespace PeepoDrumKit
 	struct DrawTimelineRectBaseParam { vec2 TL, BR; f32 TriScaleL, TriScaleR; u32 ColorBorder, ColorOuter, ColorInner; };
 	inline void DrawTimelineRectBaseWithStartEndTriangles(ImDrawList* drawList, DrawTimelineRectBaseParam param)
 	{
-		static constexpr f32 outerOffset = 2.0f, innerOffset = 5.0f;
+		const f32 outerOffset = ClampBot(GuiScale(2.0f), 1.0f);
+		const f32 innerOffset = ClampBot(GuiScale(5.0f), 1.0f);
 		const Rect borderRect = Rect(param.TL, param.BR);
 		Rect outerRect = Rect(param.TL + vec2(outerOffset), param.BR - vec2(outerOffset)); if (outerRect.GetWidth() < outerOffset) outerRect.BR.x = outerRect.TL.x + outerOffset;
 		Rect innerRect = Rect(param.TL + vec2(innerOffset), param.BR - vec2(innerOffset)); if (innerRect.GetWidth() < outerOffset) innerRect.BR.x = innerRect.TL.x + outerOffset;

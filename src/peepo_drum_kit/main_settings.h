@@ -32,6 +32,7 @@ namespace PeepoDrumKit
 		// TODO:
 		// i32 SwapInterval;
 		// std::vector<std::string> RecentFilePaths;
+		// f32 LastSessionGuiScale = 1.0f;
 	};
 
 	struct UserSettingsData
@@ -61,6 +62,9 @@ namespace PeepoDrumKit
 
 			WithDefault<MultiInputBinding> Editor_ToggleFullscreen = { KeyBinding(ImGuiKey_F11), KeyBinding(ImGuiKey_Enter, ImGuiModFlags_Alt), KeyBinding(ImGuiKey_KeypadEnter, ImGuiModFlags_Alt) };
 			WithDefault<MultiInputBinding> Editor_ToggleVSync = { KeyBinding(ImGuiKey_F10) };
+			WithDefault<MultiInputBinding> Editor_IncreaseGuiScale = { KeyBinding(ImGuiKey_Equal, ImGuiModFlags_Ctrl) };
+			WithDefault<MultiInputBinding> Editor_DecreaseGuiScale = { KeyBinding(ImGuiKey_Minus, ImGuiModFlags_Ctrl) };
+			WithDefault<MultiInputBinding> Editor_ResetGuiScale = { KeyBinding(ImGuiKey_0, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_Undo = { KeyBinding(ImGuiKey_Z, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_Redo = { KeyBinding(ImGuiKey_Y, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_ChartNew = { KeyBinding(ImGuiKey_N, ImGuiModFlags_Ctrl) };

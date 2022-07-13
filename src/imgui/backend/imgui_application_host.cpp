@@ -42,6 +42,7 @@ namespace ApplicationHost
 	//		 Hardcoded for now but should probably be passed in as a parameter / updated dynamically as the ImGui style changes (?)
 	static constexpr u32 Win32WindowBackgroundColor = 0x001F1F1F;
 	static constexpr f32 D3D11SwapchainClearColor[4] = { 0.12f, 0.12f, 0.12f, 1.0f };
+	static constexpr const char* FontFilePath = "assets/NotoSansCJKjp-Regular.otf";
 
 	static LRESULT WINAPI MainWindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -57,23 +58,98 @@ namespace ApplicationHost
 	static bool						GlobalIsWindowBeingDragged = false;
 	static UINT_PTR					GlobalWindowRedrawTimerID = {};
 	static HANDLE					GlobalSwapChainWaitableObject = NULL;
+	static struct { const ImWchar *JP, *EN; } GlobalGlyphRanges = {};
+	static ImGuiStyle				GlobalOriginalScaleStyle = {};
+	static bool						GlobalIsFirstFrameAfterFontRebuild = true;
 
 	static bool CreateGlobalD3D11(const StartupParam& startupParam, HWND hWnd);
 	static void CleanupGlobalD3D11();
 	static void CreateGlobalD3D11SwapchainRenderTarget();
 	static void CleanupGlobalD3D11SwapchainRenderTarget();
 
+	static void ImGuiUpdateBuildFonts()
+	{
+		// TODO: Fonts should probably be set up by the application itself instead of being tucked away here but it doesn't really matter too much for now..
+		ImGuiIO& io = ImGui::GetIO();
+
+		if (GlobalGlyphRanges.JP == nullptr)
+		{
+			// NOTE: Using the glyph ranges builder here takes around ~0.15ms in release and ~2ms in debug builds
+			static ImVector<ImWchar>		globalRangesJP;
+			static ImFontGlyphRangesBuilder globalRangesBuilderJP;
+
+			// HACK: Somewhat arbitrary non-exhaustive list of glyphs sometimes seen in song names etc.
+			static constexpr const char additionalGlyphs[] =
+				u8"ΔΨαλμχд‐’“”…′※™ⅠⅡⅤⅥⅦⅩ↑→↓∞∫≠⊆⑨▼◆◇"
+				u8"○◎★☆♂♡♢♥♦♨♪亰什儚兩凋區叩吠吼咄哭嗚嘘"
+				u8"噛囃堡姐孩學對弩彡彷徨怎怯愴戀戈捌掴撥擺朧朶"
+				u8"杓棍棕檄欅洩涵渕溟滾漾漿潘澤濤濱炸焉焔爛狗獨"
+				u8"琲甜睛筐篭繋繚繧翡舘芒范蔀蔔蔡薇薔薛蘋蘿號蛻"
+				u8"裙訶譚變賽逅邂郢雙霍霖靡韶餃驢髭魄麹麼鼠﻿";
+
+			// HACK: The mere 常用 + 人名 kanji of course aren't anywhere near sufficient, **especially** for song names and file paths.
+			//		 This *should* include *at least* the ~6000 漢字漢検１級 + common "fancy" unicode characters used as variations of the regular ASCII set.
+			//		 Creating a font atlas that big upfront however absolutely kills startup times so the only sane solution is to use dynamic glyph rasterization
+			//		 which will hopefully be fully implemented in the not too distant future :Copium: (https://github.com/ocornut/imgui/pull/3471)
+			globalRangesBuilderJP.AddText(additionalGlyphs, additionalGlyphs + (ArrayCount(additionalGlyphs) - sizeof('\0')));
+			globalRangesBuilderJP.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+			globalRangesBuilderJP.BuildRanges(&globalRangesJP);
+
+			// GlobalGlyphRanges.JP = io.Fonts->GetGlyphRangesJapanese();
+			GlobalGlyphRanges.JP = globalRangesJP.Data;
+			GlobalGlyphRanges.EN = io.Fonts->GetGlyphRangesDefault();
+		}
+
+		const std::string_view fontFileName = Path::GetFileName(FontFilePath);
+
+		enum class Ownership : u8 { Copy, Move };
+		auto addFont = [&](i32 fontSizePixels, const ImWchar* glyphRanges, Ownership ownership) -> ImFont*
+		{
+			ImFontConfig fontConfig = {};
+			fontConfig.FontDataOwnedByAtlas = (ownership == Ownership::Move) ? true : false;
+			fontConfig.EllipsisChar = '\0';
+			sprintf_s(fontConfig.Name, "%.*s, %dpx", FmtStrViewArgs(fontFileName), fontSizePixels);
+
+			return io.Fonts->AddFontFromMemoryTTF(GlobalState.FontFileContent, static_cast<int>(GlobalState.FontFileContentSize), static_cast<f32>(fontSizePixels), &fontConfig, glyphRanges);
+		};
+
+		const bool rebuild = !io.Fonts->Fonts.empty();
+		if (rebuild)
+			io.Fonts->Clear();
+
+		// NOTE: Unfortunately Dear ImGui does not allow avoiding these copies at the moment as far as I can tell (except for maybe some super hacky "inject nullptrs before shutdown")
+		FontMain_JP = addFont(GuiScaleI32(16), GlobalGlyphRanges.JP, Ownership::Copy);
+		FontMedium_EN = addFont(GuiScaleI32(18), GlobalGlyphRanges.EN, Ownership::Copy);
+		FontLarge_EN = addFont(GuiScaleI32(22), GlobalGlyphRanges.EN, Ownership::Copy);
+
+		if (rebuild)
+			ImGui_ImplDX11_RecreateFontTexture();
+
+		GlobalIsFirstFrameAfterFontRebuild = true;
+	}
+
 	static void ImGuiAndUserUpdateThenRenderAndPresentFrame()
 	{
 		if (!GlobalIsWindowMinimized && GlobalSwapChainWaitableObject != NULL)
 			::WaitForSingleObjectEx(GlobalSwapChainWaitableObject, 1000, true);
+
+		if (!ApproxmiatelySame(GuiScaleFactor, GuiScaleFactorToSetNextFrame))
+		{
+			GuiScaleFactor = RoundAndClampGuiScaleFactor(GuiScaleFactorToSetNextFrame);
+			GuiScaleFactorToSetNextFrame = GuiScaleFactor;
+			ImGuiUpdateBuildFonts();
+
+			ImGui::GetStyle() = GlobalOriginalScaleStyle;
+			if (!ApproxmiatelySame(GuiScaleFactor, 1.0f))
+				ImGui::GetStyle().ScaleAllSizes(GuiScaleFactor);
+		}
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 		ImGui_UpdateInternalInputExtraDataAtStartOfFrame();
 
-		if (ImGui::GetFrameCount() <= 1)
+		if (GlobalIsFirstFrameAfterFontRebuild)
 		{
 			// HACK: First stub out with '\0' so that ImFont::BuildLookupTable() doesn't try to overwrite it using FindFirstExistingGlyph()
 			//		 then disable using -1 so that the built in ellipsis glyph won't being used (since it doesn't look too great, with "Noto Sans CJK JP" at least)
@@ -82,6 +158,7 @@ namespace ApplicationHost
 				if (font->EllipsisChar == '\0')
 					font->EllipsisChar = static_cast<ImWchar>(-1);
 			}
+			GlobalIsFirstFrameAfterFontRebuild = false;
 		}
 
 		assert(GlobalOnUserUpdate != nullptr);
@@ -109,7 +186,7 @@ namespace ApplicationHost
 
 	i32 EnterProgramLoop(const StartupParam& startupParam, UserCallbacks userCallbacks)
 	{
-		// ImGui_ImplWin32_EnableDpiAwareness();
+		ImGui_ImplWin32_EnableDpiAwareness();
 		const HICON windowIcon = ::LoadIconW(::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(PEEPO_DRUM_KIT_ICON));
 
 		WNDCLASSEXW windowClass = { sizeof(windowClass), CS_CLASSDC, MainWindowProc, 0L, 0L, ::GetModuleHandleW(nullptr), windowIcon, NULL, ::CreateSolidBrush(Win32WindowBackgroundColor), nullptr, L"ImGuiApplicationHost", NULL };
@@ -159,60 +236,17 @@ namespace ApplicationHost
 		ImGui_ImplWin32_Init(hwnd, windowIcon);
 		ImGui_ImplDX11_Init(GlobalD3D11Device, GlobalD3D11DeviceContext);
 
-		// TODO: Fonts should probably be set up by the application itself instead of being tucked away here but it doesn't really matter too much for now..
-		{
-			static constexpr const char* fontFilePath = "assets/NotoSansCJKjp-Regular.otf";
-			const std::string_view fontFileNameWithExtension = Path::GetFileName(fontFilePath);
-			// HACK: The mere 常用 + 人名 kanji of course aren't anywhere near sufficient, **especially** for song names and file paths.
-			//		 This *should* include *at least* the ~6000 漢字漢検１級 + common "fancy" unicode characters used as variations of the regular ASCII set.
-			//		 Creating a font atlas that big upfront however absolutely kills startup times so the only sane solution is to use dynamic glyph rasterization
-			//		 which will hopefully be fully implemented in the not too distant future :Copium: (https://github.com/ocornut/imgui/pull/3471)
-			const ImWchar* glyphRangesEN = io.Fonts->GetGlyphRangesDefault();
-#if 1
-			// NOTE: Using the glyph ranges builder here takes around ~0.15ms in release and ~2ms in debug builds
-			static ImVector<ImWchar>		globalRangesJP;
-			static ImFontGlyphRangesBuilder globalRangesBuilderJP;
-			{
-				// HACK: Somewhat arbitrary non-exhaustive list of glyphs sometimes seen in song names etc.
-				static constexpr const char additionalGlyphs[] =
-					u8"ΔΨαλμχд‐’“”…′※™ⅠⅡⅤⅥⅦⅩ↑→↓∞∫≠⊆⑨▼◆◇"
-					u8"○◎★☆♂♡♢♥♦♨♪亰什儚兩凋區叩吠吼咄哭嗚嘘"
-					u8"噛囃堡姐孩學對弩彡彷徨怎怯愴戀戈捌掴撥擺朧朶"
-					u8"杓棍棕檄欅洩涵渕溟滾漾漿潘澤濤濱炸焉焔爛狗獨"
-					u8"琲甜睛筐篭繋繚繧翡舘芒范蔀蔔蔡薇薔薛蘋蘿號蛻"
-					u8"裙訶譚變賽逅邂郢雙霍霖靡韶餃驢髭魄麹麼鼠﻿";
-
-				globalRangesBuilderJP.AddText(additionalGlyphs, additionalGlyphs + (ArrayCount(additionalGlyphs) - sizeof('\0')));
-				globalRangesBuilderJP.AddRanges(io.Fonts->GetGlyphRangesJapanese());
-				globalRangesBuilderJP.BuildRanges(&globalRangesJP);
-			}
-			const ImWchar* glyphRangesJP = globalRangesJP.Data;
-#else
-			const ImWchar* glyphRangesJP = io.Fonts->GetGlyphRangesJapanese();
-#endif
-
-			size_t fontDataTTFByteSize = 0;
-			void* fontDataTTF = ImFileLoadToMemory(fontFilePath, "rb", &fontDataTTFByteSize, 0);
-			assert(fontDataTTF != nullptr && fontDataTTFByteSize > 0);
-
-			enum class Ownership : u8 { Copy, Move };
-			auto addFont = [&](i32 fontSizePixels, const ImWchar* glyphRanges, Ownership ownership) -> ImFont*
-			{
-				ImFontConfig fontConfig = {};
-				fontConfig.FontDataOwnedByAtlas = (ownership == Ownership::Move) ? true : false;
-				fontConfig.EllipsisChar = '\0';
-				sprintf_s(fontConfig.Name, "%.*s, %dpx", FmtStrViewArgs(fontFileNameWithExtension), fontSizePixels);
-
-				return io.Fonts->AddFontFromMemoryTTF(fontDataTTF, static_cast<int>(fontDataTTFByteSize), static_cast<f32>(fontSizePixels), &fontConfig, glyphRanges);
-			};
-
-			// NOTE: Unfortunately Dear ImGui does not allow avoiding these copies at the moment as far as I can tell (except for maybe some super hacky "inject nullptrs before shutdown")
-			FontMain_JP = addFont(16, glyphRangesJP, Ownership::Move);
-			FontMedium_EN = addFont(18, glyphRangesEN, Ownership::Copy);
-			FontLarge_EN = addFont(22, glyphRangesEN, Ownership::Copy);
-		}
-
 		userCallbacks.OnStartup();
+
+		// TODO: Proper error handling
+		GlobalState.FontFileContent = ImFileLoadToMemory(FontFilePath, "rb", &GlobalState.FontFileContentSize, 0);
+		assert(GlobalState.FontFileContent != nullptr && GlobalState.FontFileContentSize > 0);
+		ImGuiUpdateBuildFonts();
+
+		GuiScaleFactorToSetNextFrame = GuiScaleFactor;
+		GlobalOriginalScaleStyle = ImGui::GetStyle();
+		if (!ApproxmiatelySame(GuiScaleFactor, 1.0f))
+			ImGui::GetStyle().ScaleAllSizes(GuiScaleFactor);
 
 		bool done = false;
 		while (!done)
@@ -298,6 +332,10 @@ namespace ApplicationHost
 		}
 
 		userCallbacks.OnShutdown();
+
+		IM_FREE(GlobalState.FontFileContent);
+		GlobalState.FontFileContent = nullptr;
+		GlobalState.FontFileContentSize = 0;
 
 		ImGui_ImplDX11_Shutdown();
 		ImGui_ImplWin32_Shutdown();

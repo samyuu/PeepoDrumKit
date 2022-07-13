@@ -209,7 +209,7 @@ namespace PeepoDrumKit
 			}
 		}
 
-		if (Gui::CollapsingHeader("Global Settings", ImGuiTreeNodeFlags_DefaultOpen))
+		if (Gui::CollapsingHeader("User Settings", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			if (Gui::Property::BeginTable(tableFlags))
 			{
@@ -396,7 +396,7 @@ namespace PeepoDrumKit
 
 	static void DrawTimelineScrollbarXMinimap(const ChartTimeline& timeline, ImDrawList* drawList, const ChartCourse& course, BranchType branch, Time chartDuration)
 	{
-		const vec2 localNoteRectSize = vec2(2.0f, 4.0f); // timeline.Regions.ContentScrollbarX.GetHeight() * 0.25f;
+		const vec2 localNoteRectSize = GuiScale(vec2(2.0f, 4.0f)); // timeline.Regions.ContentScrollbarX.GetHeight() * 0.25f;
 		const f32 localNoteCenterY = timeline.Regions.ContentScrollbarX.GetHeight() * /*0.5f*//*0.75f*/0.25f;
 
 		// TODO: Also draw other timeline items... tempo / signature changes, gogo-time etc. (?)
@@ -540,7 +540,7 @@ namespace PeepoDrumKit
 		for (size_t i = 0; i < EnumCount<TimelineRowType>; i++)
 		{
 			const auto rowType = static_cast<TimelineRowType>(i);
-			const f32 localHeight = (rowType >= TimelineRowType::NoteBranches_First && rowType <= TimelineRowType::NoteBranches_Last) ? TimelineRowHeightNotes : TimelineRowHeight;
+			const f32 localHeight = GuiScale((rowType >= TimelineRowType::NoteBranches_First && rowType <= TimelineRowType::NoteBranches_Last) ? TimelineRowHeightNotes : TimelineRowHeight);
 
 			perRowFunc(ForEachRowData { rowType, localY, localHeight, TimelineRowTypeNames[i] });
 			localY += localHeight;
@@ -634,13 +634,15 @@ namespace PeepoDrumKit
 
 		// NOTE: Big enough to fit both the bar-index, bar-time and some padding
 		static constexpr f32 contentAndSidebarHeaderHeight = 34.0f;
+		const f32 sidebarWidth = GuiScale(CurrentSidebarWidth);
+		const f32 sidebarHeight = GuiScale(contentAndSidebarHeaderHeight);
 
 		const f32 scrollbarHeight = Gui::GetStyle().ScrollbarSize * 3.0f;
 		Regions.Window = Rect::FromTLSize(Gui::GetCursorScreenPos(), Gui::GetContentRegionAvail());
-		Regions.SidebarHeader = Rect::FromTLSize(Regions.Window.TL, vec2(CurrentSidebarWidth, contentAndSidebarHeaderHeight));
-		Regions.Sidebar = Rect::FromTLSize(Regions.SidebarHeader.GetBL(), vec2(CurrentSidebarWidth, Regions.Window.GetHeight() - contentAndSidebarHeaderHeight));
+		Regions.SidebarHeader = Rect::FromTLSize(Regions.Window.TL, vec2(sidebarWidth, sidebarHeight));
+		Regions.Sidebar = Rect::FromTLSize(Regions.SidebarHeader.GetBL(), vec2(sidebarWidth, Regions.Window.GetHeight() - sidebarHeight));
 		Regions.ContentHeader = Rect(Regions.SidebarHeader.GetTR(), vec2(Regions.Window.BR.x, Regions.SidebarHeader.BR.y));
-		Regions.Content = Rect::FromTLSize(Regions.ContentHeader.GetBL(), Max(vec2(0.0f), vec2(Regions.Window.GetWidth() - CurrentSidebarWidth, Regions.Window.GetHeight() - contentAndSidebarHeaderHeight - scrollbarHeight)));
+		Regions.Content = Rect::FromTLSize(Regions.ContentHeader.GetBL(), Max(vec2(0.0f), vec2(Regions.Window.GetWidth() - sidebarWidth, Regions.Window.GetHeight() - sidebarHeight - scrollbarHeight)));
 		Regions.ContentScrollbarX = Rect::FromTLSize(Regions.Content.GetBL(), vec2(Regions.Content.GetWidth(), scrollbarHeight));
 
 		auto timelineRegionBegin = [](const Rect region, const char* name, bool padding = false)
@@ -1015,7 +1017,7 @@ namespace PeepoDrumKit
 						if (note.IsSelected)
 						{
 							const vec2 center = LocalToScreenSpace(vec2(Camera.TimeToLocalSpaceX(context.BeatToTime(note.BeatTime)), localNotesRowRect.GetCenter().y));
-							const Rect hitbox = Rect::FromCenterSize(center, vec2(IsBigNote(note.Type) ? TimelineSelectedNoteHitBoxSizeBig : TimelineSelectedNoteHitBoxSizeSmall));
+							const Rect hitbox = Rect::FromCenterSize(center, vec2(GuiScale(IsBigNote(note.Type) ? TimelineSelectedNoteHitBoxSizeBig : TimelineSelectedNoteHitBoxSizeSmall)));
 							if (hitbox.Contains(MousePosThisFrame))
 							{
 								SelectedItemDrag.IsHovering = true;
@@ -1548,8 +1550,8 @@ namespace PeepoDrumKit
 				const vec2 headerScreenSpaceTL = LocalToScreenSpace_ContentHeader(vec2(songDemoStartTimeLocalSpaceX, 0.0f));
 				const vec2 triangle[3]
 				{
-					headerScreenSpaceTL + vec2(0.0f, Regions.ContentHeader.GetHeight() - TimelineSongDemoStartMarkerHeight),
-					headerScreenSpaceTL + vec2(TimelineSongDemoStartMarkerWidth, Regions.ContentHeader.GetHeight()),
+					headerScreenSpaceTL + vec2(0.0f, Regions.ContentHeader.GetHeight() - GuiScale(TimelineSongDemoStartMarkerHeight)),
+					headerScreenSpaceTL + vec2(GuiScale(TimelineSongDemoStartMarkerWidth), Regions.ContentHeader.GetHeight()),
 					headerScreenSpaceTL + vec2(0.0f, Regions.ContentHeader.GetHeight()),
 				};
 
@@ -1562,6 +1564,9 @@ namespace PeepoDrumKit
 		{
 			const f32 screenSpaceTimeTextWidth = Gui::CalcTextSize(Time::Zero().ToString().Data).x;
 			vec2 lastDrawnScreenSpaceTextTL = vec2(F32Min);
+
+			const vec2 screenSpaceTextOffsetBarIndex = GuiScale(vec2(4.0f, 1.0f));
+			const vec2 screenSpaceTextOffsetBarTime = GuiScale(vec2(4.0f, 13.0f));
 
 			Gui::PushFont(FontMedium_EN);
 			ForEachTimelineVisibleGridLine(*this, context, [&](const ForEachGridLineData& gridIt)
@@ -1582,12 +1587,11 @@ namespace PeepoDrumKit
 					if (gridIt.IsBar)
 					{
 						Gui::DisableFontPixelSnap(true);
-						static constexpr f32 textPaddingX = 4.0f;
 
 						char buffer[32];
-						Gui::AddTextWithDropShadow(DrawListContentHeader, headerScreenSpaceTL + vec2(textPaddingX, 1.0f), Gui::GetColorU32(ImGuiCol_Text),
+						Gui::AddTextWithDropShadow(DrawListContentHeader, headerScreenSpaceTL + screenSpaceTextOffsetBarIndex, Gui::GetColorU32(ImGuiCol_Text),
 							std::string_view(buffer, sprintf_s(buffer, "%d", gridIt.BarIndex)));
-						Gui::AddTextWithDropShadow(DrawListContentHeader, headerScreenSpaceTL + vec2(textPaddingX, 13.0f), Gui::GetColorU32(ImGuiCol_Text, 0.5f),
+						Gui::AddTextWithDropShadow(DrawListContentHeader, headerScreenSpaceTL + screenSpaceTextOffsetBarTime, Gui::GetColorU32(ImGuiCol_Text, 0.5f),
 							gridIt.Time.ToString().Data);
 
 						lastDrawnScreenSpaceTextTL = headerScreenSpaceTL;
@@ -1645,7 +1649,7 @@ namespace PeepoDrumKit
 
 			if ((TimelineRangeSelectionHeaderHighlightColor & IM_COL32_A_MASK) > 0)
 			{
-				static constexpr f32 headerHighlightRectHeight = 3.0f;
+				const f32 headerHighlightRectHeight = GuiScale(3.0f);
 				const Rect headerHighlightRect = Rect(
 					LocalToScreenSpace_ContentHeader(vec2(localTL.x, Regions.ContentHeader.GetHeight() - headerHighlightRectHeight)),
 					LocalToScreenSpace_ContentHeader(vec2(localBR.x, Regions.ContentHeader.GetHeight() + 2.0f)));
@@ -1787,7 +1791,7 @@ namespace PeepoDrumKit
 
 							if (note.IsSelected)
 							{
-								const vec2 hitBoxSize = vec2(IsBigNote(note.Type) ? TimelineSelectedNoteHitBoxSizeBig : TimelineSelectedNoteHitBoxSizeSmall);
+								const vec2 hitBoxSize = vec2(GuiScale((IsBigNote(note.Type) ? TimelineSelectedNoteHitBoxSizeBig : TimelineSelectedNoteHitBoxSizeSmall)));
 								TempSelectionBoxesDrawBuffer.push_back(TempDrawSelectionBox { Rect::FromCenterSize(LocalToScreenSpace(localCenter), hitBoxSize), TimelineSelectedNoteBoxBackgroundColor, TimelineSelectedNoteBoxBorderColor });
 							}
 						}
@@ -1963,13 +1967,16 @@ namespace PeepoDrumKit
 
 		// NOTE: Cursor foreground
 		{
+			const f32 cursorWidth = GuiScale(TimelineCursorHeadWidth);
+			const f32 cursorHeight = GuiScale(TimelineCursorHeadHeight);
+
 			// TODO: Maybe animate between triangle and something else depending on isPlayback (?)
 			DrawListContentHeader->AddTriangleFilled(
-				LocalToScreenSpace_ContentHeader(vec2(cursorHeaderTriangleLocalSpaceX - TimelineCursorHeadWidth, 0.0f)),
-				LocalToScreenSpace_ContentHeader(vec2(cursorHeaderTriangleLocalSpaceX + TimelineCursorHeadWidth, 0.0f)),
-				LocalToScreenSpace_ContentHeader(vec2(cursorHeaderTriangleLocalSpaceX, TimelineCursorHeadHeight)), TimelineCursorColor);
+				LocalToScreenSpace_ContentHeader(vec2(cursorHeaderTriangleLocalSpaceX - cursorWidth, 0.0f)),
+				LocalToScreenSpace_ContentHeader(vec2(cursorHeaderTriangleLocalSpaceX + cursorWidth, 0.0f)),
+				LocalToScreenSpace_ContentHeader(vec2(cursorHeaderTriangleLocalSpaceX, cursorHeight)), TimelineCursorColor);
 			DrawListContentHeader->AddLine(
-				LocalToScreenSpace_ContentHeader(vec2(cursorLocalSpaceX, TimelineCursorHeadHeight)),
+				LocalToScreenSpace_ContentHeader(vec2(cursorLocalSpaceX, cursorHeight)),
 				LocalToScreenSpace_ContentHeader(vec2(cursorLocalSpaceX, Regions.ContentHeader.GetHeight())), TimelineCursorColor);
 
 			// TODO: Maybe draw different cursor color or "type" depending on grid snap (?) (see "ArrowVortex/assets/icons snap.png")

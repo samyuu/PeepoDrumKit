@@ -6,9 +6,19 @@
 
 // NOTE: Exposed here specifically to be used with PushFont() / PopFont()
 struct ImFont;
-inline ImFont* FontMain_JP  = nullptr;
+inline ImFont* FontMain_JP = nullptr;
 inline ImFont* FontMedium_EN = nullptr;
 inline ImFont* FontLarge_EN = nullptr;
+
+inline f32 GuiScaleFactor = 1.0f;
+inline f32 GuiScaleFactorToSetNextFrame = GuiScaleFactor;
+inline f32 GuiScale(f32 value) { return Floor(value * GuiScaleFactor); }
+inline vec2 GuiScale(vec2 value) { return Floor(value * GuiScaleFactor); }
+inline i32 GuiScaleI32(i32 value) { return static_cast<i32>(Floor(static_cast<f32>(value) * GuiScaleFactor)); }
+
+constexpr f32 GuiScaleFactorMin = FromPercent(50.0f);
+constexpr f32 GuiScaleFactorMax = FromPercent(400.0f);
+constexpr f32 RoundAndClampGuiScaleFactor(f32 scaleFactor) { return Clamp(FromPercent(Round(ToPercent(scaleFactor))), GuiScaleFactorMin, GuiScaleFactorMax); }
 
 namespace ApplicationHost
 {
@@ -32,6 +42,8 @@ namespace ApplicationHost
 		// TODO: Implement the notion of "handling" a dropped file event
 		std::vector<std::string> FilePathsDroppedThisFrame;
 		std::string WindowTitle;
+		void* FontFileContent;
+		size_t FontFileContentSize;
 		// --------------------------------
 
 		// NOTE: READ + WRITE

@@ -6,6 +6,7 @@
 namespace PeepoDrumKit
 {
 	static constexpr std::string_view UntitledChartFileName = "Untitled Chart.tja";
+	static constexpr f32 ScaleFactorIncrementStep = FromPercent(10.0f); // 20.0f;
 
 	static bool CanOpenChartDirectoryInFileExplorer(const ChartContext& context)
 	{
@@ -71,7 +72,7 @@ namespace PeepoDrumKit
 				if (Gui::MenuItem("Toggle Fullscreen", ToShortcutString(*Settings.Input.Editor_ToggleFullscreen).Data, ApplicationHost::GlobalState.IsBorderlessFullscreen))
 					ApplicationHost::GlobalState.SetBorderlessFullscreenNextFrame = !ApplicationHost::GlobalState.IsBorderlessFullscreen;
 
-				if (Gui::BeginMenu("Resize"))
+				if (Gui::BeginMenu("Window Size"))
 				{
 					const bool allowResize = !ApplicationHost::GlobalState.IsBorderlessFullscreen;
 					const ivec2 currentResolution = ApplicationHost::GlobalState.WindowSize;
@@ -96,6 +97,24 @@ namespace PeepoDrumKit
 
 					Gui::Separator();
 					sprintf_s(labelBuffer, "Current Size: %dx%d", currentResolution.x, currentResolution.y);
+					Gui::MenuItem(labelBuffer, nullptr, nullptr, false);
+
+					Gui::EndMenu();
+				}
+
+				if (Gui::BeginMenu("DPI Scale"))
+				{
+					// TODO: Fix ToShortcutString() formatting for '=' and '-' 
+					if (Gui::MenuItem("Zoom In", ToShortcutString(*Settings.Input.Editor_IncreaseGuiScale).Data, nullptr, (GuiScaleFactor < GuiScaleFactorMax)))
+						GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep);
+
+					if (Gui::MenuItem("Zoom Out", ToShortcutString(*Settings.Input.Editor_DecreaseGuiScale).Data, nullptr, (GuiScaleFactor > GuiScaleFactorMin)))
+						GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor - ScaleFactorIncrementStep);
+
+					if (Gui::MenuItem("Reset Zoom", ToShortcutString(*Settings.Input.Editor_ResetGuiScale).Data, nullptr, (GuiScaleFactor != 1.0f)))
+						GuiScaleFactorToSetNextFrame = 1.0f;
+
+					char labelBuffer[32]; sprintf_s(labelBuffer, "Current Scale: %g%%", ToPercent(GuiScaleFactor));
 					Gui::MenuItem(labelBuffer, nullptr, nullptr, false);
 
 					Gui::EndMenu();
@@ -338,6 +357,13 @@ namespace PeepoDrumKit
 					if (Gui::IsAnyPressed(*Settings.Input.Editor_ToggleVSync, false))
 						ApplicationHost::GlobalState.SwapInterval = !ApplicationHost::GlobalState.SwapInterval;
 
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_IncreaseGuiScale, true))
+						GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep);
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_DecreaseGuiScale, true))
+						GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor - ScaleFactorIncrementStep);
+					if (Gui::IsAnyPressed(*Settings.Input.Editor_ResetGuiScale, false))
+						GuiScaleFactorToSetNextFrame = 1.0f;
+
 					if (Gui::IsAnyPressed(*Settings.Input.Editor_Undo, true))
 						context.Undo.Undo();
 
@@ -483,8 +509,8 @@ namespace PeepoDrumKit
 			const ImGuiViewport* mainViewport = Gui::GetMainViewport();
 			Gui::SetNextWindowPos(Rect::FromTLSize(mainViewport->Pos, mainViewport->Size).GetCenter(), ImGuiCond_Appearing, vec2(0.5f));
 
-			Gui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 4.0f, Gui::GetStyle().ItemSpacing.y });
-			Gui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 6.0f, 6.0f });
+			Gui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { GuiScale(4.0f), Gui::GetStyle().ItemSpacing.y });
+			Gui::PushStyleVar(ImGuiStyleVar_WindowPadding, { GuiScale(6.0f), GuiScale(6.0f) });
 			bool isPopupOpen = true;
 			if (Gui::BeginPopupModal(saveConfirmationPopupID, &isPopupOpen, ImGuiWindowFlags_AlwaysAutoResize))
 			{
@@ -497,7 +523,7 @@ namespace PeepoDrumKit
 
 				// TODO: Improve button appearance (?)
 				//Gui::PushStyleColor(ImGuiCol_Button, Gui::GetStyleColorVec4(ImGuiCol_FrameBg));
-				static constexpr vec2 buttonSize = vec2(120.0f, 0.0f);
+				const vec2 buttonSize = GuiScale(vec2(120.0f, 0.0f));
 				const bool clickedYes = Gui::Button("Save Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_YesOrOk, false));
 				Gui::SameLine();
 				const bool clickedNo = Gui::Button("Discard Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_No, false));
