@@ -243,6 +243,86 @@ namespace PeepoDrumKit
 namespace PeepoDrumKit
 {
 	// TODO: Maybe use f64 for all timeline units? "dvec2"?
+	struct ForEachRowData
+	{
+		TimelineRowType RowType;
+		f32 LocalY;
+		f32 LocalHeight;
+		std::string_view Label;
+	};
+
+	template <typename Func>
+	static void ForEachTimelineRow(ChartTimeline& timeline, Func perRowFunc)
+	{
+		f32 localY = 0.0f;
+		for (size_t i = 0; i < EnumCount<TimelineRowType>; i++)
+		{
+			const auto rowType = static_cast<TimelineRowType>(i);
+			const f32 localHeight = GuiScale((rowType >= TimelineRowType::NoteBranches_First && rowType <= TimelineRowType::NoteBranches_Last) ? TimelineRowHeightNotes : TimelineRowHeight);
+
+			perRowFunc(ForEachRowData { rowType, localY, localHeight, TimelineRowTypeNames[i] });
+			localY += localHeight;
+		}
+	}
+
+	static f32 GetTotalTimelineRowsHeight(const ChartTimeline& timeline)
+	{
+		f32 totalHeight = 0.0f;
+		ForEachTimelineRow(*const_cast<ChartTimeline*>(&timeline), [&](const ForEachRowData& it) { totalHeight += it.LocalHeight; });
+		return totalHeight;
+	}
+
+	struct ForEachGridLineData
+	{
+		Time Time;
+		i32 BarIndex;
+		bool IsBar;
+	};
+
+	template <typename Func>
+	static void ForEachTimelineVisibleGridLine(ChartTimeline& timeline, ChartContext& context, Func perGridFunc)
+	{
+		// TODO: Rewrite all of this to correctly handle tempo map changes and take GuiScaleFactor text size into account
+		/* // TEMP: */ static constexpr Time GridTimeStep = Time::FromSeconds(1.0);
+		if (GridTimeStep.Seconds <= 0.0)
+			return;
+
+		// TODO: Not too sure about the exact values here, these just came from randomly trying out numbers until it looked about right
+		static constexpr f32 minAllowedSpacing = 128.0f;
+		static constexpr i32 maxSubDivisions = 6;
+
+		// TODO: Go the extra step and add a fade animation for these too
+		i32 gridLineSubDivisions = 0;
+		for (gridLineSubDivisions = 0; gridLineSubDivisions < maxSubDivisions; gridLineSubDivisions++)
+		{
+			const f32 localSpaceXPerGridLine = timeline.Camera.WorldToLocalSpaceScale(vec2(timeline.Camera.TimeToWorldSpaceX(GridTimeStep), 0.0f)).x;
+			const f32 localSpaceXPerGridLineSubDivided = localSpaceXPerGridLine * static_cast<f32>(gridLineSubDivisions + 1);
+
+			if (localSpaceXPerGridLineSubDivided >= (minAllowedSpacing / (gridLineSubDivisions + 1)))
+				break;
+		}
+
+		const auto minMaxVisibleTime = timeline.GetMinMaxVisibleTime(Time::FromSeconds(1.0));
+		const i32 gridLineModToSkip = (1 << gridLineSubDivisions);
+		i32 gridLineIndex = 0;
+
+		const Time chartDuration = context.Chart.GetDurationOrDefault();
+		context.ChartSelectedCourse->TempoMap.ForEachBeatBar([&](const SortedTempoMap::ForEachBeatBarData& it)
+		{
+			const Time timeIt = context.ChartSelectedCourse->TempoMap.BeatToTime(it.Beat);
+
+			if ((gridLineIndex++ % gridLineModToSkip) == 0)
+			{
+				if (timeIt >= minMaxVisibleTime.Min && timeIt <= minMaxVisibleTime.Max)
+					perGridFunc(ForEachGridLineData { timeIt, it.BarIndex, it.IsBar });
+			}
+
+			if (timeIt >= minMaxVisibleTime.Max || (it.IsBar && timeIt >= chartDuration))
+				return ControlFlow::Break;
+			else
+				return ControlFlow::Continue;
+		});
+	}
 
 	// NOTE: Drawing the waveform on top was originally intended to ensure it is always visible, though it can admittedly looks a bit weird at times...
 	enum class WaveformDrawOrder { Background, Foreground };
@@ -329,7 +409,7 @@ namespace PeepoDrumKit
 		const Time waveformDuration = waveformL.GetDuration();
 
 		const Rect contentRect = timeline.Regions.Content;
-		const f32 contentRectHalfHeight = contentRect.GetHeight() * 0.5f;
+		const f32 halfHeight = GetTotalTimelineRowsHeight(timeline) * 0.5f;
 
 		for (size_t waveformIndex = 0; waveformIndex < 2; waveformIndex++)
 		{
@@ -340,13 +420,13 @@ namespace PeepoDrumKit
 			const auto& waveformMip = waveform.FindClosestMip(waveformTimePerPixel);
 			for (i32 visiblePixel = 0; visiblePixel < contentRect.GetWidth(); visiblePixel++)
 			{
-				const vec2 localCenter = vec2(static_cast<f32>(visiblePixel), contentRectHalfHeight);
+				const vec2 localCenter = vec2(static_cast<f32>(visiblePixel), halfHeight);
 				const vec2 screenCenter = timeline.LocalToScreenSpace(localCenter);
 				const Time timeAtPixel = timeline.Camera.LocalSpaceXToTime(localCenter.x) - chartSongOffset;
 				if (timeAtPixel < Time::Zero()) continue;
 				if (timeAtPixel > waveformDuration) break;
 				DrawSingleWaveformLine(drawList,
-					screenCenter, waveformAnimationScale * Clamp(waveform.GetAmplitudeAt(waveformMip, timeAtPixel, waveformTimePerPixel) * contentRectHalfHeight, 1.0f, contentRectHalfHeight), waveformColor);
+					screenCenter, waveformAnimationScale * Clamp(waveform.GetAmplitudeAt(waveformMip, timeAtPixel, waveformTimePerPixel) * halfHeight, 1.0f, halfHeight), waveformColor);
 			}
 		}
 	}
@@ -523,79 +603,6 @@ namespace PeepoDrumKit
 				return ControlFlow::Continue;
 			});
 		}
-	}
-
-	struct ForEachRowData
-	{
-		TimelineRowType RowType;
-		f32 LocalY;
-		f32 LocalHeight;
-		std::string_view Label;
-	};
-
-	template <typename Func>
-	static void ForEachTimelineRow(ChartTimeline& timeline, Func perRowFunc)
-	{
-		f32 localY = 0.0f;
-		for (size_t i = 0; i < EnumCount<TimelineRowType>; i++)
-		{
-			const auto rowType = static_cast<TimelineRowType>(i);
-			const f32 localHeight = GuiScale((rowType >= TimelineRowType::NoteBranches_First && rowType <= TimelineRowType::NoteBranches_Last) ? TimelineRowHeightNotes : TimelineRowHeight);
-
-			perRowFunc(ForEachRowData { rowType, localY, localHeight, TimelineRowTypeNames[i] });
-			localY += localHeight;
-		}
-	}
-
-	struct ForEachGridLineData
-	{
-		Time Time;
-		i32 BarIndex;
-		bool IsBar;
-	};
-
-	template <typename Func>
-	static void ForEachTimelineVisibleGridLine(ChartTimeline& timeline, ChartContext& context, Func perGridFunc)
-	{
-		/* // TEMP: */ static constexpr Time GridTimeStep = Time::FromSeconds(1.0);
-		if (GridTimeStep.Seconds <= 0.0)
-			return;
-
-		// TODO: Not too sure about the exact values here, these just came from randomly trying out numbers until it looked about right
-		static constexpr f32 minAllowedSpacing = 128.0f;
-		static constexpr i32 maxSubDivisions = 6;
-
-		// TODO: Go the extra step and add a fade animation for these too
-		i32 gridLineSubDivisions = 0;
-		for (gridLineSubDivisions = 0; gridLineSubDivisions < maxSubDivisions; gridLineSubDivisions++)
-		{
-			const f32 localSpaceXPerGridLine = timeline.Camera.WorldToLocalSpaceScale(vec2(timeline.Camera.TimeToWorldSpaceX(GridTimeStep), 0.0f)).x;
-			const f32 localSpaceXPerGridLineSubDivided = localSpaceXPerGridLine * static_cast<f32>(gridLineSubDivisions + 1);
-
-			if (localSpaceXPerGridLineSubDivided >= (minAllowedSpacing / (gridLineSubDivisions + 1)))
-				break;
-		}
-
-		const auto minMaxVisibleTime = timeline.GetMinMaxVisibleTime(Time::FromSeconds(1.0));
-		const i32 gridLineModToSkip = (1 << gridLineSubDivisions);
-		i32 gridLineIndex = 0;
-
-		const Time chartDuration = context.Chart.GetDurationOrDefault();
-		context.ChartSelectedCourse->TempoMap.ForEachBeatBar([&](const SortedTempoMap::ForEachBeatBarData& it)
-		{
-			const Time timeIt = context.ChartSelectedCourse->TempoMap.BeatToTime(it.Beat);
-
-			if ((gridLineIndex++ % gridLineModToSkip) == 0)
-			{
-				if (timeIt >= minMaxVisibleTime.Min && timeIt <= minMaxVisibleTime.Max)
-					perGridFunc(ForEachGridLineData { timeIt, it.BarIndex, it.IsBar });
-			}
-
-			if (timeIt >= minMaxVisibleTime.Max || (it.IsBar && timeIt >= chartDuration))
-				return ControlFlow::Break;
-			else
-				return ControlFlow::Continue;
-		});
 	}
 
 	void ChartTimeline::DrawGui(ChartContext& context)
