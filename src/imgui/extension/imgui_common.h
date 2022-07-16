@@ -45,6 +45,7 @@ namespace ImGui
 	ImVec2 CalcTextSize(std::string_view text, bool hide_text_after_double_hash = false, float wrap_width = -1.0f);
 
 	inline ImU32 ColorU32WithAlpha(ImU32 colorU32, f32 alphaFactor) { ImVec4 v4 = ImGui::ColorConvertU32ToFloat4(colorU32); v4.w *= alphaFactor; return ImGui::ColorConvertFloat4ToU32(v4); }
+	inline ImU32 ColorU32WithNewAlpha(ImU32 colorU32, f32 newAlpha) { ImVec4 v4 = ImGui::ColorConvertU32ToFloat4(colorU32); v4.w = newAlpha; return ImGui::ColorConvertFloat4ToU32(v4); }
 	inline bool ColorEdit3_U32(const char* label, u32* color, ImGuiColorEditFlags flags = 0) { ImVec4 v3 = ImGui::ColorConvertU32ToFloat4(*color); if (ImGui::ColorEdit3(label, &v3.x, flags)) { *color = ImGui::ColorConvertFloat4ToU32(v3); return true; } return false; }
 	inline bool ColorEdit4_U32(const char* label, u32* color, ImGuiColorEditFlags flags = 0) { ImVec4 v4 = ImGui::ColorConvertU32ToFloat4(*color); if (ImGui::ColorEdit4(label, &v4.x, flags)) { *color = ImGui::ColorConvertFloat4ToU32(v4); return true; } return false; }
 

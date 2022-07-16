@@ -105,14 +105,15 @@ namespace PeepoDrumKit
 				if (Gui::BeginMenu("DPI Scale"))
 				{
 					// TODO: Fix ToShortcutString() formatting for '=' and '-' 
+					const f32 guiScaleFactorToSetNextFrame = GuiScaleFactorToSetNextFrame;
 					if (Gui::MenuItem("Zoom In", ToShortcutString(*Settings.Input.Editor_IncreaseGuiScale).Data, nullptr, (GuiScaleFactor < GuiScaleFactorMax)))
 						GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep);
-
 					if (Gui::MenuItem("Zoom Out", ToShortcutString(*Settings.Input.Editor_DecreaseGuiScale).Data, nullptr, (GuiScaleFactor > GuiScaleFactorMin)))
 						GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor - ScaleFactorIncrementStep);
-
 					if (Gui::MenuItem("Reset Zoom", ToShortcutString(*Settings.Input.Editor_ResetGuiScale).Data, nullptr, (GuiScaleFactor != 1.0f)))
 						GuiScaleFactorToSetNextFrame = 1.0f;
+
+					if (guiScaleFactorToSetNextFrame != GuiScaleFactorToSetNextFrame) { if (!zoomPopup.IsOpen) zoomPopup.Open(); zoomPopup.OnChange(); }
 
 					char labelBuffer[32]; sprintf_s(labelBuffer, "Current Scale: %g%%", ToPercent(GuiScaleFactor));
 					Gui::MenuItem(labelBuffer, nullptr, nullptr, false);
@@ -261,7 +262,7 @@ namespace PeepoDrumKit
 				if (performance.ShowOverlay)
 				{
 					const ImGuiViewport* mainViewport = Gui::GetMainViewport();
-					Gui::SetNextWindowPos(vec2(mainViewport->Pos.x + mainViewport->Size.x, mainViewport->Pos.y + 24.0f), ImGuiCond_Always, vec2(1.0f, 0.0f));
+					Gui::SetNextWindowPos(vec2(mainViewport->Pos.x + mainViewport->Size.x, mainViewport->Pos.y + GuiScale(24.0f)), ImGuiCond_Always, vec2(1.0f, 0.0f));
 					Gui::SetNextWindowViewport(mainViewport->ID);
 					Gui::PushStyleColor(ImGuiCol_WindowBg, Gui::GetStyleColorVec4(ImGuiCol_PopupBg));
 					Gui::PushStyleColor(ImGuiCol_FrameBg, Gui::GetColorU32(ImGuiCol_FrameBg, 0.0f));
@@ -287,7 +288,7 @@ namespace PeepoDrumKit
 						const f32 scaleMin = ClampBot((1000.0f / 30.0f), minFrameTime - 0.001f);
 						const f32 scaleMax = ClampTop((1000.0f / 1000.0f), maxFrameTime + 0.001f);
 						Gui::PlotLines("##PerformanceHistoryPlot", performance.FrameTimesMS, ArrayCountI32(performance.FrameTimesMS), 0,
-							"", scaleMin, scaleMax, vec2(static_cast<f32>(ArrayCount(performance.FrameTimesMS)), plotLinesHeight));
+							"", scaleMin, scaleMax, GuiScale(vec2(static_cast<f32>(ArrayCount(performance.FrameTimesMS)), plotLinesHeight)));
 						const Rect plotLinesRect = Gui::GetItemRect();
 
 						char overlayTextBuffer[64];
@@ -357,12 +358,17 @@ namespace PeepoDrumKit
 					if (Gui::IsAnyPressed(*Settings.Input.Editor_ToggleVSync, false))
 						ApplicationHost::GlobalState.SwapInterval = !ApplicationHost::GlobalState.SwapInterval;
 
-					if (Gui::IsAnyPressed(*Settings.Input.Editor_IncreaseGuiScale, true))
-						GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep);
-					if (Gui::IsAnyPressed(*Settings.Input.Editor_DecreaseGuiScale, true))
-						GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor - ScaleFactorIncrementStep);
-					if (Gui::IsAnyPressed(*Settings.Input.Editor_ResetGuiScale, false))
-						GuiScaleFactorToSetNextFrame = 1.0f;
+					{
+						const f32 guiScaleFactorToSetNextFrame = GuiScaleFactorToSetNextFrame;
+						if (Gui::IsAnyPressed(*Settings.Input.Editor_IncreaseGuiScale, true))
+							GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep);
+						if (Gui::IsAnyPressed(*Settings.Input.Editor_DecreaseGuiScale, true))
+							GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor - ScaleFactorIncrementStep);
+						if (Gui::IsAnyPressed(*Settings.Input.Editor_ResetGuiScale, false))
+							GuiScaleFactorToSetNextFrame = 1.0f;
+
+						if (guiScaleFactorToSetNextFrame != GuiScaleFactorToSetNextFrame) { if (!zoomPopup.IsOpen) zoomPopup.Open(); zoomPopup.OnChange(); }
+					}
 
 					if (Gui::IsAnyPressed(*Settings.Input.Editor_Undo, true))
 						context.Undo.Undo();
@@ -498,6 +504,64 @@ namespace PeepoDrumKit
 					exportDebugViewData.Update |= Gui::Button("Force Update", vec2(Gui::GetContentRegionAvail().x, buttonHeight));
 				}
 				Gui::End();
+			}
+		}
+
+		// NOTE: Zoom change popup
+		if (zoomPopup.IsOpen)
+		{
+			static constexpr Time fadeInDuration = Time::FromFrames(10.0), fadeOutDuration = Time::FromFrames(14.0);
+			static constexpr Time closeDuration = Time::FromSeconds(2.0);
+			const f32 fadeIn = static_cast<f32>(ConvertRangeClampInput(0.0, fadeInDuration.Seconds, 0.0, 1.0, zoomPopup.TimeSinceOpen.Seconds));
+			const f32 fadeOut = static_cast<f32>(ConvertRangeClampInput(0.0, fadeOutDuration.Seconds, 0.0, 1.0, (closeDuration - zoomPopup.TimeSinceLastChange).Seconds));
+
+			bool isWindowHovered = false;
+			Gui::PushStyleVar(ImGuiStyleVar_Alpha, (fadeIn < 1.0f) ? (fadeIn * fadeIn) : (fadeOut * fadeOut));
+			Gui::PushStyleVar(ImGuiStyleVar_WindowRounding, GuiScale(6.0f));
+			Gui::PushStyleColor(ImGuiCol_WindowBg, Gui::ColorU32WithNewAlpha(Gui::GetColorU32(ImGuiCol_FrameBg), 1.0f));
+			Gui::PushStyleColor(ImGuiCol_Button, 0x00000000);
+			Gui::PushFont(FontMedium_EN);
+
+			constexpr ImGuiWindowFlags popupFlags =
+				ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing |
+				ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings;
+			const ImGuiViewport* mainViewport = Gui::GetMainViewport();
+			Gui::SetNextWindowPos(vec2(mainViewport->Pos.x + mainViewport->Size.x, mainViewport->Pos.y + GuiScale(24.0f)) + vec2(Gui::GetStyle().FramePadding) * vec2(-1.0f, +1.0f), ImGuiCond_Always, vec2(1.0f, 0.0f));
+			Gui::Begin("ZoomPopup", nullptr, popupFlags);
+			{
+				isWindowHovered = Gui::IsWindowHovered();
+				Gui::AlignTextToFramePadding();
+				Gui::Text("%g%% ", ToPercent(GuiScaleFactor));
+
+				Gui::BeginDisabled(GuiScaleFactor <= GuiScaleFactorMin);
+				Gui::SameLine(0.0f, 0.0f);
+				if (Gui::Button("-", vec2(Gui::GetFrameHeight(), 0.0f))) { GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor - ScaleFactorIncrementStep); zoomPopup.OnChange(); }
+				Gui::EndDisabled();
+
+				Gui::BeginDisabled(GuiScaleFactor >= GuiScaleFactorMax);
+				Gui::SameLine(0.0f, 0.0f);
+				if (Gui::Button("+", vec2(Gui::GetFrameHeight(), 0.0f))) { GuiScaleFactorToSetNextFrame = RoundAndClampGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep); zoomPopup.OnChange(); }
+				Gui::EndDisabled();
+
+				Gui::SameLine(0.0f, 0.0f);
+				if (Gui::Button(" Reset ")) { GuiScaleFactorToSetNextFrame = 1.0f; zoomPopup.OnChange(); }
+			}
+			Gui::End();
+
+			Gui::PopFont();
+			Gui::PopStyleColor(2);
+			Gui::PopStyleVar(2);
+
+			if (zoomPopup.TimeSinceLastChange >= closeDuration)
+			{
+				zoomPopup.IsOpen = false;
+				zoomPopup.TimeSinceOpen = zoomPopup.TimeSinceLastChange = {};
+			}
+			else
+			{
+				// NOTE: Clamp so that the fade-in animation won't ever be fully skipped even with font rebuild lag
+				zoomPopup.TimeSinceOpen += Time::FromSeconds(ClampTop(Gui::GetIO().DeltaTime, 1.0f / 30.0f));
+				zoomPopup.TimeSinceLastChange = isWindowHovered ? (closeDuration * 0.5) : zoomPopup.TimeSinceLastChange + Time::FromSeconds(Gui::GetIO().DeltaTime);
 			}
 		}
 

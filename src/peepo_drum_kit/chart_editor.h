@@ -61,7 +61,7 @@ namespace PeepoDrumKit
 
 		bool OpenLoadChartFileDialog(ChartContext& context);
 		bool OpenLoadAudioFileDialog(Undo::UndoHistory& undo);
-		
+
 		void CheckOpenSaveConfirmationPopupThenCall(std::function<void()> onSuccess);
 
 	private:
@@ -85,6 +85,15 @@ namespace PeepoDrumKit
 		ChartPropertiesWindow propertiesWindow = {};
 		ChartTempoWindow tempoWindow = {};
 		ChartLyricsWindow lyricsWindow = {};
+
+		struct ZoomPopupData
+		{
+			bool IsOpen;
+			Time TimeSinceOpen;
+			Time TimeSinceLastChange;
+			inline void Open() { IsOpen = true; TimeSinceOpen = TimeSinceLastChange = {}; }
+			inline void OnChange() { TimeSinceLastChange = {}; }
+		} zoomPopup = {};
 
 		struct SaveConfirmationPopupData
 		{
