@@ -1,29 +1,17 @@
 #include "core_undo.h"
 
-namespace Hacks
-{
-#if !defined(_MSC_VER)
-	static_assert(false, "This may not work on different compilers as they could either detect UB and delete the code outright or *technically* the vfptr might not be stored at the start of the object");
-#endif
-
-	template <typename T>
-	static const void* GetVirtualFunctionTablePointer(const T& polymorphicObject)
-	{
-		static_assert(std::is_polymorphic_v<T> && sizeof(T) >= sizeof(void*), "Non-polymorphic objects do not have a virtual function table");
-
-		// HACK: This is surely invoking undefined behavior but from my testing with _MSV_VER=1916 this is definitely reliable for both debug and release builds.
-		//		 Alternatively it might be safer to memcpy() into a temp buffer or directly memcmp() with sizeof(void*) instead (?)
-		const auto vfptr = *reinterpret_cast<const void* const*>(&polymorphicObject);
-		return vfptr;
-	}
-}
-
 namespace Undo
 {
-	// TODO: Maybe use templated static function pointer IDs (similar to std::any) instead of hacky vftable for type comparisons (?)
-	static bool CommandsAreOfSameType(const Command& commandA, const Command& commandB)
+	using VoidVFPtr = void(**)();
+	struct PolymorphicLayoutTest { i32 DummyField; virtual void VirtualFunc() = 0; };
+
+	inline bool CommandsHaveSameVFPtr(const Command& commandA, const Command& commandB)
 	{
-		return (Hacks::GetVirtualFunctionTablePointer(commandA) == Hacks::GetVirtualFunctionTablePointer(commandB));
+		// HACK: This ""technically"" may not work on different compilers as the vfptr might not be stored at the start of the object (or at all)
+		//		 and even a static_assert() of an offsetof() isn't *technically* allowed (?) although it seems to be supported by all major compilers
+		static_assert(offsetof(PolymorphicLayoutTest, DummyField) == sizeof(VoidVFPtr), "Expected virtual function table pointer at start of object");
+		static_assert(std::is_polymorphic_v<Command> && sizeof(Command) >= sizeof(VoidVFPtr), "Only polymorphic objects have virtual function tables");
+		return memcmp(&commandA, &commandB, sizeof(VoidVFPtr)) == 0;
 	}
 
 	static auto VectorPop(std::vector<std::unique_ptr<Command>>& vectorToPop)
@@ -64,7 +52,7 @@ namespace Undo
 		const Time timeSinceLastCommand = LastExecutedCommandStopwatch.Restart();
 		Command* lastCommand = (!UndoStack.empty() ? UndoStack.back().get() : nullptr);
 
-		const bool mergeDisallowedByTypeMismatch = (lastCommand == nullptr || !CommandsAreOfSameType(*commandToExecute, *lastCommand));
+		const bool mergeDisallowedByTypeMismatch = (lastCommand == nullptr || !CommandsHaveSameVFPtr(*commandToExecute, *lastCommand));
 		const bool mergeDisallowedByTimeOut = (CommandMergeTimeThreshold > Time::Zero()) && (timeSinceLastCommand > CommandMergeTimeThreshold);
 		const bool mergeDisallowedByCounter = (NumberOfCommandsToDisallowMergesFor > 0);
 		if (NumberOfCommandsToDisallowMergesFor > 0) NumberOfCommandsToDisallowMergesFor--;
