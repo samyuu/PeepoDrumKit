@@ -17,8 +17,8 @@ inline vec2 GuiScale(vec2 value) { return Floor(value * GuiScaleFactor); }
 inline i32 GuiScaleI32(i32 value) { return static_cast<i32>(Floor(static_cast<f32>(value) * GuiScaleFactor)); }
 
 constexpr f32 GuiScaleFactorMin = FromPercent(50.0f);
-constexpr f32 GuiScaleFactorMax = FromPercent(400.0f);
-constexpr f32 RoundAndClampGuiScaleFactor(f32 scaleFactor) { return Clamp(FromPercent(Round(ToPercent(scaleFactor))), GuiScaleFactorMin, GuiScaleFactorMax); }
+constexpr f32 GuiScaleFactorMax = FromPercent(300.0f);
+constexpr f32 ClampRoundGuiScaleFactor(f32 scaleFactor) { return Clamp(FromPercent(Round(ToPercent(scaleFactor))), GuiScaleFactorMin, GuiScaleFactorMax); }
 
 namespace ApplicationHost
 {

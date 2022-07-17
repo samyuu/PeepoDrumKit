@@ -41,7 +41,7 @@ namespace ApplicationHost
 	//		 Should match the primary ImGui style window background color to create a seamless transition.
 	//		 Hardcoded for now but should probably be passed in as a parameter / updated dynamically as the ImGui style changes (?)
 	static constexpr u32 Win32WindowBackgroundColor = 0x001F1F1F;
-	static constexpr f32 D3D11SwapchainClearColor[4] = { 0.12f, 0.12f, 0.12f, 1.0f };
+	static constexpr f32 D3D11SwapChainClearColor[4] = { 0.12f, 0.12f, 0.12f, 1.0f };
 	static constexpr const char* FontFilePath = "assets/NotoSansCJKjp-Regular.otf";
 
 	static LRESULT WINAPI MainWindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -135,7 +135,7 @@ namespace ApplicationHost
 
 		if (!ApproxmiatelySame(GuiScaleFactor, GuiScaleFactorToSetNextFrame))
 		{
-			GuiScaleFactor = RoundAndClampGuiScaleFactor(GuiScaleFactorToSetNextFrame);
+			GuiScaleFactor = ClampRoundGuiScaleFactor(GuiScaleFactorToSetNextFrame);
 			GuiScaleFactorToSetNextFrame = GuiScaleFactor;
 			ImGuiUpdateBuildFonts();
 
@@ -168,7 +168,7 @@ namespace ApplicationHost
 		ImGui_UpdateInternalInputExtraDataAtEndOfFrame();
 
 		GlobalD3D11DeviceContext->OMSetRenderTargets(1, &GlobalMainRenderTargetView, nullptr);
-		GlobalD3D11DeviceContext->ClearRenderTargetView(GlobalMainRenderTargetView, D3D11SwapchainClearColor);
+		GlobalD3D11DeviceContext->ClearRenderTargetView(GlobalMainRenderTargetView, D3D11SwapChainClearColor);
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
