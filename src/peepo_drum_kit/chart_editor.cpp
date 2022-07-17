@@ -104,7 +104,6 @@ namespace PeepoDrumKit
 
 				if (Gui::BeginMenu("DPI Scale"))
 				{
-					// TODO: Fix ToShortcutString() formatting for '=' and '-' 
 					const f32 guiScaleFactorToSetNextFrame = GuiScaleFactorToSetNextFrame;
 					if (Gui::MenuItem("Zoom In", ToShortcutString(*Settings.Input.Editor_IncreaseGuiScale).Data, nullptr, (GuiScaleFactor < GuiScaleFactorMax)))
 						GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep);

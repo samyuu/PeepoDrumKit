@@ -81,17 +81,17 @@ static constexpr ImGuiKeyInfo NamedImGuiKeyInfoTable[] =
 	{ ImGuiKey_F10, 			"F10", },
 	{ ImGuiKey_F11, 			"F11", },
 	{ ImGuiKey_F12,				"F12", },
-	{ ImGuiKey_Apostrophe,		"Apostrophe", },        // '
-	{ ImGuiKey_Comma,           "Comma", },             // ,
-	{ ImGuiKey_Minus,           "Minus", },             // -
-	{ ImGuiKey_Period,          "Period", },            // .
-	{ ImGuiKey_Slash,           "Slash", },             // /
-	{ ImGuiKey_Semicolon,       "Semicolon", },         // ;
-	{ ImGuiKey_Equal,           "Equal", },             // =
-	{ ImGuiKey_LeftBracket,     "Left Bracket", },      // [
-	{ ImGuiKey_Backslash,       "Backslash", },         // \ (this text inhibit multiline comment caused by backslash)
-	{ ImGuiKey_RightBracket,    "Right Bracket", },     // ]
-	{ ImGuiKey_GraveAccent,     "Grave Accent", },      // `
+	{ ImGuiKey_Apostrophe,		"'", "Apostrophe", },        // '
+	{ ImGuiKey_Comma,           ",", "Comma", },             // ,
+	{ ImGuiKey_Minus,           "-", "Minus", },             // -
+	{ ImGuiKey_Period,          ".", "Period", },            // .
+	{ ImGuiKey_Slash,           "/", "Slash", },             // /
+	{ ImGuiKey_Semicolon,       ";", "Semicolon", },         // ;
+	{ ImGuiKey_Equal,           "=", "Equal", },             // =
+	{ ImGuiKey_LeftBracket,     "[", "Left Bracket", },      // [
+	{ ImGuiKey_Backslash,       "\\", "Backslash", },        // \ (this text inhibit multiline comment caused by backslash)
+	{ ImGuiKey_RightBracket,    "]", "Right Bracket", },     // ]
+	{ ImGuiKey_GraveAccent,     "`", "Grave Accent", },      // `
 	{ ImGuiKey_CapsLock,		"Caps Lock", },
 	{ ImGuiKey_ScrollLock,		"Scroll Lock", },
 	{ ImGuiKey_NumLock,			"Num Lock", },
