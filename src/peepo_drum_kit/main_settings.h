@@ -29,28 +29,59 @@ namespace PeepoDrumKit
 
 	struct PersistentAppData
 	{
-		// TODO:
-		// i32 SwapInterval;
-		// std::vector<std::string> RecentFilePaths;
-		// f32 LastSessionGuiScale = 1.0f;
+		inline void ResetDefault() { *this = PersistentAppData {}; }
+
+		struct LastSessionData
+		{
+			f32 GuiScale = 1.0f;
+			i32 WindowSwapInterval = 1;
+			Rect WindowRegion = {};
+			Rect WindowRegionRestore = {};
+			bool WindowIsFullscreen = false;
+			bool WindowIsMaximized = false;
+		} LastSession = {};
+
+		struct RecentFilesData
+		{
+			// TODO: ...
+			std::vector<std::string> Paths;
+		} RecentFiles;
 	};
 
 	struct UserSettingsData
 	{
-		WithDefault<Beat> DrumrollHitBeatInterval = Beat::FromBars(1) / 16;
+		inline void ResetDefault() { *this = UserSettingsData {}; }
 
-		// TODO: Adjust default values (?)
-		WithDefault<f32> TimelineScrubAutoScrollPixelThreshold = 160.0f;
-		WithDefault<f32> TimelineScrubAutoScrollSpeedMin = 150.0f;
-		WithDefault<f32> TimelineScrubAutoScrollSpeedMax = 3500.0f;
+		struct GeneralData
+		{
+			// TODO: ...
+			WithDefault<std::string> DefaultCreatorName = {};
 
-		WithDefault<f32> TimelineSmoothScrollAnimationSpeed = 20.0f;
-		WithDefault<f32> TimelineWaveformFadeAnimationSpeed = 20.0f;
-		WithDefault<f32> TimelineRangeSelectionExpansionAnimationSpeed = 20.0f;
-		WithDefault<f32> TimelineWorldSpaceCursorXAnimationSpeed = 35.0f;
-		WithDefault<f32> TimelineGridSnapLineAnimationSpeed = 10.0f;
-		WithDefault<f32> TimelineGoGoRangeExpansionAnimationSpeed = 20.0f;
-		// TODO: Should probably also store scroll / zoom speed here
+			WithDefault<Beat> DrumrollHitBeatInterval = Beat::FromBars(1) / 16;
+			// TODO: Adjust default values (?)
+			WithDefault<f32> TimelineScrubAutoScrollPixelThreshold = 160.0f;
+			WithDefault<f32> TimelineScrubAutoScrollSpeedMin = 150.0f;
+			WithDefault<f32> TimelineScrubAutoScrollSpeedMax = 3500.0f;
+			// TODO: Should probably also store timeline scroll / zoom increment "speed" here
+		} General;
+
+		struct AudioData
+		{
+			// TODO: ...
+			WithDefault<bool> OpenDeviceOnStartup = true;
+			WithDefault<bool> CloseDeviceOnIdleFocusLoss = false;
+			WithDefault<bool> RequestExclusiveDeviceAccess = false;
+		} Audio;
+
+		struct AnimationData
+		{
+			WithDefault<f32> TimelineSmoothScrollSpeed = 20.0f;
+			WithDefault<f32> TimelineWaveformFadeSpeed = 20.0f;
+			WithDefault<f32> TimelineRangeSelectionExpansionSpeed = 20.0f;
+			WithDefault<f32> TimelineWorldSpaceCursorXSpeed = 35.0f;
+			WithDefault<f32> TimelineGridSnapLineSpeed = 10.0f;
+			WithDefault<f32> TimelineGoGoRangeExpansionSpeed = 20.0f;
+		} Animation;
 
 		struct InputData
 		{
@@ -69,7 +100,7 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Editor_Redo = { KeyBinding(ImGuiKey_Y, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_ChartNew = { KeyBinding(ImGuiKey_N, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_ChartOpen = { KeyBinding(ImGuiKey_O, ImGuiModFlags_Ctrl) };
-			WithDefault<MultiInputBinding> Editor_ChartOpenDirectory = {};
+			WithDefault<MultiInputBinding> Editor_ChartOpenDirectory = { KeyBinding(ImGuiKey_O, ImGuiModFlags_Ctrl | ImGuiModFlags_Shift) };
 			WithDefault<MultiInputBinding> Editor_ChartSave = { KeyBinding(ImGuiKey_S, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_ChartSaveAs = { KeyBinding(ImGuiKey_S, ImGuiModFlags_Ctrl | ImGuiModFlags_Shift) };
 
@@ -92,11 +123,6 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Timeline_ToggleMetronome = { KeyBinding(ImGuiKey_F1) };
 		} Input;
 
-		struct AnimationData
-		{
-			// TODO: Move animation speeds here (?)
-		} Animation;
-
 #if 0  // TODO: (Should probably partially be inside TJA namespace)
 		struct TJAWriteData
 		{
@@ -111,10 +137,39 @@ namespace PeepoDrumKit
 	// TODO: Implement loading and saving...
 
 	// NOTE: Load and save on every application startup and exit
-	constexpr std::string_view PersistentAppIniFileName = "settings_app.ini";
+	constexpr const char* PersistentAppIniFileName = "settings_app.ini";
 	inline PersistentAppData PersistentApp = {};
 
 	// NOTE: Load on application startup but only saved after making changes
-	constexpr std::string_view SettingsIniFileName = "settings_user.ini";
+	constexpr const char* SettingsIniFileName = "settings_user.ini";
 	inline UserSettingsData Settings = {};
+
+	struct SettingsParseResult { bool HasError; i32 ErrorLineIndex; std::string ErrorMessage; };
+
+	SettingsParseResult ParseSettingsIni(std::string_view fileContent, PersistentAppData& out);
+	void SettingsToIni(const PersistentAppData& in, std::string& out);
+
+	SettingsParseResult ParseSettingsIni(std::string_view fileContent, UserSettingsData& out);
+	void SettingsToIni(const UserSettingsData& in, std::string& out);
+
+	struct IniMemberVoidPtr { void* Address; size_t ByteSize; };
+	struct IniMemberParseResult { bool HasError; const char* ErrorMessage; };
+	using IniVoidPtrTypeFromStringFunc = IniMemberParseResult(*)(std::string_view stringToParse, IniMemberVoidPtr out);
+	using IniVoidPtrTypeToStringFunc = void(*)(IniMemberVoidPtr in, std::string& stringToAppendTo);
+
+	struct SettingsReflectionMember
+	{
+		u16 ByteOffset;
+		u16 ByteSize;
+		u16 ByteOffsetForHasValueBool;
+		const char* SourceCodeName;
+		const char* SerializedSection;
+		const char* SerializedName;
+		IniVoidPtrTypeFromStringFunc FromStringFunc;
+		IniVoidPtrTypeToStringFunc ToStringFunc;
+	};
+	struct SettingsReflectionMap { SettingsReflectionMember MemberSlots[64]; size_t MemberCount; };
+
+	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap();
+	inline const SettingsReflectionMap AppSettingsReflectionMap = StaticallyInitializeAppSettingsReflectionMap();
 }

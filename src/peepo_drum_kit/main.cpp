@@ -2,7 +2,6 @@
 #include "core_string.h"
 #include "chart_editor.h"
 #include "main_settings.h"
-#include <stdio.h>
 
 namespace PeepoDrumKit
 {
@@ -14,8 +13,6 @@ namespace PeepoDrumKit
 		{
 			auto& io = Gui::GetIO();
 			io.ConfigWindowsMoveFromTitleBarOnly = true;
-
-			// TODO: Maybe do some further adjustments here...
 			io.KeyRepeatDelay = 0.450f;
 			io.KeyRepeatRate = 0.050f;
 
@@ -25,7 +22,6 @@ namespace PeepoDrumKit
 			// NOTE: The one downside of disabling this is that is makes tab bars and docked windows look the same
 			style.WindowMenuButtonPosition = ImGuiDir_None;
 
-			// TODO: Improve button color and remove green from sliders and maybe some other widgets too
 			GuiStyleColorPeepoDrumKit(&style);
 		}
 
@@ -62,21 +58,114 @@ namespace PeepoDrumKit
 		}
 	};
 
+	enum class LoadSettingsResponse { AllGood, ErrorAbort, ErrorRetry, ErrorIgnore };
+
+	template <typename T>
+	static LoadSettingsResponse ReadParseSettingsIniFile(const char* iniFilePath, T& out)
+	{
+		auto fileContent = File::ReadAllBytes(iniFilePath);
+		if (fileContent.Content == nullptr || fileContent.Size <= 0)
+			return LoadSettingsResponse::AllGood;
+
+		const SettingsParseResult parseResult = ParseSettingsIni(std::string_view(reinterpret_cast<const char*>(fileContent.Content.get()), fileContent.Size), out);
+		if (!parseResult.HasError)
+			return LoadSettingsResponse::AllGood;
+
+		PersistentApp.ResetDefault();
+
+		char messageBuffer[2048];
+		const int messageLength = sprintf_s(messageBuffer,
+			"Failed to parse settings file:\n"
+			"\"%s\"\n"
+			"\n"
+			"Syntax Error '%s' on Line %d\n"
+			"\n"
+			"[ Abort ] to exit application\n"
+			"[ Retry ]  to read file again\n"
+			"[ Ignore ] to *LOSE ALL SETTINGS* and restore the defaults\n"
+			, iniFilePath, !parseResult.ErrorMessage.empty() ? parseResult.ErrorMessage.c_str() : "Unknown", parseResult.ErrorLineIndex + 1);
+
+		const Shell::MessageBoxResult result = Shell::ShowMessageBox(
+			std::string_view(messageBuffer, messageLength), "Peepo Drum Kit - Syntax Error",
+			Shell::MessageBoxButtons::AbortRetryIgnore, Shell::MessageBoxIcon::Warning, nullptr);
+
+		if (result == Shell::MessageBoxResult::Abort) return LoadSettingsResponse::ErrorAbort;
+		if (result == Shell::MessageBoxResult::Retry) return LoadSettingsResponse::ErrorRetry;
+		if (result == Shell::MessageBoxResult::Ignore) return LoadSettingsResponse::ErrorIgnore;
+		assert(!"Unreachable"); return LoadSettingsResponse::ErrorAbort;
+	}
+
 	int EntryPoint()
 	{
 		// TODO: Parse arguments and write into global argv settings struct
 		// auto[argc, argv] = CommandLine::GetCommandLineUTF8();
 
+		while (true)
+		{
+			const auto response = ReadParseSettingsIniFile<PersistentAppData>(PersistentAppIniFileName, PersistentApp);
+			if (response == LoadSettingsResponse::AllGood) { break; }
+			if (response == LoadSettingsResponse::ErrorAbort) { return -1; }
+			if (response == LoadSettingsResponse::ErrorRetry) { continue; }
+			if (response == LoadSettingsResponse::ErrorIgnore) { break; }
+			assert(!"Unreachable"); break;
+		}
+
+		while (true)
+		{
+			const auto response = ReadParseSettingsIniFile<UserSettingsData>(SettingsIniFileName, Settings);
+			if (response == LoadSettingsResponse::AllGood) { break; }
+			if (response == LoadSettingsResponse::ErrorAbort) { return -1; }
+			if (response == LoadSettingsResponse::ErrorRetry) { continue; }
+			if (response == LoadSettingsResponse::ErrorIgnore) { break; }
+			assert(!"Unreachable"); break;
+		}
+
 		static std::unique_ptr<ImGuiApplication> app;
-
 		ApplicationHost::StartupParam startupParam = {};
-		startupParam.WindowTitle = PeepoDrumKitApplicationTitle;
-
 		ApplicationHost::UserCallbacks callbacks = {};
-		callbacks.OnStartup = [] { Audio::Engine.ApplicationStartup(); app = std::make_unique<ImGuiApplication>(); };
-		callbacks.OnUpdate = [] { app->OnUpdate(); };
-		callbacks.OnShutdown = [] { app = nullptr; Audio::Engine.ApplicationShutdown(); };
-		callbacks.OnWindowCloseRequest = [] { return app->OnWindowCloseRequest(); };
+
+		GuiScaleFactor = ClampRoundGuiScaleFactor(PersistentApp.LastSession.GuiScale);
+		ApplicationHost::GlobalState.SwapInterval = PersistentApp.LastSession.WindowSwapInterval;
+		startupParam.WindowTitle = PeepoDrumKitApplicationTitle;
+		// TODO: ...
+		// startupParam.WindowPosition = ...;
+		// startupParam.WindowSize = ...;
+
+		callbacks.OnStartup = []
+		{
+			Audio::Engine.ApplicationStartup();
+			app = std::make_unique<ImGuiApplication>();
+		};
+		callbacks.OnUpdate = []
+		{
+			app->OnUpdate();
+		};
+		callbacks.OnShutdown = []
+		{
+			PersistentApp.LastSession.GuiScale = GuiScaleFactor;
+			PersistentApp.LastSession.WindowSwapInterval = ApplicationHost::GlobalState.SwapInterval;
+			PersistentApp.LastSession.WindowRegion = Rect::FromTLSize(vec2(ApplicationHost::GlobalState.WindowPosition), vec2(ApplicationHost::GlobalState.WindowSize));
+			// TODO: PersistentApp.LastSession.WindowRegionRestore = ...;
+			PersistentApp.LastSession.WindowIsFullscreen = ApplicationHost::GlobalState.IsBorderlessFullscreen;
+			// TODO: PersistentApp.LastSession.WindowIsMaximized = ...;
+
+			std::string iniFileContent; iniFileContent.reserve(4096);
+			SettingsToIni(PersistentApp, iniFileContent); File::WriteAllBytes(PersistentAppIniFileName, iniFileContent);
+
+			// TODO: Only save if dirty...
+			if (/* ... */ true)
+			{
+				iniFileContent.clear();
+				SettingsToIni(Settings, iniFileContent); File::WriteAllBytes(SettingsIniFileName, iniFileContent);
+			}
+
+			app = nullptr;
+			Audio::Engine.ApplicationShutdown();
+		};
+		callbacks.OnWindowCloseRequest = []
+		{
+			return app->OnWindowCloseRequest();
+		};
 
 		return ApplicationHost::EnterProgramLoop(startupParam, callbacks);
 	}

@@ -213,16 +213,16 @@ namespace PeepoDrumKit
 		{
 			if (Gui::Property::BeginTable(tableFlags))
 			{
-				static constexpr auto animationSpeed = [](const char* label, f32* inOutSpeed)
+				static constexpr auto animationSpeed = [](const char* label, WithDefault<f32>* inOutSpeed)
 				{
-					Gui::Property::PropertyTextValueFunc(label, [&] { Gui::SetNextItemWidth(-1.0f); Gui::DragFloat(label, inOutSpeed, 0.1f, 0.0f, 100.0f); });
+					Gui::Property::PropertyTextValueFunc(label, [&] { Gui::SetNextItemWidth(-1.0f); if (Gui::DragFloat(label, &inOutSpeed->Value, 0.1f, 0.0f, 100.0f)) { inOutSpeed->HasValue = true; } });
 				};
-				animationSpeed("TimelineSmoothScrollAnimationSpeed", &Settings.TimelineSmoothScrollAnimationSpeed.Value);
-				animationSpeed("TimelineWaveformFadeAnimationSpeed", &Settings.TimelineWaveformFadeAnimationSpeed.Value);
-				animationSpeed("TimelineRangeSelectionExpansionAnimationSpeed", &Settings.TimelineRangeSelectionExpansionAnimationSpeed.Value);
-				animationSpeed("TimelineWorldSpaceCursorXAnimationSpeed", &Settings.TimelineWorldSpaceCursorXAnimationSpeed.Value);
-				animationSpeed("TimelineGridSnapLineAnimationSpeed", &Settings.TimelineGridSnapLineAnimationSpeed.Value);
-				animationSpeed("TimelineGoGoRangeExpansionAnimationSpeed", &Settings.TimelineGoGoRangeExpansionAnimationSpeed.Value);
+				animationSpeed("Animation.TimelineSmoothScrollSpeed", &Settings.Animation.TimelineSmoothScrollSpeed);
+				animationSpeed("Animation.TimelineWaveformFadeSpeed", &Settings.Animation.TimelineWaveformFadeSpeed);
+				animationSpeed("Animation.TimelineRangeSelectionExpansionSpeed", &Settings.Animation.TimelineRangeSelectionExpansionSpeed);
+				animationSpeed("Animation.TimelineWorldSpaceCursorXSpeed", &Settings.Animation.TimelineWorldSpaceCursorXSpeed);
+				animationSpeed("Animation.TimelineGridSnapLineSpeed", &Settings.Animation.TimelineGridSnapLineSpeed);
+				animationSpeed("Animation.TimelineGoGoRangeExpansionSpeed", &Settings.Animation.TimelineGoGoRangeExpansionSpeed);
 				Gui::Property::EndTable();
 			}
 		}
@@ -547,7 +547,7 @@ namespace PeepoDrumKit
 					}
 					else
 					{
-						for (Beat subBeat = Beat::Zero(); subBeat <= note.BeatDuration; subBeat += *Settings.DrumrollHitBeatInterval)
+						for (Beat subBeat = Beat::Zero(); subBeat <= note.BeatDuration; subBeat += *Settings.General.DrumrollHitBeatInterval)
 							checkAndPlayNoteSound(context.BeatToTime(note.BeatTime + subBeat) + note.TimeOffset, note.Type);
 					}
 				}
@@ -609,11 +609,11 @@ namespace PeepoDrumKit
 	{
 		// BUG: Freaks out when zoomed in too far / the timeline is too long (16min song for example) float precision issue (?)
 		Camera.UpdateAnimations();
-		Gui::AnimateExponential(&context.SongWaveformFadeAnimationCurrent, context.SongWaveformFadeAnimationTarget, *Settings.TimelineWaveformFadeAnimationSpeed);
-		Gui::AnimateExponential(&RangeSelectionExpansionAnimationCurrent, RangeSelectionExpansionAnimationTarget, *Settings.TimelineRangeSelectionExpansionAnimationSpeed);
+		Gui::AnimateExponential(&context.SongWaveformFadeAnimationCurrent, context.SongWaveformFadeAnimationTarget, *Settings.Animation.TimelineWaveformFadeSpeed);
+		Gui::AnimateExponential(&RangeSelectionExpansionAnimationCurrent, RangeSelectionExpansionAnimationTarget, *Settings.Animation.TimelineRangeSelectionExpansionSpeed);
 
 		const f32 worldSpaceCursorXAnimationTarget = Camera.TimeToWorldSpaceX(context.GetCursorTime());
-		Gui::AnimateExponential(&WorldSpaceCursorXAnimationCurrent, worldSpaceCursorXAnimationTarget, *Settings.TimelineWorldSpaceCursorXAnimationSpeed);
+		Gui::AnimateExponential(&WorldSpaceCursorXAnimationCurrent, worldSpaceCursorXAnimationTarget, *Settings.Animation.TimelineWorldSpaceCursorXSpeed);
 
 		const f32 elapsedAnimationTimeSec = Gui::DeltaTime();
 		for (size_t i = 0; i < EnumCount<BranchType>; i++)
@@ -630,7 +630,7 @@ namespace PeepoDrumKit
 		}
 
 		for (auto& gogo : context.ChartSelectedCourse->GoGoRanges)
-			Gui::AnimateExponential(&gogo.ExpansionAnimationCurrent, gogo.ExpansionAnimationTarget, *Settings.TimelineGoGoRangeExpansionAnimationSpeed);
+			Gui::AnimateExponential(&gogo.ExpansionAnimationCurrent, gogo.ExpansionAnimationTarget, *Settings.Animation.TimelineGoGoRangeExpansionSpeed);
 
 		UpdateInputAtStartOfFrame(context);
 
@@ -1154,8 +1154,8 @@ namespace PeepoDrumKit
 					const Beat oldCursorBeat = context.GetCursorBeat();
 					const Beat newCursorBeat = context.TimeToBeat(mouseCursorTime);
 
-					const f32 threshold = *Settings.TimelineScrubAutoScrollPixelThreshold;
-					const f32 speedMin = *Settings.TimelineScrubAutoScrollSpeedMin, speedMax = *Settings.TimelineScrubAutoScrollSpeedMax;
+					const f32 threshold = *Settings.General.TimelineScrubAutoScrollPixelThreshold;
+					const f32 speedMin = *Settings.General.TimelineScrubAutoScrollSpeedMin, speedMax = *Settings.General.TimelineScrubAutoScrollSpeedMax;
 
 					const f32 modifier = Gui::GetIO().KeyAlt ? 0.25f : Gui::GetIO().KeyShift ? 2.0f : 1.0f;
 					if (const f32 left = threshold; mouseLocalSpaceX < left)
@@ -1613,7 +1613,7 @@ namespace PeepoDrumKit
 		{
 			static constexpr f32 maxZoomLevelAtWhichToFadeOutGridBeatSnapLines = 0.5f;
 			const f32 gridBeatSnapLineAnimationTarget = (Camera.ZoomCurrent.x <= maxZoomLevelAtWhichToFadeOutGridBeatSnapLines) ? 0.0f : 1.0f;
-			Gui::AnimateExponential(&GridSnapLineAnimationCurrent, gridBeatSnapLineAnimationTarget, *Settings.TimelineGridSnapLineAnimationSpeed);
+			Gui::AnimateExponential(&GridSnapLineAnimationCurrent, gridBeatSnapLineAnimationTarget, *Settings.Animation.TimelineGridSnapLineSpeed);
 			GridSnapLineAnimationCurrent = Clamp(GridSnapLineAnimationCurrent, 0.0f, 1.0f);
 
 			if (GridSnapLineAnimationCurrent > 0.0f)

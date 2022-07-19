@@ -29,8 +29,8 @@ namespace PeepoDrumKit
 
 		inline void UpdateAnimations()
 		{
-			Gui::AnimateExponential(&PositionCurrent, PositionTarget, *Settings.TimelineSmoothScrollAnimationSpeed);
-			Gui::AnimateExponential(&ZoomCurrent, ZoomTarget, *Settings.TimelineSmoothScrollAnimationSpeed);
+			Gui::AnimateExponential(&PositionCurrent, PositionTarget, *Settings.Animation.TimelineSmoothScrollSpeed);
+			Gui::AnimateExponential(&ZoomCurrent, ZoomTarget, *Settings.Animation.TimelineSmoothScrollSpeed);
 
 			// BUG: Result in weird jittering..?
 			// static constexpr f32 snapThreshold = 0.01f;

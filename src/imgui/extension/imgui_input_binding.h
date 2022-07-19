@@ -2,6 +2,7 @@
 #include "core_types.h"
 #include "imgui/3rdparty/imgui.h"
 #include "imgui/3rdparty/imgui_internal.h"
+#include <string>
 
 enum class InputBindingType : u8
 {
@@ -48,7 +49,7 @@ struct MultiInputBinding
 	u8 Count = 0;
 	InputBinding Slots[MaxCount] = {};
 
-	constexpr MultiInputBinding() {}
+	constexpr MultiInputBinding() = default;
 	constexpr MultiInputBinding(InputBinding primary) : Count(1), Slots { primary } {}
 	constexpr MultiInputBinding(InputBinding primary, InputBinding secondary) : Count(2), Slots { primary, secondary } {}
 	constexpr MultiInputBinding(InputBinding a, InputBinding b, InputBinding c) : Count(3), Slots { a, b, c } {}
@@ -74,6 +75,9 @@ InputFormatBuffer ToShortcutString(ImGuiKey key);
 InputFormatBuffer ToShortcutString(ImGuiKey key, ImGuiModFlags modifiers);
 InputFormatBuffer ToShortcutString(const InputBinding& binding);
 InputFormatBuffer ToShortcutString(const MultiInputBinding& binding);
+
+void InputBindingToStorageString(const MultiInputBinding& in, std::string& stringToAppendTo);
+bool InputBindingFromStorageString(std::string_view stringToParse, MultiInputBinding& out);
 
 // NOTE: Must be called once at the start / end of the frame by the backend!
 void ImGui_UpdateInternalInputExtraDataAtStartOfFrame();
