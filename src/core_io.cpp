@@ -247,6 +247,19 @@ namespace Directory
 	}
 
 
+	std::string GetExecutablePath()
+	{
+		// TODO: First ask for size then resize dynamic buffer accordingly
+		wchar_t buffer[MAX_PATH] = L"";
+		::GetModuleFileNameW(NULL, buffer, MAX_PATH);
+		return UTF8::Narrow(FixedBufferWStringView(buffer));
+	}
+
+	std::string GetExecutableDirectory()
+	{
+		return std::string { Path::GetDirectoryName(GetExecutablePath()) };
+	}
+
 	std::string GetWorkingDirectory()
 	{
 		// TODO: First ask for size then resize dynamic buffer accordingly

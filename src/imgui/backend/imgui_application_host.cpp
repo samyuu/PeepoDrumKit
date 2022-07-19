@@ -106,11 +106,18 @@ namespace ApplicationHost
 		auto addFont = [&](i32 fontSizePixels, const ImWchar* glyphRanges, Ownership ownership) -> ImFont*
 		{
 			ImFontConfig fontConfig = {};
-			fontConfig.FontDataOwnedByAtlas = (ownership == Ownership::Move) ? true : false;
-			fontConfig.EllipsisChar = '\0';
-			sprintf_s(fontConfig.Name, "%.*s, %dpx", FmtStrViewArgs(fontFileName), fontSizePixels);
-
-			return io.Fonts->AddFontFromMemoryTTF(GlobalState.FontFileContent, static_cast<int>(GlobalState.FontFileContentSize), static_cast<f32>(fontSizePixels), &fontConfig, glyphRanges);
+			if (GlobalState.FontFileContent != nullptr)
+			{
+				fontConfig.FontDataOwnedByAtlas = (ownership == Ownership::Move) ? true : false;
+				fontConfig.EllipsisChar = '\0';
+				sprintf_s(fontConfig.Name, "%.*s, %dpx", FmtStrViewArgs(fontFileName), fontSizePixels);
+				return io.Fonts->AddFontFromMemoryTTF(GlobalState.FontFileContent, static_cast<int>(GlobalState.FontFileContentSize), static_cast<f32>(fontSizePixels), &fontConfig, glyphRanges);
+			}
+			else
+			{
+				fontConfig.SizePixels = static_cast<f32>(fontSizePixels);
+				return io.Fonts->AddFontDefault(&fontConfig);
+			}
 		};
 
 		const bool rebuild = !io.Fonts->Fonts.empty();
@@ -179,7 +186,7 @@ namespace ApplicationHost
 
 		// TODO: Maybe handle this better somehow, not sure...
 		if (!GlobalIsWindowMinimized)
-			GlobalSwapChain->Present(GlobalState.SwapInterval, 0);
+			GlobalSwapChain->Present(Clamp(GlobalState.SwapInterval, 0, 4), 0);
 		else
 			::Sleep(33);
 	}
@@ -238,9 +245,38 @@ namespace ApplicationHost
 
 		userCallbacks.OnStartup();
 
-		// TODO: Proper error handling
-		GlobalState.FontFileContent = ImFileLoadToMemory(FontFilePath, "rb", &GlobalState.FontFileContentSize, 0);
-		assert(GlobalState.FontFileContent != nullptr && GlobalState.FontFileContentSize > 0);
+		while (GlobalState.FontFileContent == nullptr)
+		{
+			GlobalState.FontFileContent = ImFileLoadToMemory(FontFilePath, "rb", &GlobalState.FontFileContentSize, 0);
+			if (GlobalState.FontFileContent == nullptr || GlobalState.FontFileContentSize <= 0)
+			{
+				char messageBuffer[2048];
+				const int messageLength = sprintf_s(messageBuffer,
+					"Failed to read font file:\n"
+					"\"%s\"\n"
+					"\n"
+					"Please ensure the program was installed correctly and is run from within the correct working directory.\n"
+					"\n"
+					"Working directory:\n"
+					"\"%s\"\n"
+					"Executable directory:\n"
+					"\"%s\"\n"
+					"\n"
+					"[ Abort ] to exit application\n"
+					"[ Retry ]  to read file again\n"
+					"[ Ignore ] to continue with fallback font\n"
+					, FontFilePath, Directory::GetWorkingDirectory().c_str(), Directory::GetExecutableDirectory().c_str());
+
+				const Shell::MessageBoxResult result = Shell::ShowMessageBox(
+					std::string_view(messageBuffer, messageLength), "Peepo Drum Kit - Startup Error",
+					Shell::MessageBoxButtons::AbortRetryIgnore, Shell::MessageBoxIcon::Error, GlobalState.NativeWindowHandle);
+
+				if (result == Shell::MessageBoxResult::Abort) { ::ExitProcess(-1); }
+				if (result == Shell::MessageBoxResult::Retry) { continue; }
+				if (result == Shell::MessageBoxResult::Ignore) { break; }
+			}
+		}
+
 		ImGuiUpdateBuildFonts();
 
 		GuiScaleFactorToSetNextFrame = GuiScaleFactor;
@@ -476,7 +512,7 @@ namespace ApplicationHost
 			break;
 
 		case WM_MOVE:
-			GlobalState.WindowPosition = ivec2(static_cast<i32>(LOWORD(lParam)), static_cast<i32>(HIWORD(lParam)));
+			GlobalState.WindowPosition = ivec2(static_cast<i16>(LOWORD(lParam)), static_cast<i16>(HIWORD(lParam)));
 			return 0;
 
 		case WM_SIZE:

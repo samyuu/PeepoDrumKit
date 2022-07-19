@@ -63,6 +63,8 @@ namespace Directory
 	bool Create(std::string_view directoryPath);
 	bool Exists(std::string_view directoryPath);
 
+	std::string GetExecutablePath();
+	std::string GetExecutableDirectory();
 	std::string GetWorkingDirectory();
 	void SetWorkingDirectory(std::string_view directoryPath);
 }
