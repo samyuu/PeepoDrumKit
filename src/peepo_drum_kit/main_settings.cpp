@@ -1,8 +1,31 @@
 #include "main_settings.h"
 #include "core_string.h"
+#include "core_io.h"
+#include <algorithm>
 
 namespace PeepoDrumKit
 {
+	void RecentFilesList::Add(std::string newFilePath, bool addToEnd)
+	{
+		Path::NormalizeInPlace(newFilePath);
+		erase_remove_if(SortedPaths, [&](const auto& path) { return ASCII::MatchesInsensitive(path, newFilePath); });
+		SortedPaths.reserve(MaxCount);
+		if (addToEnd)
+			SortedPaths.push_back(std::move(newFilePath));
+		else
+			SortedPaths.emplace(SortedPaths.begin(), std::move(newFilePath));
+		if (SortedPaths.size() > MaxCount)
+			SortedPaths.resize(MaxCount);
+	}
+
+	void RecentFilesList::Remove(std::string filePathToRemove)
+	{
+		Path::NormalizeInPlace(filePathToRemove);
+		erase_remove_if(SortedPaths, [&](const auto& path) { return ASCII::MatchesInsensitive(path, filePathToRemove); });
+		if (SortedPaths.size() > MaxCount)
+			SortedPaths.resize(MaxCount);
+	}
+
 	void GuiStyleColorPeepoDrumKit(ImGuiStyle* destination)
 	{
 		ImVec4* colors = (destination != nullptr) ? destination->Colors : Gui::GetStyle().Colors;
@@ -100,6 +123,16 @@ namespace PeepoDrumKit
 	{
 		constexpr IniMemberParseResult MemberParseError(const char* errorMessage) { return IniMemberParseResult { true, errorMessage }; }
 
+		static IniMemberParseResult FromString(std::string_view stringToParse, WithDefault<i32>& out)
+		{
+			return ASCII::TryParseI32(stringToParse, out.Value) ? IniMemberParseResult {} : MemberParseError("Invalid int");
+		}
+
+		static void ToString(const WithDefault<i32>& in, std::string& stringToAppendTo)
+		{
+			char b[32]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%d", in.Value));
+		}
+
 		static IniMemberParseResult FromString(std::string_view stringToParse, WithDefault<f32>& out)
 		{
 			return ASCII::TryParseF32(stringToParse, out.Value) ? IniMemberParseResult {} : MemberParseError("Invalid float");
@@ -137,7 +170,7 @@ namespace PeepoDrumKit
 
 		static void ToString(const WithDefault<Beat>& in, std::string& stringToAppendTo)
 		{
-			char b[64]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%d", in.Value.Ticks));
+			char b[32]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%d", in.Value.Ticks));
 		}
 
 		static IniMemberParseResult FromString(std::string_view stringToParse, WithDefault<MultiInputBinding>& out)
@@ -187,7 +220,7 @@ namespace PeepoDrumKit
 						return;
 
 					line = ASCII::Trim(line);
-					if (line.empty() || line[0] == ';' || line[0] == '#')
+					if (ASCII::IsAllWhitespace(line) || line[0] == ';' || line[0] == '#')
 						return;
 
 					const size_t commentIndex = line.find_first_of(';');
@@ -291,7 +324,11 @@ namespace PeepoDrumKit
 			}
 			else if (parser.CurrentSection == "recent_files")
 			{
-				// TODO: ...
+				const std::string_view indexSuffix = ASCII::TrimPrefix(it.Key, "file_");
+				if (i32 v = 0; ASCII::TryParseI32(indexSuffix, v))
+					out.RecentFiles.Add(std::string { in }, true);
+				else
+					return parser.Error("Invalid file index");
 			}
 		});
 
@@ -316,9 +353,9 @@ namespace PeepoDrumKit
 		writer.Line();
 
 		writer.LineSection("recent_files");
-		if (!in.RecentFiles.Paths.empty())
-			for (size_t i = 0; i < in.RecentFiles.Paths.size(); i++)
-				writer.LineKeyValue_Str(std::string_view(keyBuffer, sprintf_s(keyBuffer, "path_%02zu", i)), in.RecentFiles.Paths[i]);
+		if (!in.RecentFiles.SortedPaths.empty())
+			for (size_t i = 0; i < in.RecentFiles.SortedPaths.size(); i++)
+				writer.LineKeyValue_Str(std::string_view(keyBuffer, sprintf_s(keyBuffer, "file_%02zu", i)), in.RecentFiles.SortedPaths[i]);
 		else
 			writer.LineComment("...");
 	}
@@ -352,6 +389,8 @@ namespace PeepoDrumKit
 				}
 			}
 		});
+
+		out.General.DrumrollAutoHitBarDivision.Value = Clamp(out.General.DrumrollAutoHitBarDivision.Value, 1, Beat::TicksPerBeat);
 
 		return parser.Result;
 	}
@@ -401,7 +440,7 @@ namespace PeepoDrumKit
 		{
 			SECTION("general");
 			X(General.DefaultCreatorName, "default_creator_name");
-			X(General.DrumrollHitBeatInterval, "drumroll_hit_beat_interval");
+			X(General.DrumrollAutoHitBarDivision, "drumroll_auto_hit_bar_division");
 			X(General.TimelineScrubAutoScrollPixelThreshold, "timeline_scrub_auto_scroll_pixel_threshold");
 			X(General.TimelineScrubAutoScrollSpeedMin, "timeline_scrub_auto_scroll_speed_min");
 			X(General.TimelineScrubAutoScrollSpeedMax, "timeline_scrub_auto_scroll_speed_max");

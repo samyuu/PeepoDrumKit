@@ -547,7 +547,8 @@ namespace PeepoDrumKit
 					}
 					else
 					{
-						for (Beat subBeat = Beat::Zero(); subBeat <= note.BeatDuration; subBeat += *Settings.General.DrumrollHitBeatInterval)
+						const Beat drummrollBeatInterval = GetGridBeatSnap(*Settings.General.DrumrollAutoHitBarDivision);
+						for (Beat subBeat = Beat::Zero(); subBeat <= note.BeatDuration; subBeat += drummrollBeatInterval)
 							checkAndPlayNoteSound(context.BeatToTime(note.BeatTime + subBeat) + note.TimeOffset, note.Type);
 					}
 				}

@@ -24,6 +24,7 @@ namespace PeepoDrumKit
 	{
 		context.SongVoice = Audio::Engine.AddVoice(Audio::SourceHandle::Invalid, "ChartEditor SongVoice", false, 1.0f, true);
 		context.SfxVoicePool.StartAsyncLoadingAndAddVoices();
+		context.Chart.ChartCreator = *Settings.General.DefaultCreatorName;
 		context.ChartSelectedCourse = context.Chart.Courses.emplace_back(std::make_unique<ChartCourse>()).get();
 		showHelpWindow = true;
 
@@ -44,7 +45,32 @@ namespace PeepoDrumKit
 			{
 				if (Gui::MenuItem("New Chart", ToShortcutString(*Settings.Input.Editor_ChartNew).Data)) { CheckOpenSaveConfirmationPopupThenCall([&] { CreateNewChart(context); }); }
 				if (Gui::MenuItem("Open...", ToShortcutString(*Settings.Input.Editor_ChartOpen).Data)) { CheckOpenSaveConfirmationPopupThenCall([&] { OpenLoadChartFileDialog(context); }); }
-				if (Gui::MenuItem("Open Recent", "(TODO)", nullptr, false)) { /* // TODO: ...*/ }
+
+				if (Gui::BeginMenu("Open Recent", !PersistentApp.RecentFiles.SortedPaths.empty()))
+				{
+					for (size_t i = 0; i < PersistentApp.RecentFiles.SortedPaths.size(); i++)
+					{
+						const auto& path = PersistentApp.RecentFiles.SortedPaths[i];
+						const char shortcutDigit[2] = { (i <= ('9' - '1')) ? static_cast<char>('1' + i) : '\0', '\0' };
+
+						if (Gui::MenuItem(path.c_str(), shortcutDigit))
+						{
+							if (File::Exists(path))
+							{
+								CheckOpenSaveConfirmationPopupThenCall([this, pathCopy = std::string(path)] { StartAsyncImportingChartFile(pathCopy); });
+							}
+							else
+							{
+								// TODO: Popup asking to remove from list
+							}
+						}
+					}
+					Gui::Separator();
+					if (Gui::MenuItem("Clear Items"))
+						PersistentApp.RecentFiles.SortedPaths.clear();
+					Gui::EndMenu();
+				}
+
 				if (Gui::MenuItem("Open Chart Directory...", ToShortcutString(*Settings.Input.Editor_ChartOpenDirectory).Data, nullptr, CanOpenChartDirectoryInFileExplorer(context))) { OpenChartDirectoryInFileExplorer(context); }
 				Gui::Separator();
 				if (Gui::MenuItem("Save", ToShortcutString(*Settings.Input.Editor_ChartSave).Data)) { TrySaveChartOrOpenSaveAsDialog(context); }
@@ -114,6 +140,7 @@ namespace PeepoDrumKit
 
 					if (guiScaleFactorToSetNextFrame != GuiScaleFactorToSetNextFrame) { if (!zoomPopup.IsOpen) zoomPopup.Open(); zoomPopup.OnChange(); }
 
+					Gui::Separator();
 					char labelBuffer[32]; sprintf_s(labelBuffer, "Current Scale: %g%%", ToPercent(GuiScaleFactor));
 					Gui::MenuItem(labelBuffer, nullptr, nullptr, false);
 
@@ -647,6 +674,7 @@ namespace PeepoDrumKit
 		UpdateAsyncLoading();
 
 		context.Chart = {};
+		context.Chart.ChartCreator = *Settings.General.DefaultCreatorName;
 		context.ChartFilePath.clear();
 		context.ChartSelectedCourse = context.Chart.Courses.empty() ? context.Chart.Courses.emplace_back(std::make_unique<ChartCourse>()).get() : context.Chart.Courses.front().get();
 		context.ChartSelectedBranch = BranchType::Normal;
@@ -683,6 +711,8 @@ namespace PeepoDrumKit
 
 			context.ChartFilePath = filePath;
 			context.Undo.ClearChangesWereMade();
+
+			PersistentApp.RecentFiles.Add(std::string { filePath });
 		}
 	}
 
@@ -723,6 +753,7 @@ namespace PeepoDrumKit
 		if (importChartFuture.valid())
 			importChartFuture.get();
 
+		PersistentApp.RecentFiles.Add(std::string { absoluteChartFilePath });
 		importChartFuture = std::async(std::launch::async, [tempPathCopy = std::string(absoluteChartFilePath)]() mutable->AsyncImportChartResult
 		{
 			AsyncImportChartResult result {};

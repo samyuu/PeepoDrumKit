@@ -5,6 +5,18 @@
 
 namespace PeepoDrumKit
 {
+	struct RecentFilesList
+	{
+		// NOTE: Default 9 to match the keyboard number row key count
+		size_t MaxCount = 9;
+		// NOTE: Newest items are stored first and in normalized form
+		std::vector<std::string> SortedPaths;
+
+		// NOTE: Either add new item or move existing item to top
+		void Add(std::string newFilePath, bool addToEnd = false);
+		void Remove(std::string filePathToRemove);
+	};
+
 	constexpr std::string_view PeepoDrumKitApplicationTitle = PEEPO_DEBUG ? "Peepo Drum Kit (Debug)" : PEEPO_RELEASE ? "Peepo Drum Kit (Release)" : "Peepo Drum Kit (Unknown)";
 
 	void GuiStyleColorPeepoDrumKit(ImGuiStyle* destination = nullptr);
@@ -41,11 +53,7 @@ namespace PeepoDrumKit
 			bool WindowIsMaximized = false;
 		} LastSession = {};
 
-		struct RecentFilesData
-		{
-			// TODO: ...
-			std::vector<std::string> Paths;
-		} RecentFiles;
+		RecentFilesList RecentFiles;
 	};
 
 	struct UserSettingsData
@@ -56,8 +64,7 @@ namespace PeepoDrumKit
 		{
 			// TODO: ...
 			WithDefault<std::string> DefaultCreatorName = {};
-
-			WithDefault<Beat> DrumrollHitBeatInterval = Beat::FromBars(1) / 16;
+			WithDefault<i32> DrumrollAutoHitBarDivision = 16;
 			// TODO: Adjust default values (?)
 			WithDefault<f32> TimelineScrubAutoScrollPixelThreshold = 160.0f;
 			WithDefault<f32> TimelineScrubAutoScrollSpeedMin = 150.0f;
