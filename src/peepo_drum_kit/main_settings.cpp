@@ -493,6 +493,8 @@ namespace PeepoDrumKit
 			X(Input.Timeline_DecreasePlaybackSpeed, "timeline_decrease_playback Speed");
 			X(Input.Timeline_TogglePlayback, "timeline_toggle_playback");
 			X(Input.Timeline_ToggleMetronome, "timeline_toggle_metronome");
+			X(Input.TempoCalculator_Tap, "tempo_calculator_tap");
+			X(Input.TempoCalculator_Reset, "tempo_calculator_reset");
 		}
 #undef X
 #undef SECTION

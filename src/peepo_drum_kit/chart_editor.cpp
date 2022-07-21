@@ -432,6 +432,12 @@ namespace PeepoDrumKit
 		}
 		Gui::End();
 
+		if (Gui::Begin("Tempo Calculator", nullptr, ImGuiWindowFlags_None))
+		{
+			tempoCalculatorWindow.DrawGui(context);
+		}
+		Gui::End();
+
 		if (Gui::Begin("Chart Lyrics", nullptr, ImGuiWindowFlags_None))
 		{
 			lyricsWindow.DrawGui(context, timeline);

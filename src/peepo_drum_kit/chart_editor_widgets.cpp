@@ -354,8 +354,8 @@ namespace PeepoDrumKit
 
 		const auto& style = Gui::GetStyle();
 		// NOTE: Desperate attempt for the table row selectables to not having any spacing between them
-		Gui::PushStyleVar(ImGuiStyleVar_CellPadding, { style.CellPadding.x, 4.0f });
-		Gui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { style.ItemSpacing.x, 8.0f });
+		Gui::PushStyleVar(ImGuiStyleVar_CellPadding, { style.CellPadding.x, GuiScale(4.0f) });
+		Gui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { style.ItemSpacing.x, GuiScale(8.0f) });
 		Gui::PushStyleColor(ImGuiCol_Header, Gui::GetColorU32(ImGuiCol_Header, 0.5f));
 		Gui::PushStyleColor(ImGuiCol_HeaderHovered, Gui::GetColorU32(ImGuiCol_HeaderHovered, 0.5f));
 		defer { Gui::PopStyleColor(2); Gui::PopStyleVar(2); };
@@ -425,6 +425,90 @@ namespace PeepoDrumKit
 			context.Undo.Undo(undoStack.size() - undoClickedIndex - 1);
 		else if (InBounds(redoClickedIndex, redoStack))
 			context.Undo.Redo(redoStack.size() - redoClickedIndex);
+	}
+
+	void TempoCalculatorWindow::DrawGui(ChartContext& context)
+	{
+		Gui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+		Gui::PushStyleColor(ImGuiCol_Button, Gui::GetStyleColorVec4(ImGuiCol_Header));
+		Gui::PushStyleColor(ImGuiCol_ButtonHovered, Gui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
+		Gui::PushStyleColor(ImGuiCol_ButtonActive, Gui::GetStyleColorVec4(ImGuiCol_HeaderActive));
+		{
+			const bool windowFocused = Gui::IsWindowFocused() && (Gui::GetActiveID() == 0);
+			const bool tapPressed = windowFocused && Gui::IsAnyPressed(*Settings.Input.TempoCalculator_Tap, false);
+			const bool resetPressed = windowFocused && Gui::IsAnyPressed(*Settings.Input.TempoCalculator_Reset, false);
+			const bool resetDown = windowFocused && Gui::IsAnyDown(*Settings.Input.TempoCalculator_Reset);
+
+			Gui::PushFont(FontLarge_EN);
+			{
+				const Time lastBeatDuration = Time::FromSeconds(60.0 / Round(Calculator.LastTempo.BPM));
+				const f32 tapBeatLerpT = ImSaturate((Calculator.TapCount == 0) ? 1.0f : static_cast<f32>(Calculator.LastTap.GetElapsed() / lastBeatDuration));
+				const ImVec4 animatedButtonColor = ImLerp(Gui::GetStyleColorVec4(ImGuiCol_ButtonActive), Gui::GetStyleColorVec4(ImGuiCol_Button), tapBeatLerpT);
+
+				const bool hasTimedOut = Calculator.HasTimedOut();
+				Gui::PushStyleColor(ImGuiCol_Text, Gui::GetColorU32(ImGuiCol_Text, (Calculator.TapCount > 0 && hasTimedOut) ? 0.8f : 1.0f));
+				Gui::PushStyleColor(ImGuiCol_Button, animatedButtonColor);
+				Gui::PushStyleColor(ImGuiCol_ButtonHovered, (Calculator.TapCount > 0 && !hasTimedOut) ? animatedButtonColor : Gui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
+				Gui::PushStyleColor(ImGuiCol_ButtonActive, (Calculator.TapCount > 0 && !hasTimedOut) ? animatedButtonColor : Gui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+
+				char buttonName[32]; sprintf_s(buttonName, (Calculator.TapCount == 0) ? "Tap" : (Calculator.TapCount == 1) ? "First Beat" : "%.2f BPM", Calculator.LastTempo.BPM);
+				if (tapPressed | Gui::ButtonEx(buttonName, vec2(-1.0f, Gui::GetFrameHeightWithSpacing() * 3.0f), ImGuiButtonFlags_PressedOnClick))
+				{
+					context.SfxVoicePool.PlaySound(SoundEffectType::MetronomeBeat);
+					Calculator.Tap();
+				}
+
+				Gui::PopStyleColor(4);
+			}
+			Gui::PopFont();
+
+			Gui::PushStyleColor(ImGuiCol_Text, Gui::GetStyleColorVec4((Calculator.TapCount > 0) ? ImGuiCol_Text : ImGuiCol_TextDisabled));
+			Gui::PushStyleColor(ImGuiCol_Button, Gui::GetStyleColorVec4(resetDown ? ImGuiCol_ButtonActive : ImGuiCol_Button));
+			if (resetPressed | Gui::Button("Reset", vec2(-1.0f, Gui::GetFrameHeightWithSpacing() * 1.0f)))
+			{
+				if (Calculator.TapCount > 0)
+					context.SfxVoicePool.PlaySound(SoundEffectType::MetronomeBar);
+				Calculator.Reset();
+			}
+			Gui::PopStyleColor(2);
+		}
+		Gui::PopStyleColor(3);
+		Gui::PopStyleVar(1);
+
+		Gui::PushFont(FontMedium_EN);
+		if (Gui::BeginTable("Table", 2, ImGuiTableFlags_BordersInner | ImGuiTableFlags_NoSavedSettings, Gui::GetContentRegionAvail()))
+		{
+			const char* formatStrBPM_g = (Calculator.TapCount > 1) ? "%g BPM" : "--.-- BPM";
+			const char* formatStrBPM_2f = (Calculator.TapCount > 1) ? "%.2f BPM" : "--.-- BPM";
+			static constexpr auto row = [&](auto funcLeft, auto funcRight)
+			{
+				Gui::TableNextRow();
+				Gui::TableSetColumnIndex(0); Gui::AlignTextToFramePadding(); funcLeft();
+				Gui::TableSetColumnIndex(1); Gui::AlignTextToFramePadding(); Gui::SetNextItemWidth(-1.0f); funcRight();
+			};
+			row([&] { Gui::TextUnformatted("Nearest Whole"); }, [&]
+			{
+				f32 v = Round(Calculator.LastTempo.BPM);
+				Gui::InputFloat("##NearestWhole", &v, 0.0f, 0.0f, formatStrBPM_g, ImGuiInputTextFlags_ReadOnly);
+			});
+			row([&] { Gui::TextUnformatted("Nearest"); }, [&]
+			{
+				f32 v = Calculator.LastTempo.BPM;
+				Gui::InputFloat("##Nearest", &v, 0.0f, 0.0f, formatStrBPM_2f, ImGuiInputTextFlags_ReadOnly);
+			});
+			row([&] { Gui::TextUnformatted("Min and Max"); }, [&]
+			{
+				f32 v[2] = { Calculator.LastTempoMin.BPM, Calculator.LastTempoMax.BPM };
+				Gui::InputFloat2("##MinMax", v, formatStrBPM_2f, ImGuiInputTextFlags_ReadOnly);
+			});
+			row([&] { Gui::TextUnformatted("Timing Taps"); }, [&]
+			{
+				Gui::Text((Calculator.TapCount == 1) ? "First Beat" : "%d Taps", Calculator.TapCount);
+			});
+			// NOTE: ReadOnly InputFloats specifically to allow easy copy and paste
+			Gui::EndTable();
+		}
+		Gui::PopFont();
 	}
 
 	void ChartPropertiesWindow::DrawGui(ChartContext& context, const ChartPropertiesWindowIn& in, ChartPropertiesWindowOut& out)

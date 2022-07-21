@@ -17,6 +17,30 @@ namespace PeepoDrumKit
 		const char* UpdateFrameAndGetText(bool isLoadingThisFrame, f32 deltaTimeSec);
 	};
 
+	struct TempoTapCalculator
+	{
+		i32 TapCount = 0;
+		Tempo LastTempo = Tempo(0.0f);
+		Tempo LastTempoMin = Tempo(0.0f), LastTempoMax = Tempo(0.0f);
+		CPUStopwatch FirstTap = CPUStopwatch::StartNew();
+		CPUStopwatch LastTap = CPUStopwatch::StartNew();
+		Time ResetThreshold = Time::FromSeconds(2.0);
+
+		inline bool HasTimedOut() const { return ResetThreshold > Time::Zero() && LastTap.GetElapsed() >= ResetThreshold; }
+		inline void Reset() { FirstTap.Stop(); TapCount = 0; LastTempo = LastTempoMin = LastTempoMax = Tempo(0.0f); }
+		inline void Tap()
+		{
+			if (ResetThreshold > Time::Zero() && LastTap.Restart() >= ResetThreshold)
+				Reset();
+			FirstTap.Start();
+			LastTempo = CalculateTempo(TapCount++, FirstTap.GetElapsed());
+			LastTempoMin.BPM = (TapCount <= 2) ? LastTempo.BPM : Min(LastTempo.BPM, LastTempoMin.BPM);
+			LastTempoMax.BPM = (TapCount <= 2) ? LastTempo.BPM : Max(LastTempo.BPM, LastTempoMax.BPM);
+		}
+
+		static constexpr Tempo CalculateTempo(i32 tapCount, Time elapsed) { return Tempo((tapCount <= 0) ? 0.0f : static_cast<f32>(60.0 * tapCount / elapsed.TotalSeconds())); }
+	};
+
 	struct ChartHelpWindow
 	{
 		void DrawGui(ChartContext& context);
@@ -24,6 +48,12 @@ namespace PeepoDrumKit
 
 	struct ChartUndoHistoryWindow
 	{
+		void DrawGui(ChartContext& context);
+	};
+
+	struct TempoCalculatorWindow
+	{
+		TempoTapCalculator Calculator = {};
 		void DrawGui(ChartContext& context);
 	};
 
