@@ -478,6 +478,7 @@ namespace PeepoDrumKit
 			X(Input.Editor_ResetGuiScale, "editor_reset_gui_scale");
 			X(Input.Editor_Undo, "editor_undo");
 			X(Input.Editor_Redo, "editor_redo");
+			X(Input.Editor_OpenSettings, "editor_open_settings");
 			X(Input.Editor_ChartNew, "editor_chart_new");
 			X(Input.Editor_ChartOpen, "editor_chart_open");
 			X(Input.Editor_ChartOpenDirectory, "editor_chart_open_directory");

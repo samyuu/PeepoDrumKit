@@ -4,6 +4,7 @@
 #include "chart.h"
 #include "chart_editor_context.h"
 #include "chart_editor_widgets.h"
+#include "chart_editor_settings_gui.h"
 #include "chart_timeline.h"
 #include "chart_game_preview.h"
 #include "imgui/imgui_include.h"
@@ -80,12 +81,16 @@ namespace PeepoDrumKit
 		bool tryToCloseApplicationOnNextFrame = false;
 		bool showHelpWindow = false;
 
+		bool showSettingsWindow = true;
+		bool focusSettingsWindowNextFrame = false;
+
 		ChartHelpWindow helpWindow = {};
 		ChartUndoHistoryWindow undoHistoryWindow = {};
 		TempoCalculatorWindow tempoCalculatorWindow = {};
 		ChartPropertiesWindow propertiesWindow = {};
 		ChartTempoWindow tempoWindow = {};
 		ChartLyricsWindow lyricsWindow = {};
+		ChartSettingsWindow settingsWindow = {};
 
 		struct ZoomPopupData
 		{

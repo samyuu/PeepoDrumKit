@@ -86,7 +86,7 @@ namespace PeepoDrumKit
 				if (Gui::MenuItem("Undo", ToShortcutString(*Settings.Input.Editor_Undo).Data, nullptr, context.Undo.CanUndo())) { context.Undo.Undo(); }
 				if (Gui::MenuItem("Redo", ToShortcutString(*Settings.Input.Editor_Redo).Data, nullptr, context.Undo.CanRedo())) { context.Undo.Redo(); }
 				Gui::Separator();
-				if (Gui::MenuItem("Settings...", "(TODO)", nullptr, false)) { /* // TODO: ...*/ }
+				if (Gui::MenuItem("Settings", ToShortcutString(*Settings.Input.Editor_OpenSettings).Data, &showSettingsWindow)) { focusSettingsWindowNextFrame = showSettingsWindow; }
 				Gui::EndMenu();
 			}
 
@@ -392,13 +392,15 @@ namespace PeepoDrumKit
 
 				if (Gui::IsAnyPressed(*Settings.Input.Editor_ToggleVSync, false))
 					ApplicationHost::GlobalState.SwapInterval = !ApplicationHost::GlobalState.SwapInterval;
+
+				if (Gui::IsAnyPressed(*Settings.Input.Editor_OpenSettings, true))
+					showSettingsWindow = focusSettingsWindowNextFrame = true;
 			}
 
 			if (noActiveID && noOpenPopup)
 			{
 				if (Gui::IsAnyPressed(*Settings.Input.Editor_Undo, true))
 					context.Undo.Undo();
-
 				if (Gui::IsAnyPressed(*Settings.Input.Editor_Redo, true))
 					context.Undo.Redo();
 
@@ -423,6 +425,14 @@ namespace PeepoDrumKit
 		{
 			if (Gui::Begin("Usage Guide", &showHelpWindow, ImGuiWindowFlags_None))
 				helpWindow.DrawGui(context);
+			Gui::End();
+		}
+
+		if (showSettingsWindow)
+		{
+			if (Gui::Begin("Settings", &showSettingsWindow, ImGuiWindowFlags_None))
+				settingsWindow.DrawGui(context, Settings);
+			if (focusSettingsWindowNextFrame) { focusSettingsWindowNextFrame = false; Gui::SetWindowFocus(); }
 			Gui::End();
 		}
 

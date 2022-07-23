@@ -129,6 +129,7 @@
     <ClCompile Include="src\imgui\extension\imgui_input_binding.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart_editor.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_settings_gui.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart_editor_widgets.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart_game_preview.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart_sound_effects.cpp" />
@@ -140,6 +141,7 @@
     <ClCompile Include="src\tja_file_format.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_settings_gui.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_widgets.h" />
     <ClInclude Include="src_res\resource.h" />
     <ClInclude Include="src\audio\3rdparty\dr_flac.h" />
