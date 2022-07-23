@@ -256,7 +256,11 @@ void InputBindingToStorageString(const MultiInputBinding& in, std::string& strin
 			stringToAppendTo += ", ";
 
 		const InputBinding& binding = in.Slots[i];
-		if (binding.Type == InputBindingType::Keyboard)
+		if (binding.Type == InputBindingType::None)
+		{
+			// ...
+		}
+		else if (binding.Type == InputBindingType::Keyboard)
 		{
 			if (binding.Keyboard.Modifiers & ImGuiModFlags_Ctrl) { stringToAppendTo += "Ctrl+"; }
 			if (binding.Keyboard.Modifiers & ImGuiModFlags_Shift) { stringToAppendTo += "Shift+"; }
@@ -372,7 +376,11 @@ namespace ImGui
 	// BUG: Regular bindings with modifier keys as primary keys aren't triggered correctly
 	bool IsDown(const InputBinding& binding, InputModifierBehavior behavior)
 	{
-		if (binding.Type == InputBindingType::Keyboard)
+		if (binding.Type == InputBindingType::None)
+		{
+			return false;
+		}
+		else if (binding.Type == InputBindingType::Keyboard)
 		{
 			if (behavior == InputModifierBehavior::Strict)
 				return ImGui::IsKeyDown(binding.Keyboard.Key) && AreOnlyModifiersDown(binding.Keyboard.Modifiers) && Internal_IsKeyDownAfterAllModifiers(binding.Keyboard.Key);
@@ -392,7 +400,11 @@ namespace ImGui
 
 	bool IsPressed(const InputBinding& binding, bool repeat, InputModifierBehavior behavior)
 	{
-		if (binding.Type == InputBindingType::Keyboard)
+		if (binding.Type == InputBindingType::None)
+		{
+			return false;
+		}
+		else if (binding.Type == InputBindingType::Keyboard)
 		{
 			// NOTE: Still have to explictily check the modifier hold durations here in case of repeat
 			if (behavior == InputModifierBehavior::Strict)

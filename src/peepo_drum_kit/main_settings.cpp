@@ -123,64 +123,64 @@ namespace PeepoDrumKit
 	{
 		constexpr IniMemberParseResult MemberParseError(const char* errorMessage) { return IniMemberParseResult { true, errorMessage }; }
 
-		static IniMemberParseResult FromString(std::string_view stringToParse, WithDefault<i32>& out)
+		static IniMemberParseResult FromString(std::string_view stringToParse, i32& out)
 		{
-			return ASCII::TryParseI32(stringToParse, out.Value) ? IniMemberParseResult {} : MemberParseError("Invalid int");
+			return ASCII::TryParseI32(stringToParse, out) ? IniMemberParseResult {} : MemberParseError("Invalid int");
 		}
 
-		static void ToString(const WithDefault<i32>& in, std::string& stringToAppendTo)
+		static void ToString(const i32& in, std::string& stringToAppendTo)
 		{
-			char b[32]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%d", in.Value));
+			char b[32]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%d", in));
 		}
 
-		static IniMemberParseResult FromString(std::string_view stringToParse, WithDefault<f32>& out)
+		static IniMemberParseResult FromString(std::string_view stringToParse, f32& out)
 		{
-			return ASCII::TryParseF32(stringToParse, out.Value) ? IniMemberParseResult {} : MemberParseError("Invalid float");
+			return ASCII::TryParseF32(stringToParse, out) ? IniMemberParseResult {} : MemberParseError("Invalid float");
 		}
 
-		static void ToString(const WithDefault<f32>& in, std::string& stringToAppendTo)
+		static void ToString(const f32& in, std::string& stringToAppendTo)
 		{
-			char b[64]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%g", in.Value));
+			char b[64]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%g", in));
 		}
 
-		static IniMemberParseResult FromString(std::string_view stringToParse, WithDefault<bool>& out)
+		static IniMemberParseResult FromString(std::string_view stringToParse, bool& out)
 		{
-			return BoolFromString(stringToParse, out.Value) ? IniMemberParseResult {} : MemberParseError("Invalid bool");
+			return BoolFromString(stringToParse, out) ? IniMemberParseResult {} : MemberParseError("Invalid bool");
 		}
 
-		static void ToString(const WithDefault<bool>& in, std::string& stringToAppendTo)
+		static void ToString(const bool& in, std::string& stringToAppendTo)
 		{
-			stringToAppendTo += BoolToString(in.Value);
+			stringToAppendTo += BoolToString(in);
 		}
 
-		static void ToString(const WithDefault<std::string>& in, std::string& stringToAppendTo)
+		static void ToString(const std::string& in, std::string& stringToAppendTo)
 		{
-			stringToAppendTo += in.Value;
+			stringToAppendTo += in;
 		}
 
-		static IniMemberParseResult FromString(std::string_view stringToParse, WithDefault<std::string>& out)
+		static IniMemberParseResult FromString(std::string_view stringToParse, std::string& out)
 		{
 			out = stringToParse; return {};
 		}
 
-		static IniMemberParseResult FromString(std::string_view stringToParse, WithDefault<Beat>& out)
+		static IniMemberParseResult FromString(std::string_view stringToParse, Beat& out)
 		{
-			return ASCII::TryParseI32(stringToParse, out.Value.Ticks) ? IniMemberParseResult {} : MemberParseError("Invalid int");
+			return ASCII::TryParseI32(stringToParse, out.Ticks) ? IniMemberParseResult {} : MemberParseError("Invalid int");
 		}
 
-		static void ToString(const WithDefault<Beat>& in, std::string& stringToAppendTo)
+		static void ToString(const Beat& in, std::string& stringToAppendTo)
 		{
-			char b[32]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%d", in.Value.Ticks));
+			char b[32]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%d", in.Ticks));
 		}
 
-		static IniMemberParseResult FromString(std::string_view stringToParse, WithDefault<MultiInputBinding>& out)
+		static IniMemberParseResult FromString(std::string_view stringToParse, MultiInputBinding& out)
 		{
-			return InputBindingFromStorageString(stringToParse, out.Value) ? IniMemberParseResult {} : MemberParseError("Invalid input binding");
+			return InputBindingFromStorageString(stringToParse, out) ? IniMemberParseResult {} : MemberParseError("Invalid input binding");
 		}
 
-		static void ToString(const WithDefault<MultiInputBinding>& in, std::string& stringToAppendTo)
+		static void ToString(const MultiInputBinding& in, std::string& stringToAppendTo)
 		{
-			InputBindingToStorageString(in.Value, stringToAppendTo);
+			InputBindingToStorageString(in, stringToAppendTo);
 		}
 
 		// NOTE: Rely entirely on overload resolution for these
@@ -380,9 +380,9 @@ namespace PeepoDrumKit
 				const auto& member = AppSettingsReflectionMap.MemberSlots[i];
 				if (parser.CurrentSection == member.SerializedSection && it.Key == member.SerializedName)
 				{
-					const IniMemberParseResult memberParseResult = member.FromStringFunc(it.Value, { reinterpret_cast<u8*>(&out) + member.ByteOffset, member.ByteSize });
+					const IniMemberParseResult memberParseResult = member.FromStringFunc(it.Value, { reinterpret_cast<u8*>(&out) + member.ByteOffsetValue, member.ByteSizeValue });
 					if (!memberParseResult.HasError)
-						*(reinterpret_cast<bool*>(reinterpret_cast<u8*>(&out) + member.ByteOffsetForHasValueBool)) = true;
+						*(reinterpret_cast<bool*>(reinterpret_cast<u8*>(&out) + member.ByteOffsetHasValueBool)) = true;
 					else
 						return parser.Error(memberParseResult.ErrorMessage);
 					break;
@@ -409,10 +409,16 @@ namespace PeepoDrumKit
 			const auto& member = AppSettingsReflectionMap.MemberSlots[i];
 			if (member.SerializedSection != lastSection) { writer.Line(); writer.LineSection(member.SerializedSection); lastSection = member.SerializedSection; }
 
-			if (!*(reinterpret_cast<const bool*>(reinterpret_cast<const u8*>(&in) + member.ByteOffsetForHasValueBool)))
+			if (!*(reinterpret_cast<const bool*>(reinterpret_cast<const u8*>(&in) + member.ByteOffsetHasValueBool)))
+			{
 				writer.Comment();
-
-			member.ToStringFunc({ const_cast<u8*>(reinterpret_cast<const u8*>(&in)) + member.ByteOffset, member.ByteSize }, strBuffer);
+				member.ToStringFunc({ const_cast<u8*>(reinterpret_cast<const u8*>(&in)) + member.ByteOffsetDefault, member.ByteSizeValue }, strBuffer);
+			}
+			else
+			{
+				member.ToStringFunc({ const_cast<u8*>(reinterpret_cast<const u8*>(&in)) + member.ByteOffsetValue, member.ByteSizeValue }, strBuffer);
+			}
+			
 			writer.LineKeyValue_Str(member.SerializedName, strBuffer);
 			strBuffer.clear();
 		}
@@ -425,17 +431,18 @@ namespace PeepoDrumKit
 		const char* currentSection = "";
 
 #define SECTION(serializedSection) do { currentSection = serializedSection; } while (false)
-#define X(member, serializedName) do																		\
-		{																									\
-			SettingsReflectionMember& out = outMap.MemberSlots[outMap.MemberCount++];						\
-			out.ByteOffset = static_cast<u16>(offsetof(UserSettingsData, member));							\
-			out.ByteSize = static_cast<u16>(sizeof(UserSettingsData::member));								\
-			out.ByteOffsetForHasValueBool = static_cast<u16>(offsetof(UserSettingsData, member.HasValue));	\
-			out.SourceCodeName = #member;																	\
-			out.SerializedSection = currentSection;															\
-			out.SerializedName = serializedName;															\
-			out.FromStringFunc = Ini::VoidPtrToTypeWrapper<decltype(UserSettingsData::member)>;				\
-			out.ToStringFunc = Ini::VoidPtrToTypeWrapper<decltype(UserSettingsData::member)>;				\
+#define X(member, serializedName) do																			\
+		{																										\
+			SettingsReflectionMember& out = outMap.MemberSlots[outMap.MemberCount++];							\
+			out.ByteSizeValue = static_cast<u16>(sizeof(UserSettingsData::member.Value));						\
+			out.ByteOffsetDefault = static_cast<u16>(offsetof(UserSettingsData, member.Default));				\
+			out.ByteOffsetValue = static_cast<u16>(offsetof(UserSettingsData, member.Value));					\
+			out.ByteOffsetHasValueBool = static_cast<u16>(offsetof(UserSettingsData, member.HasValue));			\
+			out.SourceCodeName = #member;																		\
+			out.SerializedSection = currentSection;																\
+			out.SerializedName = serializedName;																\
+			out.FromStringFunc = Ini::VoidPtrToTypeWrapper<decltype(UserSettingsData::member)::UnderlyingType>;	\
+			out.ToStringFunc = Ini::VoidPtrToTypeWrapper<decltype(UserSettingsData::member)::UnderlyingType>;	\
 		} while (false)
 		{
 			SECTION("general");

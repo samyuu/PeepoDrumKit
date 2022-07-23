@@ -33,6 +33,7 @@ struct InputBinding
 	constexpr bool operator==(const InputBinding& other) const
 	{
 		return (Type != other.Type) ? false :
+			(Type == InputBindingType::None) ? true :
 			(Type == InputBindingType::Keyboard) ? (Keyboard.Key == other.Keyboard.Key) && (Keyboard.Modifiers == other.Keyboard.Modifiers) :
 			(Type == InputBindingType::Mouse) ? (Mouse.Button == other.Mouse.Button) : false;
 	}

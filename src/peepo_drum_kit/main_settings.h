@@ -24,6 +24,8 @@ namespace PeepoDrumKit
 	template <typename T>
 	struct WithDefault
 	{
+		using UnderlyingType = T;
+
 		// NOTE: Default is initialized once and then shouldn't really change afterwards
 		T Default;
 		// NOTE: Value is either a *valid* copy of Default or user defined (to avoid always having to check HasValue first)
@@ -32,6 +34,7 @@ namespace PeepoDrumKit
 
 		template<typename... Args>
 		constexpr WithDefault(Args&&... args) : Default(std::forward<Args>(args)...), Value(Default), HasValue(false) {}
+		inline void ResetToDefault() { Value = Default; HasValue = false; }
 
 		constexpr T& operator*() { return Value; }
 		constexpr T* operator->() { return &Value; }
@@ -169,9 +172,10 @@ namespace PeepoDrumKit
 
 	struct SettingsReflectionMember
 	{
-		u16 ByteOffset;
-		u16 ByteSize;
-		u16 ByteOffsetForHasValueBool;
+		u16 ByteSizeValue;
+		u16 ByteOffsetDefault;
+		u16 ByteOffsetValue;
+		u16 ByteOffsetHasValueBool;
 		const char* SourceCodeName;
 		const char* SerializedSection;
 		const char* SerializedName;

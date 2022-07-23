@@ -26,16 +26,16 @@ namespace PeepoDrumKit
 		Drumroll,
 		DrumrollBig,
 		Balloon,
-		BaloonSpecial,
+		BalloonSpecial,
 		// ...
 		Count
 	};
 
 	constexpr bool IsDonNote(NoteType v) { return (v == NoteType::Don) || (v == NoteType::DonBig); }
 	constexpr bool IsKaNote(NoteType v) { return (v == NoteType::Ka) || (v == NoteType::KaBig); }
-	constexpr bool IsBigNote(NoteType v) { return (v == NoteType::DonBig) || (v == NoteType::KaBig) || (v == NoteType::DrumrollBig) || (v == NoteType::BaloonSpecial); }
+	constexpr bool IsBigNote(NoteType v) { return (v == NoteType::DonBig) || (v == NoteType::KaBig) || (v == NoteType::DrumrollBig) || (v == NoteType::BalloonSpecial); }
 	constexpr bool IsDrumrollNote(NoteType v) { return (v == NoteType::Drumroll) || (v == NoteType::DrumrollBig); }
-	constexpr bool IsBalloonNote(NoteType v) { return (v == NoteType::Balloon) || (v == NoteType::BaloonSpecial); }
+	constexpr bool IsBalloonNote(NoteType v) { return (v == NoteType::Balloon) || (v == NoteType::BalloonSpecial); }
 	constexpr bool IsLongNote(NoteType v) { return IsDrumrollNote(v) || IsBalloonNote(v); }
 
 	constexpr NoteType ToSmallNote(NoteType v)
@@ -49,7 +49,7 @@ namespace PeepoDrumKit
 		case NoteType::Drumroll: return NoteType::Drumroll;
 		case NoteType::DrumrollBig: return NoteType::Drumroll;
 		case NoteType::Balloon: return NoteType::Balloon;
-		case NoteType::BaloonSpecial: return NoteType::Balloon;
+		case NoteType::BalloonSpecial: return NoteType::Balloon;
 		default: return v;
 		}
 	}
@@ -64,8 +64,8 @@ namespace PeepoDrumKit
 		case NoteType::KaBig: return NoteType::KaBig;
 		case NoteType::Drumroll: return NoteType::DrumrollBig;
 		case NoteType::DrumrollBig: return NoteType::DrumrollBig;
-		case NoteType::Balloon: return NoteType::BaloonSpecial;
-		case NoteType::BaloonSpecial: return NoteType::BaloonSpecial;
+		case NoteType::Balloon: return NoteType::BalloonSpecial;
+		case NoteType::BalloonSpecial: return NoteType::BalloonSpecial;
 		default: return v;
 		}
 	}
