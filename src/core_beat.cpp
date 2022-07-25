@@ -83,13 +83,26 @@ Time TempoMapAccelerationStructure::GetLastCalculatedTime() const
 	return BeatTickToTimes.empty() ? Time::Zero() : BeatTickToTimes.back();
 }
 
-void TempoMapAccelerationStructure::Rebuild(const std::vector<TempoChange>& tempoChanges)
+void TempoMapAccelerationStructure::Rebuild(const TempoChange* inTempoChanges, size_t inTempoCount)
 {
-	assert(tempoChanges.size() > 0);
-	BeatTickToTimes.resize(tempoChanges.back().Beat.Ticks + 1);
+	const TempoChange* tempoChanges = inTempoChanges;
+	size_t tempoCount = inTempoCount;
+
+	// HACK: Handle this special case here by creating an adjusted copy instead of changing the algorithm itself to not risk accidentally messing anything up
+	if (inTempoCount < 1 || inTempoChanges[0].Beat > Beat::Zero())
+	{
+		TempoBuffer.resize(inTempoCount + 1);
+		TempoBuffer[0] = TempoChange(Beat::Zero(), FallbackTempo);
+		memcpy(TempoBuffer.data() + 1, inTempoChanges, sizeof(TempoChange) * inTempoCount);
+
+		tempoChanges = TempoBuffer.data();
+		tempoCount = TempoBuffer.size();
+	}
+
+	BeatTickToTimes.resize((tempoCount > 0) ? tempoChanges[tempoCount - 1].Beat.Ticks + 1 : 0);
 
 	f64 lastEndTime = 0.0;
-	for (size_t tempoChangeIndex = 0; tempoChangeIndex < tempoChanges.size(); tempoChangeIndex++)
+	for (size_t tempoChangeIndex = 0; tempoChangeIndex < tempoCount; tempoChangeIndex++)
 	{
 		const TempoChange& tempoChange = tempoChanges[tempoChangeIndex];
 
@@ -97,18 +110,21 @@ void TempoMapAccelerationStructure::Rebuild(const std::vector<TempoChange>& temp
 		const f64 beatDuration = (60.0 / bpm);
 		const f64 tickDuration = (beatDuration / Beat::TicksPerBeat);
 
-		const bool isSingleOrLastTempo = (tempoChanges.size() == 1) || (tempoChangeIndex == (tempoChanges.size() - 1));
+		const bool isSingleOrLastTempo = (tempoCount == 1) || (tempoChangeIndex == (tempoCount - 1));
 		const size_t timesCount = isSingleOrLastTempo ? BeatTickToTimes.size() : (tempoChanges[tempoChangeIndex + 1].Beat.Ticks);
 
 		for (size_t i = 0, t = tempoChange.Beat.Ticks; t < timesCount; t++)
 			BeatTickToTimes[t] = Time::FromSeconds((tickDuration * i++) + lastEndTime);
 
-		if (tempoChanges.size() > 1)
+		if (tempoCount > 1)
 			lastEndTime = BeatTickToTimes[timesCount - 1].TotalSeconds() + tickDuration;
 
 		FirstTempoBPM = (tempoChangeIndex == 0) ? bpm : FirstTempoBPM;
 		LastTempoBPM = bpm;
 	}
+
+	if (!TempoBuffer.empty())
+		TempoBuffer.clear();
 }
 
 template <typename T>
@@ -155,50 +171,32 @@ static void InsertOrUpdateIntoSortedVector(std::vector<T>& sortedChanges, T chan
 	assert(ValidateIsVectorSortedByBeat(sortedChanges));
 }
 
-template <typename T>
-static void RemoveAtIndexFromSortedVectorAndAddDefaultIfEmpty(std::vector<T>& sortedChanges, size_t indexToRemove, T defaultValue)
-{
-	if (InBounds(indexToRemove, sortedChanges))
-	{
-		sortedChanges.erase(sortedChanges.begin() + indexToRemove);
-		if (sortedChanges.empty())
-			sortedChanges.push_back(defaultValue);
-	}
-}
-
 // TODO: Optimize using binary search
 template <typename T>
 static size_t LinearlySearchSortedVectorForChangeWithLowerBeat(const std::vector<T>& sortedChanges, Beat beat)
 {
-	assert(!sortedChanges.empty());
-	if (sortedChanges.size() <= 1)
-		return 0;
+	if (sortedChanges.size() == 0)
+		return -1;
+	if (sortedChanges.size() == 1)
+		return (sortedChanges[0].Beat <= beat) ? 0 : -1;
+	if (beat < sortedChanges[0].Beat)
+		return -1;
 
 	for (size_t i = 0; i < sortedChanges.size() - 1; i++)
 	{
 		if (sortedChanges[i].Beat <= beat && sortedChanges[i + 1].Beat > beat)
 			return i;
 	}
-
 	return sortedChanges.size() - 1;
-}
-
-void SortedTempoMap::Reset()
-{
-	TempoChanges.clear();
-	TempoChanges.push_back(TempoChange(Beat(0), TempoChange::Default));
-	SignatureChanges.clear();
-	SignatureChanges.push_back(TimeSignatureChange(Beat(0), TimeSignatureChange::Default));
-	RebuildAccelerationStructure();
 }
 
 void SortedTempoMap::TempoInsertOrUpdate(TempoChange tempoChangeToInsertOrUpdate) { InsertOrUpdateIntoSortedVector(TempoChanges, tempoChangeToInsertOrUpdate); }
 
-void SortedTempoMap::TempoRemoveAtIndex(size_t indexToRemove) { RemoveAtIndexFromSortedVectorAndAddDefaultIfEmpty(TempoChanges, indexToRemove, TempoChange(Beat(0), TempoChange::Default)); }
+void SortedTempoMap::TempoRemoveAtIndex(size_t indexToRemove) { if (InBounds(indexToRemove, TempoChanges)) { TempoChanges.erase(TempoChanges.begin() + indexToRemove); } }
 
 void SortedTempoMap::SignatureInsertOrUpdate(TimeSignatureChange signatureChangeToInsertOrUpdate) { InsertOrUpdateIntoSortedVector(SignatureChanges, signatureChangeToInsertOrUpdate); }
 
-void SortedTempoMap::SignatureRemoveAtIndex(size_t indexToRemove) { RemoveAtIndexFromSortedVectorAndAddDefaultIfEmpty(SignatureChanges, indexToRemove, TimeSignatureChange(Beat(0), TimeSignatureChange::Default)); }
+void SortedTempoMap::SignatureRemoveAtIndex(size_t indexToRemove) { if (InBounds(indexToRemove, SignatureChanges)) { SignatureChanges.erase(SignatureChanges.begin() + indexToRemove); } }
 
 size_t SortedTempoMap::TempoFindLastIndexAtBeat(Beat beat) const { return LinearlySearchSortedVectorForChangeWithLowerBeat(TempoChanges, beat); }
 

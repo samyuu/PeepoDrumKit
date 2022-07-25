@@ -97,7 +97,7 @@ namespace PeepoDrumKit
 
 		struct RemoveTempoChange : Undo::Command
 		{
-			RemoveTempoChange(SortedTempoMap* tempoMap, Beat beat) : TempoMap(tempoMap), OldValue(TempoMap->TempoFindLastAtBeat(beat)) { assert(OldValue.Beat == beat); }
+			RemoveTempoChange(SortedTempoMap* tempoMap, Beat beat) : TempoMap(tempoMap), OldValue(*TempoMap->TempoTryFindLastAtBeat(beat)) { assert(OldValue.Beat == beat); }
 
 			void Undo() override { TempoMap->TempoInsertOrUpdate(OldValue); TempoMap->RebuildAccelerationStructure(); }
 			void Redo() override { TempoMap->TempoRemoveAtBeat(OldValue.Beat); TempoMap->RebuildAccelerationStructure(); }
@@ -111,7 +111,7 @@ namespace PeepoDrumKit
 
 		struct UpdateTempoChange : Undo::Command
 		{
-			UpdateTempoChange(SortedTempoMap* tempoMap, TempoChange newValue) : TempoMap(tempoMap), NewValue(newValue), OldValue(TempoMap->TempoFindLastAtBeat(newValue.Beat)) { assert(newValue.Beat == OldValue.Beat); }
+			UpdateTempoChange(SortedTempoMap* tempoMap, TempoChange newValue) : TempoMap(tempoMap), NewValue(newValue), OldValue(*TempoMap->TempoTryFindLastAtBeat(newValue.Beat)) { assert(newValue.Beat == OldValue.Beat); }
 
 			void Undo() override { TempoMap->TempoInsertOrUpdate(OldValue); TempoMap->RebuildAccelerationStructure(); }
 			void Redo() override { TempoMap->TempoInsertOrUpdate(NewValue); TempoMap->RebuildAccelerationStructure(); }
@@ -148,7 +148,7 @@ namespace PeepoDrumKit
 
 		struct RemoveTimeSignatureChange : Undo::Command
 		{
-			RemoveTimeSignatureChange(SortedTempoMap* tempoMap, Beat beat) : TempoMap(tempoMap), OldValue(TempoMap->SignatureFindLastAtBeat(beat)) { assert(OldValue.Beat == beat); }
+			RemoveTimeSignatureChange(SortedTempoMap* tempoMap, Beat beat) : TempoMap(tempoMap), OldValue(*TempoMap->SignatureTryFindLastAtBeat(beat)) { assert(OldValue.Beat == beat); }
 
 			void Undo() override { TempoMap->SignatureInsertOrUpdate(OldValue); }
 			void Redo() override { TempoMap->SignatureRemoveAtBeat(OldValue.Beat); }
@@ -162,7 +162,7 @@ namespace PeepoDrumKit
 
 		struct UpdateTimeSignatureChange : Undo::Command
 		{
-			UpdateTimeSignatureChange(SortedTempoMap* tempoMap, TimeSignatureChange newValue) : TempoMap(tempoMap), NewValue(newValue), OldValue(TempoMap->SignatureFindLastAtBeat(newValue.Beat)) { assert(newValue.Beat == OldValue.Beat); }
+			UpdateTimeSignatureChange(SortedTempoMap* tempoMap, TimeSignatureChange newValue) : TempoMap(tempoMap), NewValue(newValue), OldValue(*TempoMap->SignatureTryFindLastAtBeat(newValue.Beat)) { assert(newValue.Beat == OldValue.Beat); }
 
 			void Undo() override { TempoMap->SignatureInsertOrUpdate(OldValue); }
 			void Redo() override { TempoMap->SignatureInsertOrUpdate(NewValue); }

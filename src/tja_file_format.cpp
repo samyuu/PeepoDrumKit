@@ -939,7 +939,7 @@ namespace TJA
 
 		outCommands.reserve(inMeasures.size() * 4);
 
-		TimeSignature lastSignature = TimeSignatureChange::Default;
+		TimeSignature lastSignature = DefaultTimeSignature;
 		for (const ConvertedMeasure& inMeasure : inMeasures)
 		{
 			if (inMeasure.TimeSignature != lastSignature)

@@ -76,7 +76,6 @@ constexpr bool IsTimeSignatureSupported(TimeSignature v) { return (v.Numerator >
 
 struct TempoChange
 {
-	static constexpr Tempo Default = Tempo(160.0);
 	constexpr TempoChange() = default;
 	constexpr TempoChange(Beat beat, Tempo tempo) : Beat(beat), Tempo(tempo) {}
 
@@ -86,7 +85,6 @@ struct TempoChange
 
 struct TimeSignatureChange
 {
-	static constexpr TimeSignature Default = TimeSignature(4, 4);
 	constexpr TimeSignatureChange() = default;
 	constexpr TimeSignatureChange(Beat beat, TimeSignature signature) : Beat(beat), Signature(signature) {}
 
@@ -125,25 +123,30 @@ struct TempoMapAccelerationStructure
 {
 	// NOTE: Pre calculated beat times up to the last tempo change
 	std::vector<Time> BeatTickToTimes;
+	std::vector<TempoChange> TempoBuffer;
 	f64 FirstTempoBPM = 0.0, LastTempoBPM = 0.0;
 
 	Time ConvertBeatToTimeUsingLookupTableIndexing(Beat beat) const;
 	Beat ConvertTimeToBeatUsingLookupTableBinarySearch(Time time) const;
 
 	Time GetLastCalculatedTime() const;
-	void Rebuild(const std::vector<TempoChange>& tempoChanges);
+	void Rebuild(const TempoChange* inTempoChanges, size_t inTempoCount);
 };
+
+// NOTE: Used when no other tempo / time signature change is defined (empty list or pre-first beat)
+constexpr Tempo FallbackTempo = Tempo(120.0f);
+constexpr TimeSignature FallbackTimeSignature = TimeSignature(4, 4);
 
 struct SortedTempoMap
 {
-	// NOTE: These must always remain sorted, non-empty and only have changes with (Beat.Ticks >= 0)
+	// NOTE: These must always remain sorted and only have changes with (Beat.Ticks >= 0)
 	std::vector<TempoChange> TempoChanges;
 	std::vector<TimeSignatureChange> SignatureChanges;
 	TempoMapAccelerationStructure AccelerationStructure;
 
 public:
-	inline SortedTempoMap() { Reset(); }
-	void Reset();
+	inline SortedTempoMap() { RebuildAccelerationStructure(); }
+	inline void Clear() { TempoChanges.clear(); SignatureChanges.clear(); RebuildAccelerationStructure(); }
 
 	void TempoInsertOrUpdate(TempoChange tempoChangeToInsertOrUpdate);
 	void TempoRemoveAtIndex(size_t indexToRemove);
@@ -154,20 +157,20 @@ public:
 	inline void SignatureRemoveAtBeat(Beat beatToFindAndRemove) { SignatureRemoveAtIndex(SignatureFindIndexWithExactBeat(beatToFindAndRemove)); }
 
 	// NOTE: Must manually be called every time a TempoChange has been edited otherwise Beat <-> Time conversions will be incorrect
-	inline void RebuildAccelerationStructure() { AccelerationStructure.Rebuild(TempoChanges); }
+	inline void RebuildAccelerationStructure() { AccelerationStructure.Rebuild(TempoChanges.data(), TempoChanges.size()); }
 	inline Time BeatToTime(Beat beat) const { return AccelerationStructure.ConvertBeatToTimeUsingLookupTableIndexing(beat); }
 	inline Beat TimeToBeat(Time time) const { return AccelerationStructure.ConvertTimeToBeatUsingLookupTableBinarySearch(time); }
 
 public:
 	size_t TempoFindLastIndexAtBeat(Beat beat) const;
 	size_t TempoFindIndexWithExactBeat(Beat exactBeat) const;
-	TempoChange& TempoFindLastAtBeat(Beat beat) { return TempoChanges[TempoFindLastIndexAtBeat(beat)]; }
-	const TempoChange& TempoFindLastAtBeat(Beat beat) const { return TempoChanges[TempoFindLastIndexAtBeat(beat)]; }
+	TempoChange* TempoTryFindLastAtBeat(Beat beat) { return IndexOrNull(TempoFindLastIndexAtBeat(beat), TempoChanges); }
+	const TempoChange* TempoTryFindLastAtBeat(Beat beat) const { return IndexOrNull(TempoFindLastIndexAtBeat(beat), TempoChanges); }
 
 	size_t SignatureFindLastIndexAtBeat(Beat beat) const;
 	size_t SignatureFindIndexWithExactBeat(Beat exactBeat) const;
-	TimeSignatureChange& SignatureFindLastAtBeat(Beat beat) { return SignatureChanges[SignatureFindLastIndexAtBeat(beat)]; }
-	const TimeSignatureChange& SignatureFindLastAtBeat(Beat beat) const { return SignatureChanges[SignatureFindLastIndexAtBeat(beat)]; }
+	TimeSignatureChange* SignatureTryFindLastAtBeat(Beat beat) { return IndexOrNull(SignatureFindLastIndexAtBeat(beat), SignatureChanges); }
+	const TimeSignatureChange* SignatureTryFindLastAtBeat(Beat beat) const { return IndexOrNull(SignatureFindLastIndexAtBeat(beat), SignatureChanges); }
 
 	struct ForEachBeatBarData { TimeSignature Signature; Beat Beat; i32 BarIndex; bool IsBar; };
 	template <typename Func>
@@ -179,7 +182,7 @@ public:
 		for (i32 barIndex = 0; /*barIndex < MAX_BAR_COUNT*/; barIndex++)
 		{
 			const TimeSignatureChange* thisChange = signatureChangeIt.Next(SignatureChanges, beatIt);
-			const TimeSignature thisSignature = (thisChange == nullptr) ? SignatureChanges[0].Signature : thisChange->Signature;
+			const TimeSignature thisSignature = (thisChange == nullptr) ? FallbackTimeSignature : thisChange->Signature;
 
 			const i32 beatsPerBar = thisSignature.GetBeatsPerBar();
 			const Beat durationPerBeat = thisSignature.GetDurationPerBeat();

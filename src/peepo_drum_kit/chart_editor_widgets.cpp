@@ -676,10 +676,12 @@ namespace PeepoDrumKit
 				const Beat cursorBeat = FloorBeatToGrid(context.GetCursorBeat(), GetGridBeatSnap(timeline.CurrentGridBarDivision));
 				Gui::BeginDisabled(cursorBeat.Ticks < 0);
 
-				const TempoChange tempoChangeAtCursor = course.TempoMap.TempoFindLastAtBeat(cursorBeat);
+				const TempoChange* tempoChangeAtCursor = course.TempoMap.TempoTryFindLastAtBeat(cursorBeat);
+				const Tempo tempoAtCursor = (tempoChangeAtCursor != nullptr) ? tempoChangeAtCursor->Tempo : FallbackTempo;
+
 				auto insertOrUpdateCursorTempoChange = [&](Tempo newTempo)
 				{
-					if (tempoChangeAtCursor.Beat != cursorBeat)
+					if (tempoChangeAtCursor == nullptr || tempoChangeAtCursor->Beat != cursorBeat)
 						context.Undo.Execute<Commands::AddTempoChange>(&course.TempoMap, TempoChange(cursorBeat, newTempo));
 					else
 						context.Undo.Execute<Commands::UpdateTempoChange>(&course.TempoMap, TempoChange(cursorBeat, newTempo));
@@ -688,31 +690,32 @@ namespace PeepoDrumKit
 				Gui::Property::Property([&]
 				{
 					Gui::SetNextItemWidth(-1.0f);
-					if (f32 v = tempoChangeAtCursor.Tempo.BPM; GuiDragFloatLabel("Tempo##DragFloatLabel", &v, 1.0f, MinBPM, MaxBPM, "%g", ImGuiSliderFlags_AlwaysClamp))
+					if (f32 v = tempoAtCursor.BPM; GuiDragFloatLabel("Tempo##DragFloatLabel", &v, 1.0f, MinBPM, MaxBPM, "%g", ImGuiSliderFlags_AlwaysClamp))
 						insertOrUpdateCursorTempoChange(Tempo(v));
 				});
 				Gui::Property::Value([&]
 				{
 					Gui::SetNextItemWidth(-1.0f);
-					if (f32 v = tempoChangeAtCursor.Tempo.BPM; Gui::InputFloat("##TempoAtCursor", &v, 1.0f, 10.0f, "%g BPM", ImGuiInputTextFlags_None))
+					if (f32 v = tempoAtCursor.BPM; Gui::InputFloat("##TempoAtCursor", &v, 1.0f, 10.0f, "%g BPM", ImGuiInputTextFlags_None))
 						insertOrUpdateCursorTempoChange(Tempo(Clamp(v, MinBPM, MaxBPM)));
 
 					if (Gui::Button("Remove##TempoAtCursor", vec2(-1.0f, 0.0f)))
 					{
-						if (tempoChangeAtCursor.Beat == cursorBeat)
+						if (tempoChangeAtCursor != nullptr && tempoChangeAtCursor->Beat == cursorBeat)
 							context.Undo.Execute<Commands::RemoveTempoChange>(&course.TempoMap, cursorBeat);
 					}
 				});
 				Gui::Property::PropertyTextValueFunc("Time Signature", [&]
 				{
-					const TimeSignatureChange signatureChangeAtCursor = course.TempoMap.SignatureFindLastAtBeat(cursorBeat);
+					const TimeSignatureChange* signatureChangeAtCursor = course.TempoMap.SignatureTryFindLastAtBeat(cursorBeat);
+					const TimeSignature signatureAtCursor = (signatureChangeAtCursor != nullptr) ? signatureChangeAtCursor->Signature : FallbackTimeSignature;
 
 					Gui::SetNextItemWidth(-1.0f);
-					if (ivec2 v = { signatureChangeAtCursor.Signature.Numerator, signatureChangeAtCursor.Signature.Denominator };
+					if (ivec2 v = { signatureAtCursor.Numerator, signatureAtCursor.Denominator };
 						GuiInputFraction("##SignatureAtCursor", &v, ivec2(1, Beat::TicksPerBeat * 4)))
 					{
 						// TODO: Also floor cursor beat to ~~last~~ next whole bar
-						if (signatureChangeAtCursor.Beat != cursorBeat)
+						if (signatureChangeAtCursor == nullptr || signatureChangeAtCursor->Beat != cursorBeat)
 							context.Undo.Execute<Commands::AddTimeSignatureChange>(&course.TempoMap, TimeSignatureChange(cursorBeat, TimeSignature(v[0], v[1])));
 						else
 							context.Undo.Execute<Commands::UpdateTimeSignatureChange>(&course.TempoMap, TimeSignatureChange(cursorBeat, TimeSignature(v[0], v[1])));
@@ -720,7 +723,7 @@ namespace PeepoDrumKit
 
 					if (Gui::Button("Remove##SignatureAtCursor", vec2(-1.0f, 0.0f)))
 					{
-						if (signatureChangeAtCursor.Beat == cursorBeat)
+						if (signatureChangeAtCursor != nullptr && signatureChangeAtCursor->Beat == cursorBeat)
 							context.Undo.Execute<Commands::RemoveTimeSignatureChange>(&course.TempoMap, cursorBeat);
 					}
 				});
@@ -740,9 +743,9 @@ namespace PeepoDrumKit
 						}
 						else
 						{
-							if (f32 v = tempoChangeAtCursor.Tempo.BPM * ((scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed);
+							if (f32 v = tempoAtCursor.BPM * ((scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed);
 								Gui::DragFloat("##ScrollTempoAtCursor", &v, 1.0f, MinBPM, MaxBPM, "%g BPM", ImGuiSliderFlags_NoRoundToFormat))
-								newScrollSpeed = (v / tempoChangeAtCursor.Tempo.BPM);
+								newScrollSpeed = (v / tempoAtCursor.BPM);
 						}
 						return false;
 					});

@@ -267,8 +267,8 @@ namespace PeepoDrumKit
 			outCourse.Type = Clamp(static_cast<DifficultyType>(inCourse.CourseMetadata.COURSE), DifficultyType {}, DifficultyType::Count);
 			outCourse.Level = Clamp(static_cast<DifficultyLevel>(inCourse.CourseMetadata.LEVEL), DifficultyLevel::Min, DifficultyLevel::Max);
 
-			outCourse.TempoMap.TempoChanges[0] = TempoChange(Beat::Zero(), inTJA.Metadata.BPM);
-			outCourse.TempoMap.SignatureChanges[0] = TimeSignatureChange(Beat::Zero(), TimeSignature(4, 4));
+			outCourse.TempoMap.TempoChanges = { TempoChange(Beat::Zero(), inTJA.Metadata.BPM) };
+			outCourse.TempoMap.SignatureChanges = { TimeSignatureChange(Beat::Zero(), TimeSignature(4, 4)) };
 			TimeSignature lastSignature = TimeSignature(4, 4);
 
 			i32 currentBalloonIndex = 0;
@@ -393,7 +393,10 @@ namespace PeepoDrumKit
 		if (!in.Courses.empty())
 		{
 			if (!in.Courses[0]->TempoMap.TempoChanges.empty())
-				out.Metadata.BPM = in.Courses[0]->TempoMap.TempoFindLastAtBeat(Beat::Zero()).Tempo;
+			{
+				const TempoChange* initialTempo = in.Courses[0]->TempoMap.TempoTryFindLastAtBeat(Beat::Zero());
+				out.Metadata.BPM = (initialTempo != nullptr) ? initialTempo->Tempo : FallbackTempo;
+			}
 		}
 
 		out.Courses.reserve(in.Courses.size());
@@ -430,10 +433,7 @@ namespace PeepoDrumKit
 			});
 
 			if (outConvertedMeasures.empty())
-				outConvertedMeasures.push_back(TJA::ConvertedMeasure { Beat::Zero(), TimeSignatureChange::Default });
-
-			if (inCourse.TempoMap.TempoChanges.empty() && out.Metadata.BPM.BPM != TempoChange::Default.BPM)
-				outConvertedMeasures[0].TempoChanges.push_back(TJA::ConvertedTempoChange { Beat::Zero(), TempoChange::Default });
+				outConvertedMeasures.push_back(TJA::ConvertedMeasure { Beat::Zero(), TimeSignature(4, 4) });
 
 			static constexpr auto tryFindMeasureForBeat = [](std::vector<TJA::ConvertedMeasure>& measures, Beat beatToFind) -> TJA::ConvertedMeasure*
 			{

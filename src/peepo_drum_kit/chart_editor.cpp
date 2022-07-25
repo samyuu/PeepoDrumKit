@@ -20,12 +20,27 @@ namespace PeepoDrumKit
 			Shell::OpenInExplorer(chartDirectory);
 	}
 
+	static void SetChartDefaultSettingsAndCourses(ChartProject& outChart)
+	{
+		outChart.ChartCreator = *Settings.General.DefaultCreatorName;
+
+		assert(!outChart.Courses.empty() && "Expected to have initialized the base course first");
+		for (auto& course : outChart.Courses)
+		{
+			course->TempoMap.TempoChanges = { TempoChange(Beat::Zero(), Tempo(160.0f)) };
+			course->TempoMap.SignatureChanges = { TimeSignatureChange(Beat::Zero(), TimeSignature(4, 4)) };
+			course->TempoMap.RebuildAccelerationStructure();;
+		}
+	}
+
 	ChartEditor::ChartEditor()
 	{
 		context.SongVoice = Audio::Engine.AddVoice(Audio::SourceHandle::Invalid, "ChartEditor SongVoice", false, 1.0f, true);
 		context.SfxVoicePool.StartAsyncLoadingAndAddVoices();
-		context.Chart.ChartCreator = *Settings.General.DefaultCreatorName;
+
 		context.ChartSelectedCourse = context.Chart.Courses.emplace_back(std::make_unique<ChartCourse>()).get();
+		SetChartDefaultSettingsAndCourses(context.Chart);
+
 		showHelpWindow = true;
 
 		Audio::Engine.SetMasterVolume(0.75f);
@@ -690,10 +705,10 @@ namespace PeepoDrumKit
 		UpdateAsyncLoading();
 
 		context.Chart = {};
-		context.Chart.ChartCreator = *Settings.General.DefaultCreatorName;
 		context.ChartFilePath.clear();
 		context.ChartSelectedCourse = context.Chart.Courses.empty() ? context.Chart.Courses.emplace_back(std::make_unique<ChartCourse>()).get() : context.Chart.Courses.front().get();
 		context.ChartSelectedBranch = BranchType::Normal;
+		SetChartDefaultSettingsAndCourses(context.Chart);
 
 		context.SetIsPlayback(false);
 		context.SetCursorBeat(Beat::Zero());

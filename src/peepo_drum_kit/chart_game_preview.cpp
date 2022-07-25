@@ -212,7 +212,7 @@ namespace PeepoDrumKit
 {
 	static constexpr bool VisibleOrDefault(const BarLineChange* v) { return (v == nullptr) ? true : v->IsVisible; };
 	static constexpr f32 ScrollOrDefault(const ScrollChange* v) { return (v == nullptr) ? 1.0f : v->ScrollSpeed; };
-	static inline Tempo TempoOrDefault(const SortedTempoMap& map, const TempoChange* v) { return (v == nullptr) ? map.TempoChanges[0].Tempo : v->Tempo; };
+	static inline Tempo TempoOrDefault(const TempoChange* v) { return (v == nullptr) ? FallbackTempo : v->Tempo; };
 
 	struct ForEachBarLaneData
 	{
@@ -241,7 +241,7 @@ namespace PeepoDrumKit
 
 			const Time time = course.TempoMap.BeatToTime(it.Beat);
 			perBarFunc(ForEachBarLaneData { time,
-				TempoOrDefault(course.TempoMap, tempoChangeIt.Next(course.TempoMap.TempoChanges, it.Beat)),
+				TempoOrDefault(tempoChangeIt.Next(course.TempoMap.TempoChanges, it.Beat)),
 				ScrollOrDefault(scrollChangeIt.Next(course.ScrollChanges.Sorted, it.Beat)) });
 
 			return ControlFlow::Continue;
@@ -269,7 +269,7 @@ namespace PeepoDrumKit
 			const Time head = (course.TempoMap.BeatToTime(beat) + note.TimeOffset);
 			const Time tail = (note.BeatDuration > Beat::Zero()) ? (course.TempoMap.BeatToTime(beat + note.BeatDuration) + note.TimeOffset) : head;
 			perNoteFunc(ForEachNoteLaneData { &note, head, tail,
-				TempoOrDefault(course.TempoMap, tempoChangeIt.Next(course.TempoMap.TempoChanges, beat)),
+				TempoOrDefault(tempoChangeIt.Next(course.TempoMap.TempoChanges, beat)),
 				ScrollOrDefault(scrollChangeIt.Next(course.ScrollChanges.Sorted, beat))
 				});
 		}
