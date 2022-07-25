@@ -106,7 +106,7 @@ void TempoMapAccelerationStructure::Rebuild(const TempoChange* inTempoChanges, s
 	{
 		const TempoChange& tempoChange = tempoChanges[tempoChangeIndex];
 
-		const f64 bpm = tempoChange.Tempo.BPM;
+		const f64 bpm = SafetyCheckTempo(tempoChange.Tempo).BPM;
 		const f64 beatDuration = (60.0 / bpm);
 		const f64 tickDuration = (beatDuration / Beat::TicksPerBeat);
 

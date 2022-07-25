@@ -56,6 +56,8 @@ struct Tempo
 	constexpr explicit Tempo(f32 bpm) : BPM(bpm) {}
 };
 
+constexpr Tempo SafetyCheckTempo(Tempo v) { return (v.BPM <= -1.0f) ? Tempo(-v.BPM) : Tempo(ClampBot(v.BPM, 1.0f)); }
+
 struct TimeSignature
 {
 	i32 Numerator = 4;

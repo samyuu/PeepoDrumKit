@@ -745,7 +745,7 @@ namespace PeepoDrumKit
 						{
 							if (f32 v = tempoAtCursor.BPM * ((scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed);
 								Gui::DragFloat("##ScrollTempoAtCursor", &v, 1.0f, MinBPM, MaxBPM, "%g BPM", ImGuiSliderFlags_NoRoundToFormat))
-								newScrollSpeed = (v / tempoAtCursor.BPM);
+								newScrollSpeed = (tempoAtCursor.BPM == 0.0f) ? 0.0f : (v / tempoAtCursor.BPM);
 						}
 						return false;
 					});
