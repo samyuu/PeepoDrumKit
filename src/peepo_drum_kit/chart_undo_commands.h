@@ -381,8 +381,8 @@ namespace PeepoDrumKit
 		{
 			AddSingleNote(SortedNotesList* notes, Note newNote) : Notes(notes), NewNote(newNote) {}
 
-			void Undo() override { Notes->RemoveID(NewNote.StableID); }
-			void Redo() override { NewNote.StableID = Notes->Add(NewNote); }
+			void Undo() override { Notes->RemoveAtBeat(NewNote.BeatTime); }
+			void Redo() override { Notes->InsertOrUpdate(NewNote); }
 
 			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override { return Undo::MergeResult::Failed; }
 			Undo::CommandInfo GetInfo() const override { return { "Add Note" }; }
@@ -395,17 +395,8 @@ namespace PeepoDrumKit
 		{
 			AddMultipleNotes(SortedNotesList* notes, std::vector<Note> newNotes) : Notes(notes), NewNotes(std::move(newNotes)) {}
 
-			void Undo() override
-			{
-				for (const Note& note : NewNotes)
-					Notes->RemoveID(note.StableID);
-			}
-
-			void Redo() override
-			{
-				for (Note& note : NewNotes)
-					note.StableID = Notes->Add(note);
-			}
+			void Undo() override { for (const Note& note : NewNotes) Notes->RemoveAtBeat(note.BeatTime); }
+			void Redo() override { for (const Note& note : NewNotes) Notes->InsertOrUpdate(note); }
 
 			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override { return Undo::MergeResult::Failed; }
 			Undo::CommandInfo GetInfo() const override { return { "Add Notes" }; }
@@ -418,8 +409,8 @@ namespace PeepoDrumKit
 		{
 			RemoveSingleNote(SortedNotesList* notes, Note oldNote) : Notes(notes), OldNote(oldNote) {}
 
-			void Undo() override { OldNote.StableID = Notes->Add(OldNote); }
-			void Redo() override { Notes->RemoveID(OldNote.StableID); }
+			void Undo() override { Notes->InsertOrUpdate(OldNote); }
+			void Redo() override { Notes->RemoveAtBeat(OldNote.BeatTime); }
 
 			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override { return Undo::MergeResult::Failed; }
 			Undo::CommandInfo GetInfo() const override { return { "Remove Note" }; }
@@ -432,17 +423,8 @@ namespace PeepoDrumKit
 		{
 			RemoveMultipleNotes(SortedNotesList* notes, std::vector<Note> oldNotes) : Notes(notes), OldNotes(std::move(oldNotes)) {}
 
-			void Undo() override
-			{
-				for (Note& note : OldNotes)
-					note.StableID = Notes->Add(note);
-			}
-
-			void Redo() override
-			{
-				for (Note& note : OldNotes)
-					Notes->RemoveID(note.StableID);
-			}
+			void Undo() override { for (Note& note : OldNotes) Notes->InsertOrUpdate(note); }
+			void Redo() override { for (const Note& note : OldNotes) Notes->RemoveAtBeat(note.BeatTime); }
 
 			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override { return Undo::MergeResult::Failed; }
 			Undo::CommandInfo GetInfo() const override { return { "Remove Notes" }; }
@@ -455,8 +437,8 @@ namespace PeepoDrumKit
 		{
 			AddSingleLongNote(SortedNotesList* notes, Note newNote, std::vector<Note> notesToRemove) : Notes(notes), NewNote(newNote), NotesToRemove(notes, std::move(notesToRemove)) {}
 
-			void Undo() override { Notes->RemoveID(NewNote.StableID); NotesToRemove.Undo(); }
-			void Redo() override { NotesToRemove.Redo(); NewNote.StableID = Notes->Add(NewNote); }
+			void Undo() override { Notes->RemoveAtBeat(NewNote.BeatTime); NotesToRemove.Undo(); }
+			void Redo() override { NotesToRemove.Redo(); Notes->InsertOrUpdate(NewNote); }
 
 			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override { return Undo::MergeResult::Failed; }
 			Undo::CommandInfo GetInfo() const override { return { "Add Long Note" }; }
@@ -480,23 +462,12 @@ namespace PeepoDrumKit
 
 		struct ChangeSingleNoteType : Undo::Command
 		{
-			struct Data { StableID StableID; NoteType NewType, OldType; };
+			struct Data { size_t Index; NoteType NewType, OldType; };
 
-			ChangeSingleNoteType(SortedNotesList* notes, Data newData)
-				: Notes(notes), NewData(std::move(newData))
-			{
-				NewData.OldType = Notes->TryFindID(NewData.StableID)->Type;
-			}
+			ChangeSingleNoteType(SortedNotesList* notes, Data newData) : Notes(notes), NewData(std::move(newData)) { NewData.OldType = (*Notes)[NewData.Index].Type; }
 
-			void Undo() override
-			{
-				Notes->TryFindID(NewData.StableID)->Type = NewData.OldType;
-			}
-
-			void Redo() override
-			{
-				Notes->TryFindID(NewData.StableID)->Type = NewData.NewType;
-			}
+			void Undo() override { (*Notes)[NewData.Index].Type = NewData.OldType; }
+			void Redo() override { (*Notes)[NewData.Index].Type = NewData.NewType; }
 
 			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override
 			{
@@ -504,7 +475,7 @@ namespace PeepoDrumKit
 				if (other->Notes != Notes)
 					return Undo::MergeResult::Failed;
 
-				if (NewData.StableID != other->NewData.StableID)
+				if (NewData.Index != other->NewData.Index)
 					return Undo::MergeResult::Failed;
 
 				NewData.NewType = other->NewData.NewType;
@@ -520,25 +491,25 @@ namespace PeepoDrumKit
 
 		struct ChangeMultipleNoteTypes : Undo::Command
 		{
-			struct Data { StableID StableID; NoteType NewType, OldType; };
+			struct Data { size_t Index; NoteType NewType, OldType; };
 
 			ChangeMultipleNoteTypes(SortedNotesList* notes, std::vector<Data> newData)
 				: Notes(notes), NewData(std::move(newData))
 			{
 				for (auto& newData : NewData)
-					newData.OldType = Notes->TryFindID(newData.StableID)->Type;
+					newData.OldType = (*Notes)[newData.Index].Type;
 			}
 
 			void Undo() override
 			{
 				for (const auto& newData : NewData)
-					Notes->TryFindID(newData.StableID)->Type = newData.OldType;
+					(*Notes)[newData.Index].Type = newData.OldType;
 			}
 
 			void Redo() override
 			{
 				for (const auto& newData : NewData)
-					Notes->TryFindID(newData.StableID)->Type = newData.NewType;
+					(*Notes)[newData.Index].Type = newData.NewType;
 			}
 
 			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override
@@ -552,7 +523,7 @@ namespace PeepoDrumKit
 
 				for (size_t i = 0; i < NewData.size(); i++)
 				{
-					if (NewData[i].StableID != other->NewData[i].StableID)
+					if (NewData[i].Index != other->NewData[i].Index)
 						return Undo::MergeResult::Failed;
 				}
 
@@ -570,25 +541,25 @@ namespace PeepoDrumKit
 
 		struct ChangeMultipleNoteBeats : Undo::Command
 		{
-			struct Data { StableID StableID; Beat NewBeat, OldBeat; };
+			struct Data { size_t Index; Beat NewBeat, OldBeat; };
 
 			ChangeMultipleNoteBeats(SortedNotesList* notes, std::vector<Data> data) : Notes(notes), NewData(std::move(data))
 			{
 				for (auto& newData : NewData)
-					newData.OldBeat = Notes->TryFindID(newData.StableID)->BeatTime;
+					newData.OldBeat = (*Notes)[newData.Index].BeatTime;
 			}
 
 			void Undo() override
 			{
 				for (const auto& newData : NewData)
-					Notes->TryFindID(newData.StableID)->BeatTime = newData.OldBeat;
+					(*Notes)[newData.Index].BeatTime = newData.OldBeat;
 				// TODO: Assert sorted (?)
 			}
 
 			void Redo() override
 			{
 				for (const auto& newData : NewData)
-					Notes->TryFindID(newData.StableID)->BeatTime = newData.NewBeat;
+					(*Notes)[newData.Index].BeatTime = newData.NewBeat;
 				// TODO: Assert sorted (?)
 			}
 
@@ -603,7 +574,7 @@ namespace PeepoDrumKit
 
 				for (size_t i = 0; i < NewData.size(); i++)
 				{
-					if (NewData[i].StableID != other->NewData[i].StableID)
+					if (NewData[i].Index != other->NewData[i].Index)
 						return Undo::MergeResult::Failed;
 				}
 

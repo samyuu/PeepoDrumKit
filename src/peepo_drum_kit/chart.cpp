@@ -3,103 +3,13 @@
 
 namespace PeepoDrumKit
 {
-	// TODO: Optimize using binary search (same as for SortedTempoMap)
+	// TODO: Optimize using binary search
 	template <typename T>
 	static i32 LinearlySearchSortedVectorForInsertionIndex(const std::vector<T>& sortedChanges, Beat beat)
 	{
 		for (i32 i = 0; i < static_cast<i32>(sortedChanges.size()); i++)
 			if (beat <= sortedChanges[i].BeatTime) return i;
 		return static_cast<i32>(sortedChanges.size());
-	}
-
-	StableID SortedNotesList::Add(Note newNote)
-	{
-		if (newNote.StableID == StableID::Null)
-			newNote.StableID = GenerateNewStableID();
-
-		const i32 insertionIndex = LinearlySearchSortedVectorForInsertionIndex(Sorted, newNote.BeatTime);
-		Sorted.emplace(Sorted.begin() + insertionIndex, newNote);
-
-		// TODO: This is not great...
-		for (i32 i = static_cast<i32>(insertionIndex); i < static_cast<i32>(Sorted.size()); i++)
-			IDToNoteIndexMap[Sorted[i].StableID] = i;
-
-		// AssertSortedTargetListEntireState(targets, idToIndexMap);
-		return newNote.StableID;
-	}
-
-	Note SortedNotesList::RemoveID(StableID id)
-	{
-		assert(id != StableID::Null);
-		return RemoveIndex(FindIDIndex(id));
-	}
-
-	Note SortedNotesList::RemoveIndex(i32 index)
-	{
-		if (!InBounds(index, Sorted))
-			return Note {};
-
-		Note oldNote = Sorted[index];
-		{
-			// TODO: This is not great...
-			for (i32 i = index + 1; i < static_cast<i32>(Sorted.size()); i++)
-				IDToNoteIndexMap.find(Sorted[i].StableID)->second--;
-
-			IDToNoteIndexMap.erase(oldNote.StableID);
-			Sorted.erase(Sorted.begin() + index);
-		}
-		return oldNote;
-	}
-
-	i32 SortedNotesList::FindIDIndex(StableID id) const
-	{
-		assert(id != StableID::Null);
-		const auto found = IDToNoteIndexMap.find(id);
-		if (found == IDToNoteIndexMap.end())
-			return -1;
-
-		assert(InBounds(found->second, Sorted) && Sorted[found->second].StableID == id);
-		return found->second;
-	}
-
-	i32 SortedNotesList::FindExactBeatIndex(Beat beat) const
-	{
-		// TODO: Optimize using binary search
-		i32 foundIndex = -1;
-		for (const Note& note : Sorted)
-			if (note.BeatTime == beat) { foundIndex = ArrayItToIndexI32(&note, &Sorted[0]); break; }
-		return foundIndex;
-	}
-
-	i32 SortedNotesList::FindOverlappingBeatIndex(Beat beatStart, Beat beatEnd) const
-	{
-		// TODO: Optimize using binary search
-		i32 foundIndex = -1;
-		for (const Note& note : Sorted)
-		{
-			// NOTE: Only break after a large beat has been found to correctly handle long notes with other notes "inside"
-			//		 (even if they should't be placable in the first place)
-			if (note.GetStart() <= beatEnd && beatStart <= note.GetEnd())
-				foundIndex = ArrayItToIndexI32(&note, &Sorted[0]);
-			else if (note.GetEnd() > beatEnd)
-				break;
-		}
-		return foundIndex;
-	}
-
-	Note* SortedNotesList::TryFindID(StableID id) { return IndexOrNull(FindIDIndex(id), Sorted); }
-	Note* SortedNotesList::TryFindExactAtBeat(Beat beat) { return IndexOrNull(FindExactBeatIndex(beat), Sorted); }
-	Note* SortedNotesList::TryFindOverlappingBeat(Beat beat) { return IndexOrNull(FindOverlappingBeatIndex(beat, beat), Sorted); }
-	Note* SortedNotesList::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) { return IndexOrNull(FindOverlappingBeatIndex(beatStart, beatEnd), Sorted); }
-	const Note* SortedNotesList::TryFindID(StableID id) const { return IndexOrNull(FindIDIndex(id), Sorted); }
-	const Note* SortedNotesList::TryFindExactAtBeat(Beat beat) const { return IndexOrNull(FindExactBeatIndex(beat), Sorted); }
-	const Note* SortedNotesList::TryFindOverlappingBeat(Beat beat) const { return IndexOrNull(FindOverlappingBeatIndex(beat, beat), Sorted); }
-	const Note* SortedNotesList::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const { return IndexOrNull(FindOverlappingBeatIndex(beatStart, beatEnd), Sorted); }
-
-	void SortedNotesList::Clear()
-	{
-		Sorted.clear();
-		IDToNoteIndexMap.clear();
 	}
 
 	template <typename T>
@@ -111,7 +21,7 @@ namespace PeepoDrumKit
 	template <typename T>
 	const T* BeatSortedList<T>::TryFindLastAtBeat(Beat beat) const
 	{
-		// TODO: IMPLEMENT BINARY SAERCH INSTEAD <---------------------------
+		// TODO: Optimize using binary search
 		if (Sorted.size() == 0)
 			return nullptr;
 		if (Sorted.size() == 1)
@@ -129,7 +39,7 @@ namespace PeepoDrumKit
 	template <typename T>
 	const T* BeatSortedList<T>::TryFindExactAtBeat(Beat beat) const
 	{
-		// TODO: IMPLEMENT BINARY SAERCH INSTEAD <---------------------------
+		// TODO: Optimize using binary search
 		for (const T& v : Sorted)
 		{
 			if (GetBeat(v) == beat)
@@ -139,9 +49,35 @@ namespace PeepoDrumKit
 	}
 
 	template <typename T>
+	T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beat) { return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindOverlappingBeat(beat)); }
+
+	template <typename T>
+	T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) { return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindOverlappingBeat(beatStart, beatEnd)); }
+
+	template <typename T>
+	const T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beat) const { return TryFindOverlappingBeat(beat, beat); }
+
+	template <typename T>
+	const T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const
+	{
+		// TODO: Optimize using binary search
+		const T* found = nullptr;
+		for (const T& v : Sorted)
+		{
+			// NOTE: Only break after a large beat has been found to correctly handle long notes with other notes "inside"
+			//		 (even if they should't be placable in the first place)
+			if (GetBeat(v) <= beatEnd && beatStart <= (GetBeat(v) + GetBeatDuration(v)))
+				found = &v;
+			else if ((GetBeat(v) + GetBeatDuration(v)) > beatEnd)
+				break;
+		}
+		return found;
+	}
+
+	template <typename T>
 	static size_t LinearlySearchForInsertionIndex(const BeatSortedList<T>& sortedList, Beat beat)
 	{
-		// TODO: IMPLEMENT BINARY SAERCH INSTEAD <---------------------------
+		// TODO: Optimize using binary search
 		for (size_t i = 0; i < sortedList.size(); i++)
 			if (beat <= GetBeat(sortedList[i])) return i;
 		return sortedList.size();
@@ -154,24 +90,24 @@ namespace PeepoDrumKit
 	}
 
 	template <typename T>
-	void BeatSortedList<T>::InsertOrUpdate(T changeToInsertOrUpdate)
+	void BeatSortedList<T>::InsertOrUpdate(T valueToInsertOrUpdate)
 	{
-		// TODO: IMPLEMENT BINARY SAERCH INSTEAD <---------------------------
-		const size_t insertionIndex = LinearlySearchForInsertionIndex(*this, GetBeat(changeToInsertOrUpdate));
+		// TODO: Optimize using binary search
+		const size_t insertionIndex = LinearlySearchForInsertionIndex(*this, GetBeat(valueToInsertOrUpdate));
 		if (InBounds(insertionIndex, Sorted))
 		{
-			if (T& existing = Sorted[insertionIndex]; GetBeat(existing) == GetBeat(changeToInsertOrUpdate))
-				existing = changeToInsertOrUpdate;
+			if (T& existing = Sorted[insertionIndex]; GetBeat(existing) == GetBeat(valueToInsertOrUpdate))
+				existing = valueToInsertOrUpdate;
 			else
-				Sorted.insert(Sorted.begin() + insertionIndex, changeToInsertOrUpdate);
+				Sorted.insert(Sorted.begin() + insertionIndex, valueToInsertOrUpdate);
 		}
 		else
 		{
-			Sorted.push_back(changeToInsertOrUpdate);
+			Sorted.push_back(valueToInsertOrUpdate);
 		}
 
 #if PEEPO_DEBUG
-		assert(GetBeat(changeToInsertOrUpdate).Ticks >= 0);
+		assert(GetBeat(valueToInsertOrUpdate).Ticks >= 0);
 		assert(ValidateIsSortedByBeat(*this));
 #endif
 	}
@@ -190,6 +126,7 @@ namespace PeepoDrumKit
 			Sorted.erase(Sorted.begin() + indexToRemove);
 	}
 
+	template struct BeatSortedList<Note>;
 	template struct BeatSortedList<ScrollChange>;
 	template struct BeatSortedList<BarLineChange>;
 	template struct BeatSortedList<GoGoRange>;
@@ -292,7 +229,6 @@ namespace PeepoDrumKit
 					Note& outNote = outCourse.Notes_Normal.Sorted.emplace_back();
 					outNote.BeatTime = (inMeasure.StartTime + inNote.TimeWithinMeasure);
 					outNote.Type = outNoteType;
-					outNote.StableID = GenerateNewStableID();
 
 					if (inNote.Type == TJA::NoteType::Start_Balloon || inNote.Type == TJA::NoteType::Start_BaloonSpecial)
 					{
@@ -332,14 +268,6 @@ namespace PeepoDrumKit
 			outCourse.ScoreDiff = inCourse.CourseMetadata.SCOREDIFF;
 
 			outCourse.TempoMap.RebuildAccelerationStructure();
-
-			// HACK: Manually build ID map due to having manually inserted (assumed sorted) notes as well
-			for (size_t i = 0; i < EnumCount<BranchType>; i++)
-			{
-				SortedNotesList& notes = outCourse.GetNotes(static_cast<BranchType>(i));
-				for (i32 i = 0; i < static_cast<i32>(notes.size()); i++)
-					notes.IDToNoteIndexMap[notes[i].StableID] = i;
-			}
 
 			if (!inCourse.Measures.empty())
 				out.ChartDuration = Max(out.ChartDuration, outCourse.TempoMap.BeatToTime(inCourse.Measures.back().StartTime /*+ inCourse.Measures.back().TimeSignature.GetDurationPerBar()*/));
@@ -437,7 +365,7 @@ namespace PeepoDrumKit
 
 			static constexpr auto tryFindMeasureForBeat = [](std::vector<TJA::ConvertedMeasure>& measures, Beat beatToFind) -> TJA::ConvertedMeasure*
 			{
-				// HACK: SUPER SHITTY LINEAR SEARCH FOR NOW WHILE DOING QUICK TESTING, should use binary search instead!
+				// TODO: Optimize using binary search
 				for (auto& measure : measures)
 					if (beatToFind >= measure.StartTime && beatToFind < (measure.StartTime + measure.TimeSignature.GetDurationPerBar()))
 						return &measure;

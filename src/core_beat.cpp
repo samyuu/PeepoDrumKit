@@ -167,8 +167,10 @@ static void InsertOrUpdateIntoSortedVector(std::vector<T>& sortedChanges, T chan
 		sortedChanges.push_back(changeToInsertOrUpdate);
 	}
 
+#if PEEPO_DEBUG
 	assert(changeToInsertOrUpdate.Beat.Ticks >= 0);
 	assert(ValidateIsVectorSortedByBeat(sortedChanges));
+#endif
 }
 
 // TODO: Optimize using binary search

@@ -802,9 +802,7 @@ namespace PeepoDrumKit
 				});
 				Gui::Property::PropertyTextValueFunc("Go-Go Time", [&]
 				{
-					const GoGoRange* gogoRangeAtCursor = course.GoGoRanges.TryFindLastAtBeat(cursorBeat);
-					if (gogoRangeAtCursor != nullptr && cursorBeat > gogoRangeAtCursor->GetEnd())
-						gogoRangeAtCursor = nullptr;
+					const GoGoRange* gogoRangeAtCursor = course.GoGoRanges.TryFindOverlappingBeat(cursorBeat);
 
 					const bool hasRangeSelection = (timeline.RangeSelection.IsActive && timeline.RangeSelection.HasEnd);
 					Gui::BeginDisabled(!hasRangeSelection);

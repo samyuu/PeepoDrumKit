@@ -97,6 +97,8 @@ struct TimeSignatureChange
 // NOTE: Beat accessor function specifically to be used inside templates without coupling to a specific struct member name
 constexpr Beat GetBeat(const TimeSignatureChange& v) { return v.Beat; }
 constexpr Beat GetBeat(const TempoChange& v) { return v.Beat; }
+constexpr Beat GetBeatDuration(const TimeSignatureChange& v) { return Beat::Zero(); }
+constexpr Beat GetBeatDuration(const TempoChange& v) { return Beat::Zero(); }
 
 template <typename T>
 struct BeatSortedForwardIterator

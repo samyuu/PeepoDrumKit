@@ -10,11 +10,6 @@ namespace PeepoDrumKit
 	// DEBUG: Save and automatically load a separate copy so to never overwrite the original .tja (due to conversion data loss)
 	constexpr std::string_view DEBUG_EXPORTED_PEEPODRUMKIT_FILE_SUFFIX = " (PeepoDrumKit)";
 
-	// NOTE: Stable ID to be used by for example undoable commands to keeps references instead of indices / pointers
-	enum class StableID : u32 { Null = 0 };
-
-	inline StableID GenerateNewStableID() { static u32 globalCounter = 0; return static_cast<StableID>(++globalCounter); }
-
 	enum class NoteType : u8
 	{
 		// NOTE: Regular notes
@@ -117,7 +112,6 @@ namespace PeepoDrumKit
 		i16 BalloonPopCount;
 		NoteType Type;
 		bool IsSelected;
-		StableID StableID;
 		f32 ClickAnimationTimeRemaining;
 		f32 ClickAnimationTimeDuration;
 
@@ -131,21 +125,18 @@ namespace PeepoDrumKit
 	{
 		Beat BeatTime;
 		f32 ScrollSpeed;
-		// StableID StableID;
 	};
 
 	struct BarLineChange
 	{
 		Beat BeatTime;
 		bool IsVisible;
-		// StableID StableID;
 	};
 
 	struct GoGoRange
 	{
 		Beat BeatTime;
 		Beat BeatDuration;
-		// StableID StableID;
 		f32 ExpansionAnimationCurrent = 0.0f;
 		f32 ExpansionAnimationTarget = 1.0f;
 
@@ -157,39 +148,7 @@ namespace PeepoDrumKit
 	{
 		Beat BeatTime;
 		std::string Lyric;
-	};
-
-	struct SortedNotesList
-	{
-		std::vector<Note> Sorted;
-		std::unordered_map<StableID, i32> IDToNoteIndexMap;
-
-	public:
-		StableID Add(Note newNote);
-		Note RemoveID(StableID id);
-		Note RemoveIndex(i32 index);
-
-		i32 FindIDIndex(StableID id) const;
-		i32 FindExactBeatIndex(Beat beat) const;
-		i32 FindOverlappingBeatIndex(Beat beatStart, Beat beatEnd) const;
-		Note* TryFindID(StableID id);
-		Note* TryFindExactAtBeat(Beat beat);
-		Note* TryFindOverlappingBeat(Beat beat);
-		Note* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd);
-		const Note* TryFindID(StableID id) const;
-		const Note* TryFindExactAtBeat(Beat beat) const;
-		const Note* TryFindOverlappingBeat(Beat beat) const;
-		const Note* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const;
-
-		void Clear();
-
-		inline auto begin() { return Sorted.begin(); }
-		inline auto end() { return Sorted.end(); }
-		inline auto begin() const { return Sorted.begin(); }
-		inline auto end() const { return Sorted.end(); }
-		inline size_t size() const { return Sorted.size(); }
-		inline Note& operator[](size_t index) { return Sorted[index]; }
-		inline const Note& operator[](size_t index) const { return Sorted[index]; }
+		bool IsSelected;
 	};
 
 	template <typename T>
@@ -202,7 +161,13 @@ namespace PeepoDrumKit
 		T* TryFindExactAtBeat(Beat beat);
 		const T* TryFindLastAtBeat(Beat beat) const;
 		const T* TryFindExactAtBeat(Beat beat) const;
-		void InsertOrUpdate(T changeToInsertOrUpdate);
+		
+		T* TryFindOverlappingBeat(Beat beat);
+		T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd);
+		const T* TryFindOverlappingBeat(Beat beat) const;
+		const T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const;
+
+		void InsertOrUpdate(T valueToInsertOrUpdate);
 		void RemoveAtBeat(Beat beatToFindAndRemove);
 		void RemoveAtIndex(size_t indexToRemove);
 
@@ -217,6 +182,7 @@ namespace PeepoDrumKit
 	};
 
 	// NOTE: Only these template types will be explicitly instantiated to keep the header nice and clean
+	using SortedNotesList = BeatSortedList<Note>;
 	using SortedScrollChangesList = BeatSortedList<ScrollChange>;
 	using SortedBarLineChangesList = BeatSortedList<BarLineChange>;
 	using SortedGoGoRangesList = BeatSortedList<GoGoRange>;
@@ -227,6 +193,11 @@ namespace PeepoDrumKit
 	constexpr Beat GetBeat(const BarLineChange& v) { return v.BeatTime; }
 	constexpr Beat GetBeat(const GoGoRange& v) { return v.BeatTime; }
 	constexpr Beat GetBeat(const LyricChange& v) { return v.BeatTime; }
+	constexpr Beat GetBeatDuration(const Note& v) { return v.BeatDuration; }
+	constexpr Beat GetBeatDuration(const ScrollChange& v) { return Beat::Zero(); }
+	constexpr Beat GetBeatDuration(const BarLineChange& v) { return Beat::Zero(); }
+	constexpr Beat GetBeatDuration(const GoGoRange& v) { return v.BeatDuration; }
+	constexpr Beat GetBeatDuration(const LyricChange& v) { return Beat::Zero(); }
 
 	enum class Language : u8 { Base, JA, EN, CN, TW, KO, Count };
 	struct PerLanguageString
