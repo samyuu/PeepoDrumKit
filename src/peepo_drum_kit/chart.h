@@ -151,37 +151,6 @@ namespace PeepoDrumKit
 		bool IsSelected;
 	};
 
-	template <typename T>
-	struct BeatSortedList
-	{
-		std::vector<T> Sorted;
-
-	public:
-		T* TryFindLastAtBeat(Beat beat);
-		T* TryFindExactAtBeat(Beat beat);
-		const T* TryFindLastAtBeat(Beat beat) const;
-		const T* TryFindExactAtBeat(Beat beat) const;
-		
-		T* TryFindOverlappingBeat(Beat beat);
-		T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd);
-		const T* TryFindOverlappingBeat(Beat beat) const;
-		const T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const;
-
-		void InsertOrUpdate(T valueToInsertOrUpdate);
-		void RemoveAtBeat(Beat beatToFindAndRemove);
-		void RemoveAtIndex(size_t indexToRemove);
-
-		inline bool empty() const { return Sorted.empty(); }
-		inline auto begin() { return Sorted.begin(); }
-		inline auto end() { return Sorted.end(); }
-		inline auto begin() const { return Sorted.begin(); }
-		inline auto end() const { return Sorted.end(); }
-		inline size_t size() const { return Sorted.size(); }
-		inline T& operator[](size_t index) { return Sorted[index]; }
-		inline const T& operator[](size_t index) const { return Sorted[index]; }
-	};
-
-	// NOTE: Only these template types will be explicitly instantiated to keep the header nice and clean
 	using SortedNotesList = BeatSortedList<Note>;
 	using SortedScrollChangesList = BeatSortedList<ScrollChange>;
 	using SortedBarLineChangesList = BeatSortedList<BarLineChange>;

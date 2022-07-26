@@ -676,7 +676,7 @@ namespace PeepoDrumKit
 				const Beat cursorBeat = FloorBeatToGrid(context.GetCursorBeat(), GetGridBeatSnap(timeline.CurrentGridBarDivision));
 				Gui::BeginDisabled(cursorBeat.Ticks < 0);
 
-				const TempoChange* tempoChangeAtCursor = course.TempoMap.TempoTryFindLastAtBeat(cursorBeat);
+				const TempoChange* tempoChangeAtCursor = course.TempoMap.Tempo.TryFindLastAtBeat(cursorBeat);
 				const Tempo tempoAtCursor = (tempoChangeAtCursor != nullptr) ? tempoChangeAtCursor->Tempo : FallbackTempo;
 
 				auto insertOrUpdateCursorTempoChange = [&](Tempo newTempo)
@@ -707,7 +707,7 @@ namespace PeepoDrumKit
 				});
 				Gui::Property::PropertyTextValueFunc("Time Signature", [&]
 				{
-					const TimeSignatureChange* signatureChangeAtCursor = course.TempoMap.SignatureTryFindLastAtBeat(cursorBeat);
+					const TimeSignatureChange* signatureChangeAtCursor = course.TempoMap.Signature.TryFindLastAtBeat(cursorBeat);
 					const TimeSignature signatureAtCursor = (signatureChangeAtCursor != nullptr) ? signatureChangeAtCursor->Signature : FallbackTimeSignature;
 
 					Gui::SetNextItemWidth(-1.0f);

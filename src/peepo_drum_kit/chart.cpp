@@ -3,135 +3,6 @@
 
 namespace PeepoDrumKit
 {
-	// TODO: Optimize using binary search
-	template <typename T>
-	static i32 LinearlySearchSortedVectorForInsertionIndex(const std::vector<T>& sortedChanges, Beat beat)
-	{
-		for (i32 i = 0; i < static_cast<i32>(sortedChanges.size()); i++)
-			if (beat <= sortedChanges[i].BeatTime) return i;
-		return static_cast<i32>(sortedChanges.size());
-	}
-
-	template <typename T>
-	T* BeatSortedList<T>::TryFindLastAtBeat(Beat beat) { return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindLastAtBeat(beat)); }
-
-	template <typename T>
-	T* BeatSortedList<T>::TryFindExactAtBeat(Beat beat) { return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindExactAtBeat(beat)); }
-
-	template <typename T>
-	const T* BeatSortedList<T>::TryFindLastAtBeat(Beat beat) const
-	{
-		// TODO: Optimize using binary search
-		if (Sorted.size() == 0)
-			return nullptr;
-		if (Sorted.size() == 1)
-			return (GetBeat(Sorted[0]) <= beat) ? &Sorted[0] : nullptr;
-		if (beat < GetBeat(Sorted[0]))
-			return nullptr;
-		for (size_t i = 0; i < Sorted.size() - 1; i++)
-		{
-			if (GetBeat(Sorted[i]) <= beat && GetBeat(Sorted[i + 1]) > beat)
-				return &Sorted[i];
-		}
-		return &Sorted.back();
-	}
-
-	template <typename T>
-	const T* BeatSortedList<T>::TryFindExactAtBeat(Beat beat) const
-	{
-		// TODO: Optimize using binary search
-		for (const T& v : Sorted)
-		{
-			if (GetBeat(v) == beat)
-				return &v;
-		}
-		return nullptr;
-	}
-
-	template <typename T>
-	T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beat) { return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindOverlappingBeat(beat)); }
-
-	template <typename T>
-	T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) { return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindOverlappingBeat(beatStart, beatEnd)); }
-
-	template <typename T>
-	const T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beat) const { return TryFindOverlappingBeat(beat, beat); }
-
-	template <typename T>
-	const T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const
-	{
-		// TODO: Optimize using binary search
-		const T* found = nullptr;
-		for (const T& v : Sorted)
-		{
-			// NOTE: Only break after a large beat has been found to correctly handle long notes with other notes "inside"
-			//		 (even if they should't be placable in the first place)
-			if (GetBeat(v) <= beatEnd && beatStart <= (GetBeat(v) + GetBeatDuration(v)))
-				found = &v;
-			else if ((GetBeat(v) + GetBeatDuration(v)) > beatEnd)
-				break;
-		}
-		return found;
-	}
-
-	template <typename T>
-	static size_t LinearlySearchForInsertionIndex(const BeatSortedList<T>& sortedList, Beat beat)
-	{
-		// TODO: Optimize using binary search
-		for (size_t i = 0; i < sortedList.size(); i++)
-			if (beat <= GetBeat(sortedList[i])) return i;
-		return sortedList.size();
-	}
-
-	template <typename T>
-	static bool ValidateIsSortedByBeat(const BeatSortedList<T>& sortedList)
-	{
-		return std::is_sorted(sortedList.begin(), sortedList.end(), [](const T& a, const T& b) { return GetBeat(a) < GetBeat(b); });
-	}
-
-	template <typename T>
-	void BeatSortedList<T>::InsertOrUpdate(T valueToInsertOrUpdate)
-	{
-		// TODO: Optimize using binary search
-		const size_t insertionIndex = LinearlySearchForInsertionIndex(*this, GetBeat(valueToInsertOrUpdate));
-		if (InBounds(insertionIndex, Sorted))
-		{
-			if (T& existing = Sorted[insertionIndex]; GetBeat(existing) == GetBeat(valueToInsertOrUpdate))
-				existing = valueToInsertOrUpdate;
-			else
-				Sorted.insert(Sorted.begin() + insertionIndex, valueToInsertOrUpdate);
-		}
-		else
-		{
-			Sorted.push_back(valueToInsertOrUpdate);
-		}
-
-#if PEEPO_DEBUG
-		assert(GetBeat(valueToInsertOrUpdate).Ticks >= 0);
-		assert(ValidateIsSortedByBeat(*this));
-#endif
-	}
-
-	template <typename T>
-	void BeatSortedList<T>::RemoveAtBeat(Beat beatToFindAndRemove)
-	{
-		if (const T* foundAtBeat = TryFindExactAtBeat(beatToFindAndRemove); foundAtBeat != nullptr)
-			RemoveAtIndex(ArrayItToIndex(foundAtBeat, &Sorted[0]));
-	}
-
-	template <typename T>
-	void BeatSortedList<T>::RemoveAtIndex(size_t indexToRemove)
-	{
-		if (InBounds(indexToRemove, Sorted))
-			Sorted.erase(Sorted.begin() + indexToRemove);
-	}
-
-	template struct BeatSortedList<Note>;
-	template struct BeatSortedList<ScrollChange>;
-	template struct BeatSortedList<BarLineChange>;
-	template struct BeatSortedList<GoGoRange>;
-	template struct BeatSortedList<LyricChange>;
-
 	static constexpr NoteType ConvertTJANoteType(TJA::NoteType tjaNoteType)
 	{
 		switch (tjaNoteType)
@@ -204,8 +75,8 @@ namespace PeepoDrumKit
 			outCourse.Type = Clamp(static_cast<DifficultyType>(inCourse.CourseMetadata.COURSE), DifficultyType {}, DifficultyType::Count);
 			outCourse.Level = Clamp(static_cast<DifficultyLevel>(inCourse.CourseMetadata.LEVEL), DifficultyLevel::Min, DifficultyLevel::Max);
 
-			outCourse.TempoMap.TempoChanges = { TempoChange(Beat::Zero(), inTJA.Metadata.BPM) };
-			outCourse.TempoMap.SignatureChanges = { TimeSignatureChange(Beat::Zero(), TimeSignature(4, 4)) };
+			outCourse.TempoMap.Tempo.Sorted = { TempoChange(Beat::Zero(), inTJA.Metadata.BPM) };
+			outCourse.TempoMap.Signature.Sorted = { TimeSignatureChange(Beat::Zero(), TimeSignature(4, 4)) };
 			TimeSignature lastSignature = TimeSignature(4, 4);
 
 			i32 currentBalloonIndex = 0;
@@ -241,12 +112,12 @@ namespace PeepoDrumKit
 
 				if (inMeasure.TimeSignature != lastSignature)
 				{
-					outCourse.TempoMap.SignatureInsertOrUpdate(TimeSignatureChange(inMeasure.StartTime, inMeasure.TimeSignature));
+					outCourse.TempoMap.Signature.InsertOrUpdate(TimeSignatureChange(inMeasure.StartTime, inMeasure.TimeSignature));
 					lastSignature = inMeasure.TimeSignature;
 				}
 
 				for (const TJA::ConvertedTempoChange& inTempoChange : inMeasure.TempoChanges)
-					outCourse.TempoMap.TempoInsertOrUpdate(TempoChange(inMeasure.StartTime + inTempoChange.TimeWithinMeasure, inTempoChange.Tempo));
+					outCourse.TempoMap.Tempo.InsertOrUpdate(TempoChange(inMeasure.StartTime + inTempoChange.TimeWithinMeasure, inTempoChange.Tempo));
 
 				for (const TJA::ConvertedScrollChange& inScrollChange : inMeasure.ScrollChanges)
 					outCourse.ScrollChanges.Sorted.push_back(ScrollChange { (inMeasure.StartTime + inScrollChange.TimeWithinMeasure), inScrollChange.ScrollSpeed });
@@ -280,8 +151,8 @@ namespace PeepoDrumKit
 	{
 		// NOTE: Technically only need to look at the last item of each sorted list **but just to be sure**, in case there is something wonky going on with out-of-order durations or something
 		Beat maxBeat = Beat::Zero();
-		for (const auto& v : course.TempoMap.TempoChanges) maxBeat = Max(maxBeat, v.Beat);
-		for (const auto& v : course.TempoMap.SignatureChanges) maxBeat = Max(maxBeat, v.Beat);
+		for (const auto& v : course.TempoMap.Tempo) maxBeat = Max(maxBeat, v.Beat);
+		for (const auto& v : course.TempoMap.Signature) maxBeat = Max(maxBeat, v.Beat);
 		for (size_t i = 0; i < EnumCount<BranchType>; i++)
 			for (const auto& v : course.GetNotes(static_cast<BranchType>(i))) maxBeat = Max(maxBeat, v.BeatTime + Max(Beat::Zero(), v.BeatDuration));
 		for (const auto& v : course.GoGoRanges) maxBeat = Max(maxBeat, v.BeatTime + Max(Beat::Zero(), v.BeatDuration));
@@ -320,9 +191,9 @@ namespace PeepoDrumKit
 
 		if (!in.Courses.empty())
 		{
-			if (!in.Courses[0]->TempoMap.TempoChanges.empty())
+			if (!in.Courses[0]->TempoMap.Tempo.empty())
 			{
-				const TempoChange* initialTempo = in.Courses[0]->TempoMap.TempoTryFindLastAtBeat(Beat::Zero());
+				const TempoChange* initialTempo = in.Courses[0]->TempoMap.Tempo.TryFindLastAtBeat(Beat::Zero());
 				out.Metadata.BPM = (initialTempo != nullptr) ? initialTempo->Tempo : FallbackTempo;
 			}
 		}
@@ -372,9 +243,9 @@ namespace PeepoDrumKit
 				return nullptr;
 			};
 
-			for (const TempoChange& inTempoChange : inCourse.TempoMap.TempoChanges)
+			for (const TempoChange& inTempoChange : inCourse.TempoMap.Tempo)
 			{
-				if (!(&inTempoChange == &inCourse.TempoMap.TempoChanges[0] && inTempoChange.Tempo.BPM == out.Metadata.BPM.BPM))
+				if (!(&inTempoChange == &inCourse.TempoMap.Tempo[0] && inTempoChange.Tempo.BPM == out.Metadata.BPM.BPM))
 				{
 					TJA::ConvertedMeasure* outConvertedMeasure = tryFindMeasureForBeat(outConvertedMeasures, inTempoChange.Beat);
 					if (assert(outConvertedMeasure != nullptr); outConvertedMeasure != nullptr)

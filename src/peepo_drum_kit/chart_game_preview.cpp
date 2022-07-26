@@ -241,7 +241,7 @@ namespace PeepoDrumKit
 
 			const Time time = course.TempoMap.BeatToTime(it.Beat);
 			perBarFunc(ForEachBarLaneData { time,
-				TempoOrDefault(tempoChangeIt.Next(course.TempoMap.TempoChanges, it.Beat)),
+				TempoOrDefault(tempoChangeIt.Next(course.TempoMap.Tempo.Sorted, it.Beat)),
 				ScrollOrDefault(scrollChangeIt.Next(course.ScrollChanges.Sorted, it.Beat)) });
 
 			return ControlFlow::Continue;
@@ -269,7 +269,7 @@ namespace PeepoDrumKit
 			const Time head = (course.TempoMap.BeatToTime(beat) + note.TimeOffset);
 			const Time tail = (note.BeatDuration > Beat::Zero()) ? (course.TempoMap.BeatToTime(beat + note.BeatDuration) + note.TimeOffset) : head;
 			perNoteFunc(ForEachNoteLaneData { &note, head, tail,
-				TempoOrDefault(tempoChangeIt.Next(course.TempoMap.TempoChanges, beat)),
+				TempoOrDefault(tempoChangeIt.Next(course.TempoMap.Tempo.Sorted, beat)),
 				ScrollOrDefault(scrollChangeIt.Next(course.ScrollChanges.Sorted, beat))
 				});
 		}

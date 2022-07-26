@@ -105,22 +105,40 @@ struct BeatSortedForwardIterator
 {
 	size_t LastIndex = 0;
 
-	inline const T* Next(const std::vector<T>& sortedList, Beat nextBeat)
-	{
-		const T* next = nullptr;
-		for (size_t i = LastIndex; i < sortedList.size(); i++)
-		{
-			if (Beat beat = GetBeat(sortedList[i]); beat <= nextBeat)
-				next = &sortedList[i];
-			else if (beat > nextBeat)
-				break;
-		}
-		if (next != nullptr)
-			LastIndex = ArrayItToIndex(next, &sortedList[0]);
-		return next;
-	}
-
+	const T* Next(const std::vector<T>& sortedList, Beat nextBeat);
 	inline T* Next(std::vector<T>& sortedList, Beat nextBeat) { return const_cast<T*>(Next(std::as_const(sortedList), nextBeat)); }
+};
+
+template <typename T>
+struct BeatSortedList
+{
+	std::vector<T> Sorted;
+
+public:
+	T* TryFindLastAtBeat(Beat beat);
+	T* TryFindExactAtBeat(Beat beat);
+	const T* TryFindLastAtBeat(Beat beat) const;
+	const T* TryFindExactAtBeat(Beat beat) const;
+
+	T* TryFindOverlappingBeat(Beat beat);
+	T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd);
+	const T* TryFindOverlappingBeat(Beat beat) const;
+	const T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const;
+
+	void InsertOrUpdate(T valueToInsertOrUpdate);
+	void RemoveAtBeat(Beat beatToFindAndRemove);
+	void RemoveAtIndex(size_t indexToRemove);
+
+	inline bool empty() const { return Sorted.empty(); }
+	inline auto begin() { return Sorted.begin(); }
+	inline auto end() { return Sorted.end(); }
+	inline auto begin() const { return Sorted.begin(); }
+	inline auto end() const { return Sorted.end(); }
+	inline T* data() { return Sorted.data(); }
+	inline const T* data() const { return Sorted.data(); }
+	inline size_t size() const { return Sorted.size(); }
+	inline T& operator[](size_t index) { return Sorted[index]; }
+	inline const T& operator[](size_t index) const { return Sorted[index]; }
 };
 
 struct TempoMapAccelerationStructure
@@ -141,40 +159,23 @@ struct TempoMapAccelerationStructure
 constexpr Tempo FallbackTempo = Tempo(120.0f);
 constexpr TimeSignature FallbackTimeSignature = TimeSignature(4, 4);
 
+using SortedTempoChangesList = BeatSortedList<TempoChange>;
+using SortedSignatureChangesList = BeatSortedList<TimeSignatureChange>;
+
 struct SortedTempoMap
 {
 	// NOTE: These must always remain sorted and only have changes with (Beat.Ticks >= 0)
-	std::vector<TempoChange> TempoChanges;
-	std::vector<TimeSignatureChange> SignatureChanges;
+	SortedTempoChangesList Tempo;
+	SortedSignatureChangesList Signature;
 	TempoMapAccelerationStructure AccelerationStructure;
 
 public:
 	inline SortedTempoMap() { RebuildAccelerationStructure(); }
-	inline void Clear() { TempoChanges.clear(); SignatureChanges.clear(); RebuildAccelerationStructure(); }
-
-	void TempoInsertOrUpdate(TempoChange tempoChangeToInsertOrUpdate);
-	void TempoRemoveAtIndex(size_t indexToRemove);
-	inline void TempoRemoveAtBeat(Beat beatToFindAndRemove) { TempoRemoveAtIndex(TempoFindIndexWithExactBeat(beatToFindAndRemove)); }
-
-	void SignatureInsertOrUpdate(TimeSignatureChange signatureChangeToInsertOrUpdate);
-	void SignatureRemoveAtIndex(size_t indexToRemove);
-	inline void SignatureRemoveAtBeat(Beat beatToFindAndRemove) { SignatureRemoveAtIndex(SignatureFindIndexWithExactBeat(beatToFindAndRemove)); }
 
 	// NOTE: Must manually be called every time a TempoChange has been edited otherwise Beat <-> Time conversions will be incorrect
-	inline void RebuildAccelerationStructure() { AccelerationStructure.Rebuild(TempoChanges.data(), TempoChanges.size()); }
+	inline void RebuildAccelerationStructure() { AccelerationStructure.Rebuild(Tempo.data(), Tempo.size()); }
 	inline Time BeatToTime(Beat beat) const { return AccelerationStructure.ConvertBeatToTimeUsingLookupTableIndexing(beat); }
 	inline Beat TimeToBeat(Time time) const { return AccelerationStructure.ConvertTimeToBeatUsingLookupTableBinarySearch(time); }
-
-public:
-	size_t TempoFindLastIndexAtBeat(Beat beat) const;
-	size_t TempoFindIndexWithExactBeat(Beat exactBeat) const;
-	TempoChange* TempoTryFindLastAtBeat(Beat beat) { return IndexOrNull(TempoFindLastIndexAtBeat(beat), TempoChanges); }
-	const TempoChange* TempoTryFindLastAtBeat(Beat beat) const { return IndexOrNull(TempoFindLastIndexAtBeat(beat), TempoChanges); }
-
-	size_t SignatureFindLastIndexAtBeat(Beat beat) const;
-	size_t SignatureFindIndexWithExactBeat(Beat exactBeat) const;
-	TimeSignatureChange* SignatureTryFindLastAtBeat(Beat beat) { return IndexOrNull(SignatureFindLastIndexAtBeat(beat), SignatureChanges); }
-	const TimeSignatureChange* SignatureTryFindLastAtBeat(Beat beat) const { return IndexOrNull(SignatureFindLastIndexAtBeat(beat), SignatureChanges); }
 
 	struct ForEachBeatBarData { TimeSignature Signature; Beat Beat; i32 BarIndex; bool IsBar; };
 	template <typename Func>
@@ -185,7 +186,7 @@ public:
 
 		for (i32 barIndex = 0; /*barIndex < MAX_BAR_COUNT*/; barIndex++)
 		{
-			const TimeSignatureChange* thisChange = signatureChangeIt.Next(SignatureChanges, beatIt);
+			const TimeSignatureChange* thisChange = signatureChangeIt.Next(Signature.Sorted, beatIt);
 			const TimeSignature thisSignature = (thisChange == nullptr) ? FallbackTimeSignature : thisChange->Signature;
 
 			const i32 beatsPerBar = thisSignature.GetBeatsPerBar();
@@ -205,3 +206,147 @@ public:
 		}
 	}
 };
+
+template <typename T>
+inline const T* BeatSortedForwardIterator<T>::Next(const std::vector<T>& sortedList, Beat nextBeat)
+{
+	const T* next = nullptr;
+	for (size_t i = LastIndex; i < sortedList.size(); i++)
+	{
+		if (Beat beat = GetBeat(sortedList[i]); beat <= nextBeat)
+			next = &sortedList[i];
+		else if (beat > nextBeat)
+			break;
+	}
+	if (next != nullptr)
+		LastIndex = ArrayItToIndex(next, &sortedList[0]);
+	return next;
+}
+
+template <typename T>
+T* BeatSortedList<T>::TryFindLastAtBeat(Beat beat)
+{
+	return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindLastAtBeat(beat));
+}
+
+template <typename T>
+T* BeatSortedList<T>::TryFindExactAtBeat(Beat beat)
+{
+	return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindExactAtBeat(beat));
+}
+
+template <typename T>
+const T* BeatSortedList<T>::TryFindLastAtBeat(Beat beat) const
+{
+	// TODO: Optimize using binary search
+	if (Sorted.size() == 0)
+		return nullptr;
+	if (Sorted.size() == 1)
+		return (GetBeat(Sorted[0]) <= beat) ? &Sorted[0] : nullptr;
+	if (beat < GetBeat(Sorted[0]))
+		return nullptr;
+	for (size_t i = 0; i < Sorted.size() - 1; i++)
+	{
+		if (GetBeat(Sorted[i]) <= beat && GetBeat(Sorted[i + 1]) > beat)
+			return &Sorted[i];
+	}
+	return &Sorted.back();
+}
+
+template <typename T>
+const T* BeatSortedList<T>::TryFindExactAtBeat(Beat beat) const
+{
+	// TODO: Optimize using binary search
+	for (const T& v : Sorted)
+	{
+		if (GetBeat(v) == beat)
+			return &v;
+	}
+	return nullptr;
+}
+
+template <typename T>
+T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beat)
+{
+	return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindOverlappingBeat(beat));
+}
+
+template <typename T>
+T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd)
+{
+	return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindOverlappingBeat(beatStart, beatEnd));
+}
+
+template <typename T>
+const T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beat) const
+{
+	return TryFindOverlappingBeat(beat, beat);
+}
+
+template <typename T>
+const T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const
+{
+	// TODO: Optimize using binary search
+	const T* found = nullptr;
+	for (const T& v : Sorted)
+	{
+		// NOTE: Only break after a large beat has been found to correctly handle long notes with other notes "inside"
+		//		 (even if they should't be placable in the first place)
+		if (GetBeat(v) <= beatEnd && beatStart <= (GetBeat(v) + GetBeatDuration(v)))
+			found = &v;
+		else if ((GetBeat(v) + GetBeatDuration(v)) > beatEnd)
+			break;
+	}
+	return found;
+}
+
+template <typename T>
+inline size_t LinearlySearchForInsertionIndex(const BeatSortedList<T>& sortedList, Beat beat)
+{
+	// TODO: Optimize using binary search
+	for (size_t i = 0; i < sortedList.size(); i++)
+		if (beat <= GetBeat(sortedList[i])) return i;
+	return sortedList.size();
+}
+
+template <typename T>
+inline bool ValidateIsSortedByBeat(const BeatSortedList<T>& sortedList)
+{
+	return std::is_sorted(sortedList.begin(), sortedList.end(), [](const T& a, const T& b) { return GetBeat(a) < GetBeat(b); });
+}
+
+template <typename T>
+void BeatSortedList<T>::InsertOrUpdate(T valueToInsertOrUpdate)
+{
+	const size_t insertionIndex = LinearlySearchForInsertionIndex(*this, GetBeat(valueToInsertOrUpdate));
+	if (InBounds(insertionIndex, Sorted))
+	{
+		if (T& existing = Sorted[insertionIndex]; GetBeat(existing) == GetBeat(valueToInsertOrUpdate))
+			existing = valueToInsertOrUpdate;
+		else
+			Sorted.insert(Sorted.begin() + insertionIndex, valueToInsertOrUpdate);
+	}
+	else
+	{
+		Sorted.push_back(valueToInsertOrUpdate);
+	}
+
+#if PEEPO_DEBUG
+	assert(GetBeat(valueToInsertOrUpdate).Ticks >= 0);
+	assert(ValidateIsSortedByBeat(*this));
+#endif
+}
+
+template <typename T>
+void BeatSortedList<T>::RemoveAtBeat(Beat beatToFindAndRemove)
+{
+	if (const T* foundAtBeat = TryFindExactAtBeat(beatToFindAndRemove); foundAtBeat != nullptr)
+		RemoveAtIndex(ArrayItToIndex(foundAtBeat, &Sorted[0]));
+}
+
+template <typename T>
+void BeatSortedList<T>::RemoveAtIndex(size_t indexToRemove)
+{
+	if (InBounds(indexToRemove, Sorted))
+		Sorted.erase(Sorted.begin() + indexToRemove);
+}

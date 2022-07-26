@@ -85,8 +85,8 @@ namespace PeepoDrumKit
 		{
 			AddTempoChange(SortedTempoMap* tempoMap, TempoChange newValue) : TempoMap(tempoMap), NewValue(newValue) {}
 
-			void Undo() override { TempoMap->TempoRemoveAtBeat(NewValue.Beat); TempoMap->RebuildAccelerationStructure(); }
-			void Redo() override { TempoMap->TempoInsertOrUpdate(NewValue); TempoMap->RebuildAccelerationStructure(); }
+			void Undo() override { TempoMap->Tempo.RemoveAtBeat(NewValue.Beat); TempoMap->RebuildAccelerationStructure(); }
+			void Redo() override { TempoMap->Tempo.InsertOrUpdate(NewValue); TempoMap->RebuildAccelerationStructure(); }
 
 			Undo::MergeResult TryMerge(Command& commandToMerge) override { return Undo::MergeResult::Failed; }
 			Undo::CommandInfo GetInfo() const override { return { "Add Tempo Change" }; }
@@ -97,10 +97,10 @@ namespace PeepoDrumKit
 
 		struct RemoveTempoChange : Undo::Command
 		{
-			RemoveTempoChange(SortedTempoMap* tempoMap, Beat beat) : TempoMap(tempoMap), OldValue(*TempoMap->TempoTryFindLastAtBeat(beat)) { assert(OldValue.Beat == beat); }
+			RemoveTempoChange(SortedTempoMap* tempoMap, Beat beat) : TempoMap(tempoMap), OldValue(*TempoMap->Tempo.TryFindLastAtBeat(beat)) { assert(OldValue.Beat == beat); }
 
-			void Undo() override { TempoMap->TempoInsertOrUpdate(OldValue); TempoMap->RebuildAccelerationStructure(); }
-			void Redo() override { TempoMap->TempoRemoveAtBeat(OldValue.Beat); TempoMap->RebuildAccelerationStructure(); }
+			void Undo() override { TempoMap->Tempo.InsertOrUpdate(OldValue); TempoMap->RebuildAccelerationStructure(); }
+			void Redo() override { TempoMap->Tempo.RemoveAtBeat(OldValue.Beat); TempoMap->RebuildAccelerationStructure(); }
 
 			Undo::MergeResult TryMerge(Command& commandToMerge) override { return Undo::MergeResult::Failed; }
 			Undo::CommandInfo GetInfo() const override { return { "Remove Tempo Change" }; }
@@ -111,10 +111,10 @@ namespace PeepoDrumKit
 
 		struct UpdateTempoChange : Undo::Command
 		{
-			UpdateTempoChange(SortedTempoMap* tempoMap, TempoChange newValue) : TempoMap(tempoMap), NewValue(newValue), OldValue(*TempoMap->TempoTryFindLastAtBeat(newValue.Beat)) { assert(newValue.Beat == OldValue.Beat); }
+			UpdateTempoChange(SortedTempoMap* tempoMap, TempoChange newValue) : TempoMap(tempoMap), NewValue(newValue), OldValue(*TempoMap->Tempo.TryFindLastAtBeat(newValue.Beat)) { assert(newValue.Beat == OldValue.Beat); }
 
-			void Undo() override { TempoMap->TempoInsertOrUpdate(OldValue); TempoMap->RebuildAccelerationStructure(); }
-			void Redo() override { TempoMap->TempoInsertOrUpdate(NewValue); TempoMap->RebuildAccelerationStructure(); }
+			void Undo() override { TempoMap->Tempo.InsertOrUpdate(OldValue); TempoMap->RebuildAccelerationStructure(); }
+			void Redo() override { TempoMap->Tempo.InsertOrUpdate(NewValue); TempoMap->RebuildAccelerationStructure(); }
 
 			Undo::MergeResult TryMerge(Command& commandToMerge) override
 			{
@@ -136,8 +136,8 @@ namespace PeepoDrumKit
 		{
 			AddTimeSignatureChange(SortedTempoMap* tempoMap, TimeSignatureChange newValue) : TempoMap(tempoMap), NewValue(newValue) {}
 
-			void Undo() override { TempoMap->SignatureRemoveAtBeat(NewValue.Beat); }
-			void Redo() override { TempoMap->SignatureInsertOrUpdate(NewValue); }
+			void Undo() override { TempoMap->Signature.RemoveAtBeat(NewValue.Beat); }
+			void Redo() override { TempoMap->Signature.InsertOrUpdate(NewValue); }
 
 			Undo::MergeResult TryMerge(Command& commandToMerge) override { return Undo::MergeResult::Failed; }
 			Undo::CommandInfo GetInfo() const override { return { "Add Time Signature Change" }; }
@@ -148,10 +148,10 @@ namespace PeepoDrumKit
 
 		struct RemoveTimeSignatureChange : Undo::Command
 		{
-			RemoveTimeSignatureChange(SortedTempoMap* tempoMap, Beat beat) : TempoMap(tempoMap), OldValue(*TempoMap->SignatureTryFindLastAtBeat(beat)) { assert(OldValue.Beat == beat); }
+			RemoveTimeSignatureChange(SortedTempoMap* tempoMap, Beat beat) : TempoMap(tempoMap), OldValue(*TempoMap->Signature.TryFindLastAtBeat(beat)) { assert(OldValue.Beat == beat); }
 
-			void Undo() override { TempoMap->SignatureInsertOrUpdate(OldValue); }
-			void Redo() override { TempoMap->SignatureRemoveAtBeat(OldValue.Beat); }
+			void Undo() override { TempoMap->Signature.InsertOrUpdate(OldValue); }
+			void Redo() override { TempoMap->Signature.RemoveAtBeat(OldValue.Beat); }
 
 			Undo::MergeResult TryMerge(Command& commandToMerge) override { return Undo::MergeResult::Failed; }
 			Undo::CommandInfo GetInfo() const override { return { "Remove Time Signature Change" }; }
@@ -162,10 +162,10 @@ namespace PeepoDrumKit
 
 		struct UpdateTimeSignatureChange : Undo::Command
 		{
-			UpdateTimeSignatureChange(SortedTempoMap* tempoMap, TimeSignatureChange newValue) : TempoMap(tempoMap), NewValue(newValue), OldValue(*TempoMap->SignatureTryFindLastAtBeat(newValue.Beat)) { assert(newValue.Beat == OldValue.Beat); }
+			UpdateTimeSignatureChange(SortedTempoMap* tempoMap, TimeSignatureChange newValue) : TempoMap(tempoMap), NewValue(newValue), OldValue(*TempoMap->Signature.TryFindLastAtBeat(newValue.Beat)) { assert(newValue.Beat == OldValue.Beat); }
 
-			void Undo() override { TempoMap->SignatureInsertOrUpdate(OldValue); }
-			void Redo() override { TempoMap->SignatureInsertOrUpdate(NewValue); }
+			void Undo() override { TempoMap->Signature.InsertOrUpdate(OldValue); }
+			void Redo() override { TempoMap->Signature.InsertOrUpdate(NewValue); }
 
 			Undo::MergeResult TryMerge(Command& commandToMerge) override
 			{

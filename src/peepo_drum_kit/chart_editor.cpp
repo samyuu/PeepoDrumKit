@@ -27,8 +27,8 @@ namespace PeepoDrumKit
 		assert(!outChart.Courses.empty() && "Expected to have initialized the base course first");
 		for (auto& course : outChart.Courses)
 		{
-			course->TempoMap.TempoChanges = { TempoChange(Beat::Zero(), Tempo(160.0f)) };
-			course->TempoMap.SignatureChanges = { TimeSignatureChange(Beat::Zero(), TimeSignature(4, 4)) };
+			course->TempoMap.Tempo.Sorted = { TempoChange(Beat::Zero(), Tempo(160.0f)) };
+			course->TempoMap.Signature.Sorted = { TimeSignatureChange(Beat::Zero(), TimeSignature(4, 4)) };
 			course->TempoMap.RebuildAccelerationStructure();;
 		}
 	}
