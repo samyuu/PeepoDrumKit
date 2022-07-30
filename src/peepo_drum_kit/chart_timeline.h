@@ -106,6 +106,48 @@ namespace PeepoDrumKit
 		"Lyrics",
 	};
 
+	constexpr GenericList TimelineRowToGenericList(TimelineRowType row)
+	{
+		switch (row)
+		{
+		case TimelineRowType::Tempo: return GenericList::TempoChanges;
+		case TimelineRowType::TimeSignature: return GenericList::SignatureChanges;
+		case TimelineRowType::Notes_Normal: return GenericList::Notes_Normal;
+		case TimelineRowType::Notes_Expert: return GenericList::Notes_Expert;
+		case TimelineRowType::Notes_Master: return GenericList::Notes_Expert;
+		case TimelineRowType::ScrollSpeed: return GenericList::ScrollChanges;
+		case TimelineRowType::BarLineVisibility: return GenericList::BarLineChanges;
+		case TimelineRowType::GoGoTime: return GenericList::GoGoRanges;
+		case TimelineRowType::Lyrics: return GenericList::Lyrics;
+		default: assert(false); return GenericList::Count;
+		}
+	}
+
+	constexpr TimelineRowType GenericListToTimelineRow(GenericList list)
+	{
+		switch (list)
+		{
+		case GenericList::TempoChanges: return TimelineRowType::Tempo;
+		case GenericList::SignatureChanges: return TimelineRowType::TimeSignature;
+		case GenericList::Notes_Normal: return TimelineRowType::Notes_Normal;
+		case GenericList::Notes_Expert: return TimelineRowType::Notes_Expert;
+		case GenericList::Notes_Master: return TimelineRowType::Notes_Master;
+		case GenericList::ScrollChanges: return TimelineRowType::ScrollSpeed;
+		case GenericList::BarLineChanges: return TimelineRowType::BarLineVisibility;
+		case GenericList::GoGoRanges: return TimelineRowType::GoGoTime;
+		case GenericList::Lyrics: return TimelineRowType::Lyrics;
+		default: assert(false); return TimelineRowType::Count;
+		}
+	}
+
+	constexpr BranchType TimelineRowToBranchType(TimelineRowType rowType)
+	{
+		return
+			(rowType == TimelineRowType::Notes_Normal) ? BranchType::Normal :
+			(rowType == TimelineRowType::Notes_Expert) ? BranchType::Expert :
+			(rowType == TimelineRowType::Notes_Master) ? BranchType::Master : BranchType::Count;
+	}
+
 	struct TimelineRegions
 	{
 		// NOTE: Includes the entire window

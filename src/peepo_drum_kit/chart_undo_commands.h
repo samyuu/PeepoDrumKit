@@ -596,4 +596,165 @@ namespace PeepoDrumKit
 			Undo::CommandInfo GetInfo() const override { return { "Move Notes" }; }
 		};
 	}
+
+	// NOTE: Generic chart commands
+	namespace Commands
+	{
+		struct AddMultipleGenericItems : Undo::Command
+		{
+			AddMultipleGenericItems(ChartCourse* course, std::vector<GenericListStructWithType> newData) : Course(course), NewData(std::move(newData)), UpdateTempoMap(false)
+			{
+				for (const auto& data : NewData)
+				{
+					if (data.List == GenericList::TempoChanges)
+						UpdateTempoMap = true;
+				}
+			}
+
+			void Undo() override
+			{
+				for (const auto& data : NewData)
+					TryRemoveGenericStruct(*Course, data.List, data.Value);
+				if (UpdateTempoMap)
+					Course->TempoMap.RebuildAccelerationStructure();
+			}
+
+			void Redo() override
+			{
+				for (const auto& data : NewData)
+					TryAddGenericStruct(*Course, data.List, data.Value);
+				if (UpdateTempoMap)
+					Course->TempoMap.RebuildAccelerationStructure();
+			}
+
+			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override { return Undo::MergeResult::Failed; }
+			Undo::CommandInfo GetInfo() const override { return { "Add Items" }; }
+
+			ChartCourse* Course;
+			std::vector<GenericListStructWithType> NewData;
+			b8 UpdateTempoMap;
+		};
+
+		struct RemoveMultipleGenericItems : Undo::Command
+		{
+			RemoveMultipleGenericItems(ChartCourse* course, std::vector<GenericListStructWithType> oldData) : Course(course), OldData(std::move(oldData)), UpdateTempoMap(false)
+			{
+				for (const auto& data : OldData)
+				{
+					if (data.List == GenericList::TempoChanges)
+						UpdateTempoMap = true;
+				}
+			}
+
+			void Undo() override
+			{
+				for (const auto& data : OldData)
+					TryAddGenericStruct(*Course, data.List, data.Value);
+				if (UpdateTempoMap)
+					Course->TempoMap.RebuildAccelerationStructure();
+			}
+
+			void Redo() override
+			{
+				for (const auto& data : OldData)
+					TryRemoveGenericStruct(*Course, data.List, data.Value);
+				if (UpdateTempoMap)
+					Course->TempoMap.RebuildAccelerationStructure();
+			}
+
+			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override { return Undo::MergeResult::Failed; }
+			Undo::CommandInfo GetInfo() const override { return { "Remove Items" }; }
+
+			ChartCourse* Course;
+			std::vector<GenericListStructWithType> OldData;
+			b8 UpdateTempoMap;
+		};
+
+		struct AddMultipleGenericItems_Paste : AddMultipleGenericItems
+		{
+			using AddMultipleGenericItems::AddMultipleGenericItems;
+			Undo::CommandInfo GetInfo() const override { return { "Paste Items" }; }
+		};
+
+		struct RemoveMultipleGenericItems_Cut : RemoveMultipleGenericItems
+		{
+			using RemoveMultipleGenericItems::RemoveMultipleGenericItems;
+			Undo::CommandInfo GetInfo() const override { return { "Cut Items" }; }
+		};
+
+		struct ChangeMultipleGenericProperties : Undo::Command
+		{
+			// TODO: Separate string vector for cstr ownership stuff
+			struct Data
+			{
+				size_t Index;
+				GenericList List;
+				GenericMember Member;
+				GenericMemberUnion NewValue, OldValue;
+			};
+
+			ChangeMultipleGenericProperties(ChartCourse* course, std::vector<Data> newData)
+				: Course(course), NewData(std::move(newData)), UpdateTempoMap(false)
+			{
+				for (auto& data : NewData)
+				{
+					const b8 success = TryGetGeneric(*Course, data.List, data.Index, data.Member, data.OldValue);
+					assert(success);
+					if (data.List == GenericList::TempoChanges)
+						UpdateTempoMap = true;
+				}
+			}
+
+			void Undo() override
+			{
+				for (const auto& newData : NewData)
+					TrySetGeneric(*Course, newData.List, newData.Index, newData.Member, newData.OldValue);
+				if (UpdateTempoMap)
+					Course->TempoMap.RebuildAccelerationStructure();
+			}
+
+			void Redo() override
+			{
+				for (const auto& newData : NewData)
+					TrySetGeneric(*Course, newData.List, newData.Index, newData.Member, newData.NewValue);
+				if (UpdateTempoMap)
+					Course->TempoMap.RebuildAccelerationStructure();
+			}
+
+			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override
+			{
+				auto* other = static_cast<decltype(this)>(&commandToMerge);
+				if (other->Course != Course)
+					return Undo::MergeResult::Failed;
+
+				if (other->NewData.size() != NewData.size())
+					return Undo::MergeResult::Failed;
+
+				for (size_t i = 0; i < NewData.size(); i++)
+				{
+					const auto& data = NewData[i];
+					const auto& otherData = other->NewData[i];
+					if (data.Index != otherData.Index || data.List != otherData.List || data.Member != otherData.Member)
+						return Undo::MergeResult::Failed;
+				}
+
+				for (size_t i = 0; i < NewData.size(); i++)
+					NewData[i].NewValue = other->NewData[i].NewValue;
+
+				return Undo::MergeResult::ValueUpdated;
+			}
+
+			Undo::CommandInfo GetInfo() const override { return { "Change Properties" }; }
+
+			ChartCourse* Course;
+			std::vector<Data> NewData;
+			b8 UpdateTempoMap;
+		};
+
+		struct ChangeMultipleGenericProperties_MoveItems : ChangeMultipleGenericProperties
+		{
+			using ChangeMultipleGenericProperties::ChangeMultipleGenericProperties;
+			Undo::CommandInfo GetInfo() const override { return { "Move Items" }; }
+		};
+	}
 }

@@ -126,18 +126,21 @@ namespace PeepoDrumKit
 	{
 		Beat BeatTime;
 		f32 ScrollSpeed;
+		b8 IsSelected;
 	};
 
 	struct BarLineChange
 	{
 		Beat BeatTime;
 		b8 IsVisible;
+		b8 IsSelected;
 	};
 
 	struct GoGoRange
 	{
 		Beat BeatTime;
 		Beat BeatDuration;
+		b8 IsSelected;
 		f32 ExpansionAnimationCurrent = 0.0f;
 		f32 ExpansionAnimationTarget = 1.0f;
 
@@ -241,4 +244,148 @@ namespace PeepoDrumKit
 	Beat FindCourseMaxUsedBeat(const ChartCourse& course);
 	b8 CreateChartProjectFromTJA(const TJA::ParsedTJA& inTJA, ChartProject& out);
 	b8 ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out);
+}
+
+namespace PeepoDrumKit
+{
+	enum class GenericList : u8
+	{
+		TempoChanges,
+		SignatureChanges,
+		Notes_Normal,
+		Notes_Expert,
+		Notes_Master,
+		ScrollChanges,
+		BarLineChanges,
+		GoGoRanges,
+		Lyrics,
+		Count
+	};
+
+	enum class GenericMember : u8
+	{
+		B8_IsSelected,
+		B8_BarLineVisible,
+		I16_BalloonPopCount,
+		F32_ScrollSpeed,
+		Beat_Start,
+		Beat_Duration,
+		Time_Offset,
+		NoteType_V,
+		Tempo_V,
+		TimeSignature_V,
+		CStr_Lyric,
+		Count
+	};
+
+	using GenericMemberFlags = u32;
+	constexpr GenericMemberFlags EnumToFlag(GenericMember type) { return (1u << static_cast<u32>(type)); }
+	enum GenericMemberFlagsEnum : GenericMemberFlags
+	{
+		GenericMemberFlags_None = 0,
+		GenericMemberFlags_IsSelected = EnumToFlag(GenericMember::B8_IsSelected),
+		GenericMemberFlags_BarLineVisible = EnumToFlag(GenericMember::B8_BarLineVisible),
+		GenericMemberFlags_BalloonPopCount = EnumToFlag(GenericMember::I16_BalloonPopCount),
+		GenericMemberFlags_ScrollSpeed = EnumToFlag(GenericMember::F32_ScrollSpeed),
+		GenericMemberFlags_Start = EnumToFlag(GenericMember::Beat_Start),
+		GenericMemberFlags_Duration = EnumToFlag(GenericMember::Beat_Duration),
+		GenericMemberFlags_Offset = EnumToFlag(GenericMember::Time_Offset),
+		GenericMemberFlags_NoteType = EnumToFlag(GenericMember::NoteType_V),
+		GenericMemberFlags_Tempo = EnumToFlag(GenericMember::Tempo_V),
+		GenericMemberFlags_TimeSignature = EnumToFlag(GenericMember::TimeSignature_V),
+		GenericMemberFlags_Lyric = EnumToFlag(GenericMember::CStr_Lyric),
+		GenericMemberFlags_All = 0b11111111111,
+	};
+
+	static_assert(GenericMemberFlags_All & (1u << (static_cast<u32>(GenericMember::Count) - 1)));
+	static_assert(!(GenericMemberFlags_All & (1u << static_cast<u32>(GenericMember::Count))));
+
+	constexpr cstr GenericListNames[] = { "TempoChanges", "SignatureChanges", "Notes_Normal", "Notes_Expert", "Notes_Master", "ScrollChanges", "BarLineChanges", "GoGoRanges", "Lyrics", };
+	constexpr cstr GenericMemberNames[] = { "IsSelected", "BarLineVisible", "BalloonPopCount", "ScrollSpeed", "Start", "Duration", "Offset", "NoteType", "Tempo", "TimeSignature", "Lyric", };
+
+	union GenericMemberUnion
+	{
+		b8 B8;
+		i16 I16;
+		f32 F32;
+		Beat Beat;
+		Time Time;
+		NoteType NoteType;
+		Tempo Tempo;
+		TimeSignature TimeSignature;
+		cstr CStr;
+
+		inline GenericMemberUnion() { ::memset(this, 0, sizeof(*this)); }
+		inline b8 operator==(const GenericMemberUnion& other) const { return (::memcmp(this, &other, sizeof(*this)) == 0); }
+		inline b8 operator!=(const GenericMemberUnion& other) const { return !(*this == other); }
+	};
+
+	static_assert(sizeof(GenericMemberUnion) == 8);
+
+	struct GenericListStruct
+	{
+		union PODData
+		{
+			TempoChange Tempo;
+			TimeSignatureChange Signature;
+			Note Note;
+			ScrollChange Scroll;
+			BarLineChange BarLine;
+			GoGoRange GoGo;
+
+			inline PODData() { ::memset(this, 0, sizeof(*this)); }
+		} POD;
+
+		// NOTE: Handle separately due to constructor / destructor requirement
+		struct NonTrivialData
+		{
+			LyricChange Lyric;
+		} NonTrivial {};
+
+		// NOTE: Little helpers here just for convenience
+		Beat GetBeat(GenericList list) const;
+		Beat GetBeatDuration(GenericList list) const;
+		void SetBeat(GenericList list, Beat newValue);
+	};
+
+	struct GenericListStructWithType
+	{
+		GenericList List;
+		GenericListStruct Value;
+
+		inline Beat GetBeat() const { return Value.GetBeat(List); }
+		inline Beat GetBeatDuration() const { return Value.GetBeatDuration(List); }
+		inline void SetBeat(Beat newValue) { Value.SetBeat(List, newValue); }
+	};
+
+	constexpr b8 IsNotesList(GenericList list) { return (list == GenericList::Notes_Normal) || (list == GenericList::Notes_Expert) || (list == GenericList::Notes_Master); }
+
+	size_t GetGenericMember_RawByteSize(GenericMember member);
+	size_t GetGenericListCount(const ChartCourse& course, GenericList list);
+	GenericMemberFlags GetAvailableMemberFlags(GenericList list);
+
+	void* TryGetGeneric_RawVoidPtr(const ChartCourse& course, GenericList list, size_t index, GenericMember member);
+	b8 TryGetGeneric(const ChartCourse& course, GenericList list, size_t index, GenericMember member, GenericMemberUnion& outValue);
+	b8 TrySetGeneric(ChartCourse& course, GenericList list, size_t index, GenericMember member, const GenericMemberUnion& inValue);
+
+	b8 TryGetGenericStruct(const ChartCourse& course, GenericList list, size_t index, GenericListStruct& outValue);
+	b8 TrySetGenericStruct(ChartCourse& course, GenericList list, size_t index, const GenericListStruct& inValue);
+	b8 TryAddGenericStruct(ChartCourse& course, GenericList list, GenericListStruct inValue);
+	b8 TryRemoveGenericStruct(ChartCourse& course, GenericList list, const GenericListStruct& inValueToRemove);
+	b8 TryRemoveGenericStruct(ChartCourse& course, GenericList list, Beat beatToRemove);
+
+	struct ForEachChartItemData { GenericList List; size_t Index; };
+
+	template <typename Func>
+	void ForEachSelectedChartItem(const ChartCourse& course, Func perSelectedItemFunc)
+	{
+		for (GenericList list = {}; list < GenericList::Count; IncrementEnum(list))
+		{
+			for (size_t i = 0; i < GetGenericListCount(course, list); i++)
+			{
+				if (GenericMemberUnion value; TryGetGeneric(course, list, i, GenericMember::B8_IsSelected, value) && value.B8)
+					perSelectedItemFunc(ForEachChartItemData { list, i });
+			}
+		}
+	}
 }

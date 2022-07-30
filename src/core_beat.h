@@ -83,6 +83,7 @@ struct TempoChange
 
 	Beat Beat = {};
 	Tempo Tempo = {};
+	b8 IsSelected = false;
 };
 
 struct TimeSignatureChange
@@ -92,6 +93,7 @@ struct TimeSignatureChange
 
 	Beat Beat = {};
 	TimeSignature Signature = {};
+	b8 IsSelected = false;
 };
 
 // NOTE: Beat accessor function specifically to be used inside templates without coupling to a specific struct member name

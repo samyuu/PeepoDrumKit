@@ -138,7 +138,7 @@ namespace ImGui
 		return InputTextWithHint(label, hint, str->data(), str->capacity() + 1, flags, InputTextStdStringCallback, &cb_user_data);
 	}
 
-	PathInputTextWithBrowserButtonResult PathInputTextWithHintAndBrowserDialogButton(const char* label, const char* hint, std::string* str, ImGuiInputTextFlags flags)
+	PathInputTextWithBrowserButtonResult PathInputTextWithHintAndBrowserDialogButton(cstr label, cstr hint, std::string* str, ImGuiInputTextFlags flags)
 	{
 		PathInputTextWithBrowserButtonResult result {};
 

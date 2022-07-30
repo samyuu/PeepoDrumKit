@@ -300,3 +300,295 @@ namespace PeepoDrumKit
 		return true;
 	}
 }
+
+namespace PeepoDrumKit
+{
+	struct BeatStartAndDurationPtrs { Beat* Start; Beat* Duration; };
+	inline BeatStartAndDurationPtrs GetGenericListStructRawBeatPtr(GenericListStruct& in, GenericList list)
+	{
+		switch (list)
+		{
+		case GenericList::TempoChanges: return { &in.POD.Tempo.Beat, nullptr };
+		case GenericList::SignatureChanges: return { &in.POD.Signature.Beat, nullptr };
+		case GenericList::Notes_Normal: return { &in.POD.Note.BeatTime, &in.POD.Note.BeatDuration };
+		case GenericList::Notes_Expert: return { &in.POD.Note.BeatTime, &in.POD.Note.BeatDuration };
+		case GenericList::Notes_Master: return { &in.POD.Note.BeatTime, &in.POD.Note.BeatDuration };
+		case GenericList::ScrollChanges: return { &in.POD.Scroll.BeatTime, nullptr };
+		case GenericList::BarLineChanges: return { &in.POD.BarLine.BeatTime, nullptr };
+		case GenericList::GoGoRanges: return { &in.POD.GoGo.BeatTime, &in.POD.GoGo.BeatDuration };
+		case GenericList::Lyrics: return { &in.NonTrivial.Lyric.BeatTime, nullptr };
+		default: assert(false); return { nullptr, nullptr };
+		}
+	}
+
+	Beat GenericListStruct::GetBeat(GenericList list) const 
+	{ 
+		return *GetGenericListStructRawBeatPtr(*const_cast<GenericListStruct*>(this), list).Start; 
+	}
+
+	Beat GenericListStruct::GetBeatDuration(GenericList list) const
+	{
+		const auto ptrs = GetGenericListStructRawBeatPtr(*const_cast<GenericListStruct*>(this), list);
+		return (ptrs.Duration != nullptr) ? *ptrs.Duration : Beat::Zero();
+	}
+
+	void GenericListStruct::SetBeat(GenericList list, Beat newValue) 
+	{ 
+		*GetGenericListStructRawBeatPtr(*this, list).Start = newValue; 
+	}
+
+	size_t GetGenericMember_RawByteSize(GenericMember member)
+	{
+		switch (member)
+		{
+		case GenericMember::B8_IsSelected: return sizeof(b8);
+		case GenericMember::B8_BarLineVisible: return sizeof(b8);
+		case GenericMember::I16_BalloonPopCount: return sizeof(i16);
+		case GenericMember::F32_ScrollSpeed: return sizeof(f32);
+		case GenericMember::Beat_Start: return sizeof(Beat);
+		case GenericMember::Beat_Duration: return sizeof(Beat);
+		case GenericMember::Time_Offset: return sizeof(Time);
+		case GenericMember::NoteType_V: return sizeof(NoteType);
+		case GenericMember::Tempo_V: return sizeof(Tempo);
+		case GenericMember::TimeSignature_V: return sizeof(TimeSignature);
+		case GenericMember::CStr_Lyric: return sizeof(cstr);
+		default: assert(false); return 0;
+		}
+	}
+
+	size_t GetGenericListCount(const ChartCourse& course, GenericList list)
+	{
+		switch (list)
+		{
+		case GenericList::TempoChanges: return course.TempoMap.Tempo.size();
+		case GenericList::SignatureChanges: return course.TempoMap.Signature.size();
+		case GenericList::Notes_Normal: return course.Notes_Normal.size();
+		case GenericList::Notes_Expert: return course.Notes_Expert.size();
+		case GenericList::Notes_Master: return course.Notes_Master.size();
+		case GenericList::ScrollChanges: return course.ScrollChanges.size();
+		case GenericList::BarLineChanges: return course.BarLineChanges.size();
+		case GenericList::GoGoRanges: return course.GoGoRanges.size();
+		case GenericList::Lyrics: return course.Lyrics.size();
+		default: assert(false); return 0;
+		}
+	}
+
+	GenericMemberFlags GetAvailableMemberFlags(GenericList list)
+	{
+		switch (list)
+		{
+		case GenericList::TempoChanges:
+			return GenericMemberFlags_IsSelected | GenericMemberFlags_Start | GenericMemberFlags_Tempo;
+		case GenericList::SignatureChanges:
+			return GenericMemberFlags_IsSelected | GenericMemberFlags_Start | GenericMemberFlags_TimeSignature;
+		case GenericList::Notes_Normal:
+		case GenericList::Notes_Expert:
+		case GenericList::Notes_Master:
+			return GenericMemberFlags_IsSelected | GenericMemberFlags_BalloonPopCount | GenericMemberFlags_Start | GenericMemberFlags_Duration | GenericMemberFlags_Offset | GenericMemberFlags_NoteType;
+		case GenericList::ScrollChanges:
+			return GenericMemberFlags_IsSelected | GenericMemberFlags_ScrollSpeed | GenericMemberFlags_Start;
+		case GenericList::BarLineChanges:
+			return GenericMemberFlags_IsSelected | GenericMemberFlags_BarLineVisible | GenericMemberFlags_Start;
+		case GenericList::GoGoRanges:
+			return GenericMemberFlags_IsSelected | GenericMemberFlags_Start | GenericMemberFlags_Duration;
+		case GenericList::Lyrics:
+			return GenericMemberFlags_IsSelected | GenericMemberFlags_Start | GenericMemberFlags_Lyric;
+		default:
+			assert(false); return GenericMemberFlags_None;
+		}
+	}
+
+	void* TryGetGeneric_RawVoidPtr(const ChartCourse& course, GenericList list, size_t index, GenericMember member)
+	{
+		switch (list)
+		{
+		case GenericList::TempoChanges:
+			if (auto& vector = *const_cast<SortedTempoChangesList*>(&course.TempoMap.Tempo); index < vector.size())
+			{
+				switch (member)
+				{
+				case GenericMember::B8_IsSelected: return &vector[index].IsSelected;
+				case GenericMember::Beat_Start: return &vector[index].Beat;
+				case GenericMember::Tempo_V: return &vector[index].Tempo;
+				}
+			} break;
+		case GenericList::SignatureChanges:
+			if (auto& vector = *const_cast<SortedSignatureChangesList*>(&course.TempoMap.Signature); index < vector.size())
+			{
+				switch (member)
+				{
+				case GenericMember::B8_IsSelected: return &vector[index].IsSelected;
+				case GenericMember::Beat_Start: return &vector[index].Beat;
+				case GenericMember::TimeSignature_V: return &vector[index].Signature;
+				}
+			} break;
+		case GenericList::Notes_Normal:
+		case GenericList::Notes_Expert:
+		case GenericList::Notes_Master:
+		{
+			auto& vector = *const_cast<SortedNotesList*>(&(
+				list == GenericList::Notes_Normal ? course.Notes_Normal :
+				list == GenericList::Notes_Expert ? course.Notes_Expert : course.Notes_Master));
+
+			if (index < vector.size())
+			{
+				switch (member)
+				{
+				case GenericMember::B8_IsSelected: return &vector[index].IsSelected;
+				case GenericMember::I16_BalloonPopCount: return &vector[index].BalloonPopCount;
+				case GenericMember::Beat_Start: return &vector[index].BeatTime;
+				case GenericMember::Beat_Duration: return &vector[index].BeatDuration;
+				case GenericMember::Time_Offset: return &vector[index].TimeOffset;
+				case GenericMember::NoteType_V: return &vector[index].Type;
+				}
+			}
+		} break;
+		case GenericList::ScrollChanges:
+			if (auto& vector = *const_cast<SortedScrollChangesList*>(&course.ScrollChanges); index < vector.size())
+			{
+				switch (member)
+				{
+				case GenericMember::B8_IsSelected: return &vector[index].IsSelected;
+				case GenericMember::F32_ScrollSpeed: return &vector[index].ScrollSpeed;
+				case GenericMember::Beat_Start: return &vector[index].BeatTime;
+				}
+			} break;
+		case GenericList::BarLineChanges:
+			if (auto& vector = *const_cast<SortedBarLineChangesList*>(&course.BarLineChanges); index < vector.size())
+			{
+				switch (member)
+				{
+				case GenericMember::B8_IsSelected: return &vector[index].IsSelected;
+				case GenericMember::B8_BarLineVisible: return &vector[index].IsVisible;
+				case GenericMember::Beat_Start: return &vector[index].BeatTime;
+				}
+			} break;
+		case GenericList::GoGoRanges:
+			if (auto& vector = *const_cast<SortedGoGoRangesList*>(&course.GoGoRanges); index < vector.size())
+			{
+				switch (member)
+				{
+				case GenericMember::B8_IsSelected: return &vector[index].IsSelected;
+				case GenericMember::Beat_Start: return &vector[index].BeatTime;
+				case GenericMember::Beat_Duration: return &vector[index].BeatDuration;
+				}
+			} break;
+		case GenericList::Lyrics:
+			if (auto& vector = *const_cast<SortedLyricsList*>(&course.Lyrics); index < vector.size())
+			{
+				switch (member)
+				{
+				case GenericMember::B8_IsSelected: return &vector[index].IsSelected;
+				case GenericMember::Beat_Start: return &vector[index].BeatTime;
+				case GenericMember::CStr_Lyric: return vector[index].Lyric.data();
+				}
+			} break;
+		default:
+			assert(false); break;
+		}
+		return nullptr;
+	}
+
+	b8 TryGetGeneric(const ChartCourse& course, GenericList list, size_t index, GenericMember member, GenericMemberUnion& outValue)
+	{
+		const void* voidMember = TryGetGeneric_RawVoidPtr(course, list, index, member);
+		if (voidMember == nullptr)
+			return false;
+
+		if (member == GenericMember::CStr_Lyric)
+			outValue.CStr = static_cast<cstr>(voidMember);
+		else
+			memcpy(&outValue, voidMember, GetGenericMember_RawByteSize(member));
+		return true;
+	}
+
+	b8 TrySetGeneric(ChartCourse& course, GenericList list, size_t index, GenericMember member, const GenericMemberUnion& inValue)
+	{
+		void* voidMember = TryGetGeneric_RawVoidPtr(course, list, index, member);
+		if (voidMember == nullptr)
+			return false;
+
+		if (member == GenericMember::CStr_Lyric)
+			course.Lyrics[index].Lyric.assign(inValue.CStr);
+		else
+			memcpy(voidMember, &inValue, GetGenericMember_RawByteSize(member));
+		return true;
+	}
+
+	b8 TryGetGenericStruct(const ChartCourse& course, GenericList list, size_t index, GenericListStruct& outValue)
+	{
+		switch (list)
+		{
+		case GenericList::TempoChanges: if (InBounds(index, course.TempoMap.Tempo)) { outValue.POD.Tempo = course.TempoMap.Tempo[index]; return true; } break;
+		case GenericList::SignatureChanges: if (InBounds(index, course.TempoMap.Signature)) { outValue.POD.Signature = course.TempoMap.Signature[index]; return true; } break;
+		case GenericList::Notes_Normal: if (InBounds(index, course.Notes_Normal)) { outValue.POD.Note = course.Notes_Normal[index]; return true; } break;
+		case GenericList::Notes_Expert: if (InBounds(index, course.Notes_Expert)) { outValue.POD.Note = course.Notes_Expert[index]; return true; } break;
+		case GenericList::Notes_Master: if (InBounds(index, course.Notes_Master)) { outValue.POD.Note = course.Notes_Master[index]; return true; } break;
+		case GenericList::ScrollChanges: if (InBounds(index, course.ScrollChanges)) { outValue.POD.Scroll = course.ScrollChanges[index]; return true; } break;
+		case GenericList::BarLineChanges: if (InBounds(index, course.BarLineChanges)) { outValue.POD.BarLine = course.BarLineChanges[index]; return true; } break;
+		case GenericList::GoGoRanges: if (InBounds(index, course.GoGoRanges)) { outValue.POD.GoGo = course.GoGoRanges[index]; return true; } break;
+		case GenericList::Lyrics: if (InBounds(index, course.Lyrics)) { outValue.NonTrivial.Lyric = course.Lyrics[index]; return true; } break;
+		default: assert(false); break;
+		}
+		return false;
+	}
+
+	b8 TrySetGenericStruct(ChartCourse& course, GenericList list, size_t index, const GenericListStruct& inValue)
+	{
+		switch (list)
+		{
+		case GenericList::TempoChanges: if (InBounds(index, course.TempoMap.Tempo)) { course.TempoMap.Tempo[index] = inValue.POD.Tempo; return true; } break;
+		case GenericList::SignatureChanges: if (InBounds(index, course.TempoMap.Signature)) { course.TempoMap.Signature[index] = inValue.POD.Signature; return true; } break;
+		case GenericList::Notes_Normal: if (InBounds(index, course.Notes_Normal)) { course.Notes_Normal[index] = inValue.POD.Note; return true; } break;
+		case GenericList::Notes_Expert: if (InBounds(index, course.Notes_Expert)) { course.Notes_Expert[index] = inValue.POD.Note; return true; } break;
+		case GenericList::Notes_Master: if (InBounds(index, course.Notes_Master)) { course.Notes_Master[index] = inValue.POD.Note; return true; } break;
+		case GenericList::ScrollChanges: if (InBounds(index, course.ScrollChanges)) { course.ScrollChanges[index] = inValue.POD.Scroll; return true; } break;
+		case GenericList::BarLineChanges: if (InBounds(index, course.BarLineChanges)) { course.BarLineChanges[index] = inValue.POD.BarLine; return true; } break;
+		case GenericList::GoGoRanges: if (InBounds(index, course.GoGoRanges)) { course.GoGoRanges[index] = inValue.POD.GoGo; return true; } break;
+		case GenericList::Lyrics: if (InBounds(index, course.Lyrics)) { course.Lyrics[index] = inValue.NonTrivial.Lyric; return true; } break;
+		default: assert(false); break;
+		}
+		return false;
+	}
+
+	b8 TryAddGenericStruct(ChartCourse& course, GenericList list, GenericListStruct inValue)
+	{
+		switch (list)
+		{
+		case GenericList::TempoChanges: { course.TempoMap.Tempo.InsertOrUpdate(inValue.POD.Tempo); return true; } break;
+		case GenericList::SignatureChanges: { course.TempoMap.Signature.InsertOrUpdate(inValue.POD.Signature); return true; } break;
+		case GenericList::Notes_Normal: { course.Notes_Normal.InsertOrUpdate(inValue.POD.Note); return true; } break;
+		case GenericList::Notes_Expert: { course.Notes_Expert.InsertOrUpdate(inValue.POD.Note); return true; } break;
+		case GenericList::Notes_Master: { course.Notes_Master.InsertOrUpdate(inValue.POD.Note); return true; } break;
+		case GenericList::ScrollChanges: { course.ScrollChanges.InsertOrUpdate(inValue.POD.Scroll); return true; } break;
+		case GenericList::BarLineChanges: { course.BarLineChanges.InsertOrUpdate(inValue.POD.BarLine); return true; } break;
+		case GenericList::GoGoRanges: { course.GoGoRanges.InsertOrUpdate(inValue.POD.GoGo); return true; } break;
+		case GenericList::Lyrics: { course.Lyrics.InsertOrUpdate(std::move(inValue.NonTrivial.Lyric)); return true; } break;
+		default: assert(false); break;
+		}
+		return false;
+	}
+
+	b8 TryRemoveGenericStruct(ChartCourse& course, GenericList list, const GenericListStruct& inValueToRemove)
+	{
+		return TryRemoveGenericStruct(course, list, inValueToRemove.GetBeat(list));
+	}
+
+	b8 TryRemoveGenericStruct(ChartCourse& course, GenericList list, Beat beatToRemove)
+	{
+		switch (list)
+		{
+		case GenericList::TempoChanges: { course.TempoMap.Tempo.RemoveAtBeat(beatToRemove); return true; } break;
+		case GenericList::SignatureChanges: { course.TempoMap.Signature.RemoveAtBeat(beatToRemove); return true; } break;
+		case GenericList::Notes_Normal: { course.Notes_Normal.RemoveAtBeat(beatToRemove); return true; } break;
+		case GenericList::Notes_Expert: { course.Notes_Expert.RemoveAtBeat(beatToRemove); return true; } break;
+		case GenericList::Notes_Master: { course.Notes_Master.RemoveAtBeat(beatToRemove); return true; } break;
+		case GenericList::ScrollChanges: { course.ScrollChanges.RemoveAtBeat(beatToRemove); return true; } break;
+		case GenericList::BarLineChanges: { course.BarLineChanges.RemoveAtBeat(beatToRemove); return true; } break;
+		case GenericList::GoGoRanges: { course.GoGoRanges.RemoveAtBeat(beatToRemove); return true; } break;
+		case GenericList::Lyrics: { course.Lyrics.RemoveAtBeat(beatToRemove); return true; } break;
+		default: assert(false); break;
+		}
+		return false;
+	}
+}
