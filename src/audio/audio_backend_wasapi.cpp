@@ -1,5 +1,5 @@
-#include "audiO_backend.h"
-#include "audio/audio_common.h"
+#include "audio_backend.h"
+#include "audio_common.h"
 
 #include <stdio.h>
 #include <atomic>

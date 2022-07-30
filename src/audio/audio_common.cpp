@@ -4,7 +4,8 @@ namespace Audio
 {
 	i64 PCMSampleBuffer::ReadAtOrFillSilence(i64 inFrameOffset, i64 inFrameCount, i16 outSamples[]) const
 	{
-		/* // TODO: WHAT ABOUT CHANNEL COUNT MISMATCH */ // assert(ChannelCount == 2);
+		// TODO: Handle channel count mismatch (?) 
+		// assert(ChannelCount == 2);
 
 		const i64 sourceChannelCount = ChannelCount;
 		const i64 sourceFrameCount = FrameCount;

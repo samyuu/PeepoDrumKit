@@ -6,7 +6,6 @@
 #include <future>
 #include <array>
 
-// TODO: Add Async suffix to (almost) all audio operations!
 // TODO: Automatically add VariableRate playback for samplerate mismatched voices (?)
 
 // NOTE: Terminology:
@@ -91,7 +90,6 @@ namespace Audio
 		"WASAPI (Exclusive)",
 	};
 
-	// TODO: Replace singleton class with Audio::Engine namespace (just like Comfy::Input)
 	class AudioEngine : NonCopyable
 	{
 	public:
@@ -124,7 +122,6 @@ namespace Audio
 		void EnsureStreamRunning();
 
 	public:
-		// TODO: AsyncLoadedSourceHandle wrapper struct (?) and input param struct too (?)
 		std::future<SourceHandle> LoadSourceFromFileAsync(std::string_view filePath);
 		SourceHandle LoadSourceFromFileSync(std::string_view filePath);
 		SourceHandle LoadSourceFromFileContentSync(std::string_view fileName, const void* fileContent, size_t fileSize);

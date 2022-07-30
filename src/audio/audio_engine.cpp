@@ -1,18 +1,7 @@
 #include "audio_engine.h"
 #include "audio_file_formats.h"
-#include "backend/audio_backend.h"
+#include "audio_backend.h"
 #include "core_io.h"
-
-// #include "Resample.h"
-// #include "SampleMix.h"
-// #include "Backend/IAudioBackend.h"
-// #include "Backend/WASAPIBackend.h"
-// #include "Audio/Decoder/DecoderFactory.h"
-// #include "Audio/Decoder/Detail/Decoders.h"
-// #include "Core/Logger.h"
-// #include "Time/Stopwatch.h"
-// #include "IO/File.h"
-// #include "IO/Path.h"
 #include <mutex>
 
 namespace Audio
@@ -262,7 +251,7 @@ namespace Audio
 				if (!(voiceData.Flags & VoiceFlags_Alive))
 					continue;
 
-				// TODO: HANDLE SAMPLE RATE MISMATCH (by always setting variable playback speed?)
+				// TODO: Handle sample rate mismatch (by always setting variable playback speed?)
 				SourceData* sourceData = TryGetSourceData(voiceData.Source, GetSourceDataParam::ValidateBuffer);
 
 				const b8 variablePlaybackSpeed = (voiceData.Flags & VoiceFlags_VariablePlaybackSpeed);
@@ -334,7 +323,6 @@ namespace Audio
 			const u32 sampleRate = (sourceData != nullptr) ? sourceData->Buffer.SampleRate : OutputSampleRate;
 			const f64 bufferDurationSec = (FramesToTime(bufferFrameCount, sampleRate).TotalSeconds() * voiceData.PlaybackSpeed);
 
-			// TODO: Implement without the need for a raw sample view if it's ever needed
 			const i16* rawSamples = (sourceData != nullptr) ? sourceData->Buffer.InterleavedSamples.get() : nullptr;
 
 			if (sourceData == nullptr || rawSamples == nullptr)
@@ -545,7 +533,6 @@ namespace Audio
 	SourceHandle AudioEngine::LoadSourceFromFileSync(std::string_view filePath)
 	{
 		auto[fileContent, fileSize] = File::ReadAllBytes(filePath);
-		// TODO: Path::GetFileName(...)
 		return LoadSourceFromFileContentSync(Path::GetFileName(filePath), fileContent.get(), fileSize);
 	}
 

@@ -1,7 +1,7 @@
 #pragma once
 #include "core_types.h"
-#include "audio_common.h"
 #include "core_string.h"
+#include "audio_common.h"
 
 namespace Audio
 {

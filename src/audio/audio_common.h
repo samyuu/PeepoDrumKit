@@ -54,7 +54,7 @@ namespace Audio
 		"Ignore Leading",
 	};
 
-	// TODO: REFACTOR ALL OF THIS
+	// TODO: Rework most of this
 	struct ChannelMixer
 	{
 		ChannelMixingBehavior MixingBehavior = ChannelMixingBehavior::Combine;
