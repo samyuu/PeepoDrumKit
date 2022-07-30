@@ -195,7 +195,7 @@ namespace TJA
 		Count
 	};
 
-	constexpr bool IsBigNote(NoteType note)
+	constexpr b8 IsBigNote(NoteType note)
 	{
 		return
 			(note == NoteType::DonBig) || (note == NoteType::KaBig) ||
@@ -369,7 +369,7 @@ namespace TJA
 			struct { Tempo Value; } ChangeTempo;
 			struct { Time Value; } ChangeDelay;
 			struct { f32 Value; } ChangeScrollSpeed;
-			struct { bool Visible; } ChangeBarLine;
+			struct { b8 Visible; } ChangeBarLine;
 			struct { BranchCondition Condition; i32 RequirementExpert; i32 RequirementMaster; } BranchStart;
 			struct { std::string Value; } SetLyricLine;
 			struct { i32 Type; } SENoteChange;
@@ -403,7 +403,7 @@ namespace TJA
 		struct ErrorLine { i32 LineIndex; std::string Description; };
 		std::vector<ErrorLine> Errors;
 
-		inline void Push(i32 lineIndex, const char* fmt, ...)
+		inline void Push(i32 lineIndex, cstr fmt, ...)
 		{
 			char buffer[0xFF];
 			va_list args;
@@ -447,7 +447,7 @@ namespace TJA
 	struct ConvertedBarLineChange
 	{
 		Beat TimeWithinMeasure;
-		bool Visibile;
+		b8 Visibile;
 	};
 
 	struct ConvertedLyricChange

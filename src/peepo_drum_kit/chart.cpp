@@ -40,7 +40,7 @@ namespace PeepoDrumKit
 		}
 	}
 
-	bool CreateChartProjectFromTJA(const TJA::ParsedTJA& inTJA, ChartProject& out)
+	b8 CreateChartProjectFromTJA(const TJA::ParsedTJA& inTJA, ChartProject& out)
 	{
 		out.ChartDuration = Time::Zero();
 		out.ChartTitle[Language::Base] = inTJA.Metadata.TITLE;
@@ -162,9 +162,9 @@ namespace PeepoDrumKit
 		return maxBeat;
 	}
 
-	bool ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out)
+	b8 ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out)
 	{
-		static constexpr const char* FallbackTJAChartTitle = "Untitled Chart";
+		static constexpr cstr FallbackTJAChartTitle = "Untitled Chart";
 		out.Metadata.TITLE = !in.ChartTitle[Language::Base].empty() ? in.ChartTitle[Language::Base] : FallbackTJAChartTitle;
 		out.Metadata.TITLE_JA = in.ChartTitle[Language::JA];
 		out.Metadata.TITLE_EN = in.ChartTitle[Language::EN];

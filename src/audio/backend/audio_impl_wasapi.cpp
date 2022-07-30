@@ -48,7 +48,7 @@ namespace Audio
 	struct WASAPIBackend::Impl
 	{
 	public:
-		bool OpenStartStream(const BackendStreamParam& param, BackendRenderCallback callback)
+		b8 OpenStartStream(const BackendStreamParam& param, BackendRenderCallback callback)
 		{
 			if (isOpenRunning)
 				return false;
@@ -177,7 +177,7 @@ namespace Audio
 			return true;
 		}
 
-		bool StopCloseStream()
+		b8 StopCloseStream()
 		{
 			if (!isOpenRunning)
 				return false;
@@ -208,7 +208,7 @@ namespace Audio
 		}
 
 	public:
-		bool IsOpenRunning() const
+		b8 IsOpenRunning() const
 		{
 			return isOpenRunning;
 		}
@@ -323,10 +323,10 @@ namespace Audio
 		BackendStreamParam streamParam = {};
 		BackendRenderCallback renderCallback;
 
-		std::atomic<bool> isOpenRunning = false;
-		std::atomic<bool> renderThreadStopRequested = false;
+		std::atomic<b8> isOpenRunning = false;
+		std::atomic<b8> renderThreadStopRequested = false;
 
-		bool applySharedSessionVolume = true;
+		b8 applySharedSessionVolume = true;
 
 		::WAVEFORMATEX waveformat = {};
 		::REFERENCE_TIME bufferTimeDuration = {}, deviceTimePeriod = {};
@@ -347,7 +347,7 @@ namespace Audio
 
 	WASAPIBackend::WASAPIBackend() : impl(std::make_unique<Impl>()) {}
 	WASAPIBackend::~WASAPIBackend() = default;
-	bool WASAPIBackend::OpenStartStream(const BackendStreamParam& param, BackendRenderCallback callback) { return impl->OpenStartStream(param, std::move(callback)); }
-	bool WASAPIBackend::StopCloseStream() { return impl->StopCloseStream(); }
-	bool WASAPIBackend::IsOpenRunning() const { return impl->IsOpenRunning(); }
+	b8 WASAPIBackend::OpenStartStream(const BackendStreamParam& param, BackendRenderCallback callback) { return impl->OpenStartStream(param, std::move(callback)); }
+	b8 WASAPIBackend::StopCloseStream() { return impl->StopCloseStream(); }
+	b8 WASAPIBackend::IsOpenRunning() const { return impl->IsOpenRunning(); }
 }

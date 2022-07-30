@@ -93,7 +93,7 @@ namespace Audio
 	struct AudioEngine::Impl
 	{
 	public:
-		bool IsStreamOpenRunning = false;
+		b8 IsStreamOpenRunning = false;
 		std::atomic<f32> MasterVolume = AudioEngine::MaxVolume;
 
 	public:
@@ -265,9 +265,9 @@ namespace Audio
 				// TODO: HANDLE SAMPLE RATE MISMATCH (by always setting variable playback speed?)
 				SourceData* sourceData = TryGetSourceData(voiceData.Source, GetSourceDataParam::ValidateBuffer);
 
-				const bool variablePlaybackSpeed = (voiceData.Flags & VoiceFlags_VariablePlaybackSpeed);
-				const bool playPastEnd = (voiceData.Flags & VoiceFlags_PlayPastEnd);
-				bool hasReachedEnd = (sourceData == nullptr) ? false :
+				const b8 variablePlaybackSpeed = (voiceData.Flags & VoiceFlags_VariablePlaybackSpeed);
+				const b8 playPastEnd = (voiceData.Flags & VoiceFlags_PlayPastEnd);
+				b8 hasReachedEnd = (sourceData == nullptr) ? false :
 					(variablePlaybackSpeed ? (voiceData.TimePositionSec >= FramesToTime(sourceData->Buffer.FrameCount, sourceData->Buffer.SampleRate).TotalSeconds()) :
 					(voiceData.FramePosition >= sourceData->Buffer.FrameCount));
 
@@ -308,7 +308,7 @@ namespace Audio
 			TotalRenderedFrames += bufferFrameCount;
 		}
 
-		void CallbackProcessNormalSpeedVoiceSamples(i16* outputBuffer, const u32 bufferFrameCount, const bool playPastEnd, const bool hasReachedEnd, VoiceData& voiceData, SourceData* sourceData)
+		void CallbackProcessNormalSpeedVoiceSamples(i16* outputBuffer, const u32 bufferFrameCount, const b8 playPastEnd, const b8 hasReachedEnd, VoiceData& voiceData, SourceData* sourceData)
 		{
 			if (sourceData == nullptr)
 			{
@@ -329,7 +329,7 @@ namespace Audio
 			CallbackApplyVoiceVolumeAndMixTempBufferIntoOutput(outputBuffer, framesRead, voiceData, sourceData->Buffer.SampleRate);
 		}
 
-		void CallbackProcessVariableSpeedVoiceSamples(i16* outputBuffer, const u32 bufferFrameCount, const bool playPastEnd, const bool hasReachedEnd, VoiceData& voiceData, SourceData* sourceData)
+		void CallbackProcessVariableSpeedVoiceSamples(i16* outputBuffer, const u32 bufferFrameCount, const b8 playPastEnd, const b8 hasReachedEnd, VoiceData& voiceData, SourceData* sourceData)
 		{
 			const u32 sampleRate = (sourceData != nullptr) ? sourceData->Buffer.SampleRate : OutputSampleRate;
 			const f64 bufferDurationSec = (FramesToTime(bufferFrameCount, sampleRate).TotalSeconds() * voiceData.PlaybackSpeed);
@@ -496,7 +496,7 @@ namespace Audio
 
 		impl->OnOpenStream();
 
-		const bool openStreamSuccess = impl->CurrentBackend->OpenStartStream(streamParam, [this](i16* outputBuffer, const u32 bufferFrameCount, const u32 bufferChannelCount)
+		const b8 openStreamSuccess = impl->CurrentBackend->OpenStartStream(streamParam, [this](i16* outputBuffer, const u32 bufferFrameCount, const u32 bufferChannelCount)
 		{
 			impl->RenderAudioCallback(outputBuffer, bufferFrameCount, bufferChannelCount);
 		});
@@ -528,7 +528,7 @@ namespace Audio
 
 		OpenStartStream();
 
-		const bool exclusiveAndFailedToStart = (impl->CurrentBackendType == Backend::WASAPI_Exclusive && !GetIsStreamOpenRunning());
+		const b8 exclusiveAndFailedToStart = (impl->CurrentBackendType == Backend::WASAPI_Exclusive && !GetIsStreamOpenRunning());
 		if (exclusiveAndFailedToStart)
 		{
 			// NOTE: Because *any* audio is probably always better than *no* audio
@@ -627,7 +627,7 @@ namespace Audio
 		return impl->SetSourceName(source, newName);
 	}
 
-	VoiceHandle AudioEngine::AddVoice(SourceHandle source, std::string_view name, bool playing, f32 volume, bool playPastEnd)
+	VoiceHandle AudioEngine::AddVoice(SourceHandle source, std::string_view name, b8 playing, f32 volume, b8 playPastEnd)
 	{
 		const auto lock = std::scoped_lock(impl->VoiceRenderMutex);
 
@@ -717,12 +717,12 @@ namespace Audio
 		}
 	}
 
-	bool AudioEngine::GetIsStreamOpenRunning() const
+	b8 AudioEngine::GetIsStreamOpenRunning() const
 	{
 		return impl->IsStreamOpenRunning;
 	}
 
-	bool AudioEngine::GetAllVoicesAreIdle() const
+	b8 AudioEngine::GetAllVoicesAreIdle() const
 	{
 		if (!impl->IsStreamOpenRunning)
 			return true;
@@ -832,7 +832,7 @@ namespace Audio
 		return impl->LastPlayedSamplesRingBuffer;
 	}
 
-	bool Voice::IsValid() const
+	b8 Voice::IsValid() const
 	{
 		auto& impl = Engine.impl;
 		return (impl->TryGetVoiceData(Handle) != nullptr);
@@ -983,12 +983,12 @@ namespace Audio
 		return Time::Zero();
 	}
 
-	bool Voice::GetIsPlaying() const
+	b8 Voice::GetIsPlaying() const
 	{
 		return GetInternalFlag(VoiceFlags_Playing);
 	}
 
-	void Voice::SetIsPlaying(bool value)
+	void Voice::SetIsPlaying(b8 value)
 	{
 		// TODO: Allow manual render thread locking from outside code to then be used for playback sounds
 		//		 This should then become lockfree again!
@@ -999,42 +999,42 @@ namespace Audio
 		SetInternalFlag(VoiceFlags_Playing, value);
 	}
 
-	bool Voice::GetIsLooping() const
+	b8 Voice::GetIsLooping() const
 	{
 		return GetInternalFlag(VoiceFlags_Looping);
 	}
 
-	void Voice::SetIsLooping(bool value)
+	void Voice::SetIsLooping(b8 value)
 	{
 		SetInternalFlag(VoiceFlags_Looping, value);
 	}
 
-	bool Voice::GetPlayPastEnd() const
+	b8 Voice::GetPlayPastEnd() const
 	{
 		return GetInternalFlag(VoiceFlags_PlayPastEnd);
 	}
 
-	void Voice::SetPlayPastEnd(bool value)
+	void Voice::SetPlayPastEnd(b8 value)
 	{
 		SetInternalFlag(VoiceFlags_PlayPastEnd, value);
 	}
 
-	bool Voice::GetRemoveOnEnd() const
+	b8 Voice::GetRemoveOnEnd() const
 	{
 		return GetInternalFlag(VoiceFlags_RemoveOnEnd);
 	}
 
-	void Voice::SetRemoveOnEnd(bool value)
+	void Voice::SetRemoveOnEnd(b8 value)
 	{
 		SetInternalFlag(VoiceFlags_RemoveOnEnd, value);
 	}
 
-	bool Voice::GetPauseOnEnd() const
+	b8 Voice::GetPauseOnEnd() const
 	{
 		return GetInternalFlag(VoiceFlags_PauseOnEnd);
 	}
 
-	void Voice::SetPauseOnEnd(bool value)
+	void Voice::SetPauseOnEnd(b8 value)
 	{
 		SetInternalFlag(VoiceFlags_PauseOnEnd, value);
 	}
@@ -1075,7 +1075,7 @@ namespace Audio
 		}
 	}
 
-	bool Voice::GetInternalFlag(u16 flag) const
+	b8 Voice::GetInternalFlag(u16 flag) const
 	{
 		static_assert(sizeof(flag) == sizeof(VoiceFlags));
 		const auto voiceFlag = static_cast<VoiceFlags>(flag);
@@ -1085,7 +1085,7 @@ namespace Audio
 		return false;
 	}
 
-	void Voice::SetInternalFlag(u16 flag, bool value)
+	void Voice::SetInternalFlag(u16 flag, b8 value)
 	{
 		static_assert(sizeof(flag) == sizeof(VoiceFlags));
 		const auto voiceFlag = static_cast<VoiceFlags>(flag);

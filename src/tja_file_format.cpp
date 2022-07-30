@@ -117,7 +117,7 @@ namespace TJA
 		std::vector<Token> outTokens;
 		outTokens.reserve(lines.size());
 
-		bool currentlyBetweenChartStartAndEnd = false;
+		b8 currentlyBetweenChartStartAndEnd = false;
 
 		for (size_t lineIndex = 0; lineIndex < lines.size(); lineIndex++)
 		{
@@ -207,14 +207,14 @@ namespace TJA
 
 	ParsedTJA ParseTokens(const std::vector<Token>& tokens, ErrorList& outErrors)
 	{
-		static constexpr auto tryParseI32 = [](std::string_view in, i32* out) -> bool { if (in.empty()) { *out = 0; return true; } else { return ASCII::TryParseI32(in, *out); } };
-		static constexpr auto tryParseF32 = [](std::string_view in, f32* out) -> bool { if (in.empty()) { *out = 0.0f; return true; } else { return ASCII::TryParseF32(in, *out); } };
-		static constexpr auto tryParseCommaSeapratedI32s = [](std::string_view in, std::vector<i32>* out) -> bool
+		static constexpr auto tryParseI32 = [](std::string_view in, i32* out) -> b8 { if (in.empty()) { *out = 0; return true; } else { return ASCII::TryParseI32(in, *out); } };
+		static constexpr auto tryParseF32 = [](std::string_view in, f32* out) -> b8 { if (in.empty()) { *out = 0.0f; return true; } else { return ASCII::TryParseF32(in, *out); } };
+		static constexpr auto tryParseCommaSeapratedI32s = [](std::string_view in, std::vector<i32>* out) -> b8
 		{
 			i32 count = 0;
 			ASCII::ForEachInCommaSeparatedList(in, [&](std::string_view) { count++; });
 			out->reserve(count);
-			bool allSuccessful = true;
+			b8 allSuccessful = true;
 			ASCII::ForEachInCommaSeparatedList(in, [&](std::string_view i32String)
 			{
 				i32 v = 0;
@@ -223,7 +223,7 @@ namespace TJA
 			});
 			return allSuccessful;
 		};
-		static constexpr auto tryParseDifficultyType = [](std::string_view in, DifficultyType* out) -> bool
+		static constexpr auto tryParseDifficultyType = [](std::string_view in, DifficultyType* out) -> b8
 		{
 			if (i32 v; ASCII::TryParseI32(in, v)) { *out = static_cast<DifficultyType>(v); return true; }
 			if (ASCII::MatchesInsensitive(in, "easy")) { *out = DifficultyType::Easy; return true; }
@@ -236,25 +236,25 @@ namespace TJA
 			if (ASCII::MatchesInsensitive(in, "ura")) { *out = DifficultyType::OniUra; return true; }
 			return false;
 		};
-		static constexpr auto tryParseTime = [](std::string_view in, Time* out) -> bool
+		static constexpr auto tryParseTime = [](std::string_view in, Time* out) -> b8
 		{
 			if (in.empty()) { *out = Time::Zero(); return true; }
 			if (f32 v; ASCII::TryParseF32(in, v)) { *out = Time::FromSeconds(v); return true; }
 			return false;
 		};
-		static constexpr auto tryParseTempo = [](std::string_view in, Tempo* out) -> bool
+		static constexpr auto tryParseTempo = [](std::string_view in, Tempo* out) -> b8
 		{
 			if (in.empty()) { *out = Tempo(0.0f); return true; }
 			if (f32 v; ASCII::TryParseF32(in, v)) { *out = Tempo(v); return true; }
 			return false;
 		};
-		static constexpr auto tryParsePercent = [](std::string_view in, f32* out) -> bool
+		static constexpr auto tryParsePercent = [](std::string_view in, f32* out) -> b8
 		{
 			if (in.empty()) { *out = 0.0f; return true; }
 			if (f32 v; ASCII::TryParseF32(in, v)) { *out = FromPercent(v); return true; }
 			return false;
 		};
-		static constexpr auto tryParseTimeSignature = [](std::string_view in, TimeSignature* out) -> bool
+		static constexpr auto tryParseTimeSignature = [](std::string_view in, TimeSignature* out) -> b8
 		{
 			const size_t splitIndex = in.find_first_of("/");
 			if (splitIndex == std::string_view::npos)
@@ -272,7 +272,7 @@ namespace TJA
 				return false;
 			}
 		};
-		static constexpr auto tryParseNoteTypeChar = [](char in, NoteType* out) -> bool
+		static constexpr auto tryParseNoteTypeChar = [](char in, NoteType* out) -> b8
 		{
 			switch (in)
 			{
@@ -292,45 +292,45 @@ namespace TJA
 			default: return false;
 			}
 		};
-		static constexpr auto tryParseScoreMode = [](std::string_view in, ScoreMode* out) -> bool
+		static constexpr auto tryParseScoreMode = [](std::string_view in, ScoreMode* out) -> b8
 		{
 			if (in == "0") { *out = ScoreMode::AC1_To_AC7; return true; }
 			if (in == "1") { *out = ScoreMode::AC8_To_AC14; return true; }
 			if (in == "2") { *out = ScoreMode::AC0; return true; }
 			return false;
 		};
-		static constexpr auto tryParseSongSelectSide = [](std::string_view in, SongSelectSide* out) -> bool
+		static constexpr auto tryParseSongSelectSide = [](std::string_view in, SongSelectSide* out) -> b8
 		{
 			if (ASCII::MatchesInsensitive(in, "Normal") || in == "1") { *out = SongSelectSide::Normal; return true; }
 			if (ASCII::MatchesInsensitive(in, "Ex") || in == "2") { *out = SongSelectSide::Normal; return true; }
 			if (ASCII::MatchesInsensitive(in, "Both") || in == "3") { *out = SongSelectSide::Normal; return true; }
 			return false;
 		};
-		static constexpr auto tryParseGameType = [](std::string_view in, GameType* out) -> bool
+		static constexpr auto tryParseGameType = [](std::string_view in, GameType* out) -> b8
 		{
 			if (ASCII::MatchesInsensitive(in, "Taiko")) { *out = GameType::Taiko; return true; }
 			if (ASCII::MatchesInsensitive(in, "Jube")) { *out = GameType::Jubeat; return true; }
 			return false;
 		};
-		static constexpr auto tryParseScrollDirection = [](std::string_view in, ScrollDirection* out) -> bool
+		static constexpr auto tryParseScrollDirection = [](std::string_view in, ScrollDirection* out) -> b8
 		{
 			if (i32 v; ASCII::TryParseI32(in, v)) { *out = static_cast<ScrollDirection>(v); return true; }
 			*out = ScrollDirection::FromRight; return false;
 		};
-		static constexpr auto tryParseBranchCondition = [](std::string_view in, BranchCondition* out) -> bool
+		static constexpr auto tryParseBranchCondition = [](std::string_view in, BranchCondition* out) -> b8
 		{
 			if (ASCII::MatchesInsensitive(in, "r")) { *out = BranchCondition::Roll; return true; }
 			if (ASCII::MatchesInsensitive(in, "p")) { *out = BranchCondition::Precise; return true; }
 			if (ASCII::MatchesInsensitive(in, "s")) { *out = BranchCondition::Score; return true; }
 			*out = BranchCondition::Precise; return false;
 		};
-		static constexpr auto tryParseStyleMode = [](std::string_view in, StyleMode* out) -> bool
+		static constexpr auto tryParseStyleMode = [](std::string_view in, StyleMode* out) -> b8
 		{
 			if (ASCII::MatchesInsensitive(in, "Single") || in == "1") { *out = StyleMode::Single; return true; }
 			if (ASCII::MatchesInsensitive(in, "Double") || ASCII::MatchesInsensitive(in, "Couple") || in == "2") { *out = StyleMode::Double; return true; }
 			*out = StyleMode::Single; return false;
 		};
-		static constexpr auto tryParseGaugeIncrementMethod = [](std::string_view in, GaugeIncrementMethod* out) -> bool
+		static constexpr auto tryParseGaugeIncrementMethod = [](std::string_view in, GaugeIncrementMethod* out) -> b8
 		{
 			if (ASCII::MatchesInsensitive(in, "NORMAL")) { *out = GaugeIncrementMethod::Normal; return true; }
 			if (ASCII::MatchesInsensitive(in, "FLOOR")) { *out = GaugeIncrementMethod::Floor; return true; }
@@ -363,9 +363,9 @@ namespace TJA
 		ParsedCourse* currentCourse = nullptr;
 
 		i32 currentMeasureNoteCount = 0;
-		bool currentlyBetweenChartStartAndEnd = false;
-		bool currentlyBetweenGoGoStartAndEnd = false;
-		bool currentlyInBetweenMeasure = false;
+		b8 currentlyBetweenChartStartAndEnd = false;
+		b8 currentlyBetweenGoGoStartAndEnd = false;
+		b8 currentlyInBetweenMeasure = false;
 
 		auto pushChartCommand = [&outTJA, &currentCourse](ParsedChartCommandType type) -> ParsedChartCommand&
 		{
@@ -744,7 +744,7 @@ namespace TJA
 			default: return ' ';
 			}
 		};
-		static constexpr auto difficultyTypeToString = [](DifficultyType in) -> const char*
+		static constexpr auto difficultyTypeToString = [](DifficultyType in) -> cstr
 		{
 			switch (in)
 			{
@@ -1022,7 +1022,7 @@ namespace TJA
 					{
 						const Beat noteBeat = Beat::FromTicks(noteIndex * beatPerNoteInThisMeasure.Ticks);
 
-						bool noteAlreadyExists = false;
+						b8 noteAlreadyExists = false;
 						for (const TempCommand& tempCommand : tempBuffer)
 						{
 							if (tempCommand.ParsedCommand.Type == ParsedChartCommandType::MeasureNotes && tempCommand.TimeWithinMeasure == noteBeat)

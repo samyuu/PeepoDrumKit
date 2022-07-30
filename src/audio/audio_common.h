@@ -47,7 +47,7 @@ namespace Audio
 		Count
 	};
 
-	constexpr const char* ChannelMixingBehaviorNames[EnumCount<ChannelMixingBehavior>] =
+	constexpr cstr ChannelMixingBehaviorNames[EnumCount<ChannelMixingBehavior>] =
 	{
 		"Combine",
 		"Ignore Trailing",

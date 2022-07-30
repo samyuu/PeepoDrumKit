@@ -25,9 +25,9 @@ namespace Audio
 	struct IAudioBackend
 	{
 		virtual ~IAudioBackend() = default;
-		virtual bool OpenStartStream(const BackendStreamParam& param, BackendRenderCallback callback) = 0;
-		virtual bool StopCloseStream() = 0;
-		virtual bool IsOpenRunning() const = 0;
+		virtual b8 OpenStartStream(const BackendStreamParam& param, BackendRenderCallback callback) = 0;
+		virtual b8 StopCloseStream() = 0;
+		virtual b8 IsOpenRunning() const = 0;
 	};
 
 	class WASAPIBackend : public IAudioBackend
@@ -37,9 +37,9 @@ namespace Audio
 		~WASAPIBackend();
 
 	public:
-		bool OpenStartStream(const BackendStreamParam& param, BackendRenderCallback callback) override;
-		bool StopCloseStream() override;
-		bool IsOpenRunning() const override;
+		b8 OpenStartStream(const BackendStreamParam& param, BackendRenderCallback callback) override;
+		b8 StopCloseStream() override;
+		b8 IsOpenRunning() const override;
 
 	private:
 		struct Impl;

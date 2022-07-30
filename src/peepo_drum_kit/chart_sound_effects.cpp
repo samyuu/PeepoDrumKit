@@ -4,7 +4,7 @@
 
 namespace PeepoDrumKit
 {
-	static constexpr const char* SoundEffectTypeFilePaths[] =
+	static constexpr cstr SoundEffectTypeFilePaths[] =
 	{
 		u8"assets/3rdparty/taiko_don_16bit_44100.wav",
 		u8"assets/3rdparty/taiko_ka_16bit_44100.wav",
@@ -89,7 +89,7 @@ namespace PeepoDrumKit
 		Audio::Engine.EnsureStreamRunning();
 
 		// TODO: Maybe handle metronome in a different way entirely (separate voice pool?)
-		const bool isMetronome = (type == SoundEffectType::MetronomeBar || type == SoundEffectType::MetronomeBeat);
+		const b8 isMetronome = (type == SoundEffectType::MetronomeBar || type == SoundEffectType::MetronomeBeat);
 
 		// TODO: Handle external clock differently so that there isn't any problem with preview sounds / the metronome clashing with manual inputs
 		f32 voiceVolume = 1.0f;

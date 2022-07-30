@@ -110,7 +110,7 @@ void TempoMapAccelerationStructure::Rebuild(const TempoChange* inTempoChanges, s
 		const f64 beatDuration = (60.0 / bpm);
 		const f64 tickDuration = (beatDuration / Beat::TicksPerBeat);
 
-		const bool isSingleOrLastTempo = (tempoCount == 1) || (tempoChangeIndex == (tempoCount - 1));
+		const b8 isSingleOrLastTempo = (tempoCount == 1) || (tempoChangeIndex == (tempoCount - 1));
 		const size_t timesCount = isSingleOrLastTempo ? BeatTickToTimes.size() : (tempoChanges[tempoChangeIndex + 1].Beat.Ticks);
 
 		for (size_t i = 0, t = tempoChange.Beat.Ticks; t < timesCount; t++)

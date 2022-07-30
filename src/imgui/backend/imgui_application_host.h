@@ -27,8 +27,8 @@ namespace ApplicationHost
 		std::string_view WindowTitle = {};
 		std::optional<ivec2> WindowPosition = {};
 		std::optional<ivec2> WindowSize = {};
-		bool WaitableSwapChain = true;
-		bool AllowSwapChainTearing = false;
+		b8 WaitableSwapChain = true;
+		b8 AllowSwapChainTearing = false;
 	};
 
 	struct State
@@ -38,7 +38,7 @@ namespace ApplicationHost
 		void* NativeWindowHandle;
 		ivec2 WindowPosition;
 		ivec2 WindowSize;
-		bool IsBorderlessFullscreen;
+		b8 IsBorderlessFullscreen;
 		// TODO: Implement the notion of "handling" a dropped file event
 		std::vector<std::string> FilePathsDroppedThisFrame;
 		std::string WindowTitle;
@@ -53,7 +53,7 @@ namespace ApplicationHost
 		std::optional<ivec2> SetWindowPositionNextFrame;
 		std::optional<ivec2> SetWindowSizeNextFrame;
 		std::optional<ivec2> MinWindowSizeRestraints = ivec2(640, 360);
-		std::optional<bool> SetBorderlessFullscreenNextFrame;
+		std::optional<b8> SetBorderlessFullscreenNextFrame;
 		std::optional<i32> RequestExitNextFrame;
 		// --------------------------------
 	};

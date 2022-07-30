@@ -10,9 +10,9 @@ namespace PeepoDrumKit
 #if 0 // NOTE: Fixed step zoom increment
 	static constexpr f32 GuiScaleFactorIncrementStep = FromPercent(10.0f);
 
-	static bool CanZoomInGuiScale() { return (GuiScaleFactor < GuiScaleFactorMax); }
-	static bool CanZoomOutGuiScale() { return (GuiScaleFactor > GuiScaleFactorMin); }
-	static bool CanZoomResetGuiScale() { return (GuiScaleFactor != 1.0f); }
+	static b8 CanZoomInGuiScale() { return (GuiScaleFactor < GuiScaleFactorMax); }
+	static b8 CanZoomOutGuiScale() { return (GuiScaleFactor > GuiScaleFactorMin); }
+	static b8 CanZoomResetGuiScale() { return (GuiScaleFactor != 1.0f); }
 	static void ZoomInGuiScale() { GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor + GuiScaleFactorIncrementStep); }
 	static void ZoomOutGuiScale() { GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor - GuiScaleFactorIncrementStep); }
 	static void ZoomResetGuiScale() { GuiScaleFactorToSetNextFrame = 1.0f; }
@@ -27,15 +27,15 @@ namespace PeepoDrumKit
 		return ClampRoundGuiScaleFactor(PresetGuiScaleFactors[Clamp(closest + direction, 0, ArrayCountI32(PresetGuiScaleFactors) - 1)]);
 	}
 
-	static bool CanZoomInGuiScale() { return (GuiScaleFactor < PresetGuiScaleFactorMax); }
-	static bool CanZoomOutGuiScale() { return (GuiScaleFactor > PresetGuiScaleFactorMin); }
-	static bool CanZoomResetGuiScale() { return (GuiScaleFactor != 1.0f); }
+	static b8 CanZoomInGuiScale() { return (GuiScaleFactor < PresetGuiScaleFactorMax); }
+	static b8 CanZoomOutGuiScale() { return (GuiScaleFactor > PresetGuiScaleFactorMin); }
+	static b8 CanZoomResetGuiScale() { return (GuiScaleFactor != 1.0f); }
 	static void ZoomInGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactor, +1); }
 	static void ZoomOutGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactor, -1); }
 	static void ZoomResetGuiScale() { GuiScaleFactorToSetNextFrame = 1.0f; }
 #endif
 
-	static bool CanOpenChartDirectoryInFileExplorer(const ChartContext& context)
+	static b8 CanOpenChartDirectoryInFileExplorer(const ChartContext& context)
 	{
 		return !context.ChartFilePath.empty();
 	}
@@ -134,7 +134,7 @@ namespace PeepoDrumKit
 
 			if (Gui::BeginMenu("Window"))
 			{
-				if (bool v = (ApplicationHost::GlobalState.SwapInterval != 0); Gui::MenuItem("Toggle VSync", ToShortcutString(*Settings.Input.Editor_ToggleVSync).Data, &v))
+				if (b8 v = (ApplicationHost::GlobalState.SwapInterval != 0); Gui::MenuItem("Toggle VSync", ToShortcutString(*Settings.Input.Editor_ToggleVSync).Data, &v))
 					ApplicationHost::GlobalState.SwapInterval = v ? 1 : 0;
 
 				if (Gui::MenuItem("Toggle Fullscreen", ToShortcutString(*Settings.Input.Editor_ToggleFullscreen).Data, ApplicationHost::GlobalState.IsBorderlessFullscreen))
@@ -142,10 +142,10 @@ namespace PeepoDrumKit
 
 				if (Gui::BeginMenu("Window Size"))
 				{
-					const bool allowResize = !ApplicationHost::GlobalState.IsBorderlessFullscreen;
+					const b8 allowResize = !ApplicationHost::GlobalState.IsBorderlessFullscreen;
 					const ivec2 currentResolution = ApplicationHost::GlobalState.WindowSize;
 
-					struct NamedResolution { ivec2 Resolution; const char* Name; };
+					struct NamedResolution { ivec2 Resolution; cstr Name; };
 					static constexpr NamedResolution presetResolutions[] =
 					{
 						{ { 1280,  720 }, "HD" },
@@ -219,7 +219,7 @@ namespace PeepoDrumKit
 			}
 
 			static constexpr Audio::Backend availableBackends[] = { Audio::Backend::WASAPI_Shared, Audio::Backend::WASAPI_Exclusive, };
-			static constexpr auto backendToString = [](Audio::Backend backend) -> const char*
+			static constexpr auto backendToString = [](Audio::Backend backend) -> cstr
 			{
 				return (backend == Audio::Backend::WASAPI_Shared) ? "WASAPI Shared" : (backend == Audio::Backend::WASAPI_Exclusive) ? "WASAPI Exclusive" : "Invalid";
 			};
@@ -265,12 +265,12 @@ namespace PeepoDrumKit
 					{
 						// HACK: How to properly manage the imgui selected tab internal state..?
 						static const ChartCourse* lastFrameSelectedCoursePtrID = nullptr;
-						bool isAnyCourseTabSelected = false;
+						b8 isAnyCourseTabSelected = false;
 
 						for (std::unique_ptr<ChartCourse>& course : context.Chart.Courses)
 						{
 							char buffer[64]; sprintf_s(buffer, "%s x%d (Single)###Course_%p", DifficultyTypeNames[static_cast<i32>(course->Type)], static_cast<i32>(course->Level), course.get());
-							const bool setSelectedThisFrame = (course.get() == context.ChartSelectedCourse && course.get() != lastFrameSelectedCoursePtrID);
+							const b8 setSelectedThisFrame = (course.get() == context.ChartSelectedCourse && course.get() != lastFrameSelectedCoursePtrID);
 
 							Gui::PushID(course.get());
 							if (Gui::BeginTabItem(buffer, nullptr, setSelectedThisFrame ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None))
@@ -303,7 +303,7 @@ namespace PeepoDrumKit
 				Gui::SetCursorPos(vec2(Gui::GetWindowWidth() - performanceMenuWidth - audioMenuWidth, Gui::GetCursorPos().y));
 				if (Gui::BeginMenu(audioTextBuffer))
 				{
-					const bool deviceIsOpen = Audio::Engine.GetIsStreamOpenRunning();
+					const b8 deviceIsOpen = Audio::Engine.GetIsStreamOpenRunning();
 					if (Gui::MenuItem("Open Audio Device", nullptr, false, !deviceIsOpen))
 						Audio::Engine.OpenStartStream();
 					if (Gui::MenuItem("Close Audio Device", nullptr, false, deviceIsOpen))
@@ -411,8 +411,8 @@ namespace PeepoDrumKit
 
 		// NOTE: Global input bindings
 		{
-			const bool noActiveID = (Gui::GetActiveID() == 0);
-			const bool noOpenPopup = (Gui::GetCurrentContext()->OpenPopupStack.Size <= 0);
+			const b8 noActiveID = (Gui::GetActiveID() == 0);
+			const b8 noOpenPopup = (Gui::GetCurrentContext()->OpenPopupStack.Size <= 0);
 
 			if (noActiveID)
 			{
@@ -562,7 +562,7 @@ namespace PeepoDrumKit
 			{
 				if (Gui::Begin("TJA Export Debug View", &test.ShowTJAExportDebugView))
 				{
-					static struct { bool Update = true; i32 Changes = -1, Undos = 0, Redos = 0;  std::string Text; ::TextEditor Editor = CreateImGuiColorTextEditWithNiceTheme(); } exportDebugViewData;
+					static struct { b8 Update = true; i32 Changes = -1, Undos = 0, Redos = 0;  std::string Text; ::TextEditor Editor = CreateImGuiColorTextEditWithNiceTheme(); } exportDebugViewData;
 					if (context.Undo.NumberOfChangesMade != exportDebugViewData.Changes) { exportDebugViewData.Update = true; exportDebugViewData.Changes = context.Undo.NumberOfChangesMade; }
 					if (context.Undo.UndoStack.size() != exportDebugViewData.Undos) { exportDebugViewData.Update = true; exportDebugViewData.Undos = static_cast<i32>(context.Undo.UndoStack.size()); }
 					if (context.Undo.RedoStack.size() != exportDebugViewData.Redos) { exportDebugViewData.Update = true; exportDebugViewData.Redos = static_cast<i32>(context.Undo.RedoStack.size()); }
@@ -592,7 +592,7 @@ namespace PeepoDrumKit
 			const f32 fadeIn = static_cast<f32>(ConvertRangeClampInput(0.0, fadeInDuration.Seconds, 0.0, 1.0, zoomPopup.TimeSinceOpen.Seconds));
 			const f32 fadeOut = static_cast<f32>(ConvertRangeClampInput(0.0, fadeOutDuration.Seconds, 0.0, 1.0, (closeDuration - zoomPopup.TimeSinceLastChange).Seconds));
 
-			bool isWindowHovered = false;
+			b8 isWindowHovered = false;
 			Gui::PushStyleVar(ImGuiStyleVar_Alpha, (fadeIn < 1.0f) ? (fadeIn * fadeIn) : (fadeOut * fadeOut));
 			Gui::PushStyleVar(ImGuiStyleVar_WindowRounding, GuiScale(6.0f));
 			Gui::PushStyleColor(ImGuiCol_WindowBg, Gui::ColorU32WithNewAlpha(Gui::GetColorU32(ImGuiCol_FrameBg), 1.0f));
@@ -644,7 +644,7 @@ namespace PeepoDrumKit
 
 		// NOTE: Save confirmation popup
 		{
-			static constexpr const char* saveConfirmationPopupID = "Peepo Drum Kit - Unsaved Changes";
+			static constexpr cstr saveConfirmationPopupID = "Peepo Drum Kit - Unsaved Changes";
 			if (saveConfirmationPopup.OpenOnNextFrame) { Gui::OpenPopup(saveConfirmationPopupID); saveConfirmationPopup.OpenOnNextFrame = false; }
 
 			const ImGuiViewport* mainViewport = Gui::GetMainViewport();
@@ -652,7 +652,7 @@ namespace PeepoDrumKit
 
 			Gui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { GuiScale(4.0f), Gui::GetStyle().ItemSpacing.y });
 			Gui::PushStyleVar(ImGuiStyleVar_WindowPadding, { GuiScale(6.0f), GuiScale(6.0f) });
-			bool isPopupOpen = true;
+			b8 isPopupOpen = true;
 			if (Gui::BeginPopupModal(saveConfirmationPopupID, &isPopupOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
 			{
 				const vec2 buttonSize = GuiScale(vec2(120.0f, 0.0f));
@@ -666,15 +666,15 @@ namespace PeepoDrumKit
 				}
 				Gui::PopFont();
 
-				const bool clickedYes = Gui::Button("Save Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_YesOrOk, false));
+				const b8 clickedYes = Gui::Button("Save Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_YesOrOk, false));
 				Gui::SameLine();
-				const bool clickedNo = Gui::Button("Discard Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_No, false));
+				const b8 clickedNo = Gui::Button("Discard Changes", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_No, false));
 				Gui::SameLine();
-				const bool clickedCancel = Gui::Button("Cancel", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_Cancel, false));
+				const b8 clickedCancel = Gui::Button("Cancel", buttonSize) | (Gui::IsWindowFocused() && Gui::IsAnyPressed(*Settings.Input.Dialog_Cancel, false));
 
 				if (clickedYes || clickedNo || clickedCancel)
 				{
-					const bool saveDialogCanceled = clickedYes ? !TrySaveChartOrOpenSaveAsDialog(context) : false;
+					const b8 saveDialogCanceled = clickedYes ? !TrySaveChartOrOpenSaveAsDialog(context) : false;
 					UpdateApplicationWindowTitle(context);
 					if (saveConfirmationPopup.OnSuccessFunction)
 					{
@@ -769,7 +769,7 @@ namespace PeepoDrumKit
 		}
 	}
 
-	bool ChartEditor::OpenChartSaveAsDialog(ChartContext& context)
+	b8 ChartEditor::OpenChartSaveAsDialog(ChartContext& context)
 	{
 		static constexpr auto getChartFileNameWithoutExtensionOrDefault = [](const ChartContext& context) -> std::string_view
 		{
@@ -792,7 +792,7 @@ namespace PeepoDrumKit
 		return true;
 	}
 
-	bool ChartEditor::TrySaveChartOrOpenSaveAsDialog(ChartContext& context)
+	b8 ChartEditor::TrySaveChartOrOpenSaveAsDialog(ChartContext& context)
 	{
 		if (context.ChartFilePath.empty())
 			return OpenChartSaveAsDialog(context);
@@ -904,7 +904,7 @@ namespace PeepoDrumKit
 		StartAsyncLoadingSongAudioFile(Path::TryMakeAbsolute(context.Chart.SongFileName, context.ChartFilePath));
 	}
 
-	bool ChartEditor::OpenLoadChartFileDialog(ChartContext& context)
+	b8 ChartEditor::OpenLoadChartFileDialog(ChartContext& context)
 	{
 		Shell::FileDialog fileDialog {};
 		fileDialog.InTitle = "Open Chart File";
@@ -918,7 +918,7 @@ namespace PeepoDrumKit
 		return true;
 	}
 
-	bool ChartEditor::OpenLoadAudioFileDialog(Undo::UndoHistory& undo)
+	b8 ChartEditor::OpenLoadAudioFileDialog(Undo::UndoHistory& undo)
 	{
 		Shell::FileDialog fileDialog {};
 		fileDialog.InTitle = "Open Audio File";
@@ -980,7 +980,7 @@ namespace PeepoDrumKit
 
 		// NOTE: Just in case there is something wrong with the animation, that could otherwise prevent the song from finishing to load
 		static constexpr Time maxWaveformFadeOutDelaySafetyLimit = Time::FromSeconds(0.5);
-		const bool waveformHasFadedOut = (context.SongWaveformFadeAnimationCurrent <= 0.01f || loadSongStopwatch.GetElapsed() >= maxWaveformFadeOutDelaySafetyLimit);
+		const b8 waveformHasFadedOut = (context.SongWaveformFadeAnimationCurrent <= 0.01f || loadSongStopwatch.GetElapsed() >= maxWaveformFadeOutDelaySafetyLimit);
 
 		if (loadSongFuture.valid() && loadSongFuture._Is_ready() && waveformHasFadedOut)
 		{

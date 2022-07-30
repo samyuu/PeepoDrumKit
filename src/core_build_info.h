@@ -33,7 +33,7 @@ namespace BuildInfo
 	   '\0'
 	};
 
-	constexpr const char* CompilationTime() { return TimeFormattedAs_mm_hh_ss; }
-	constexpr const char* CompilationDate() { return DateFormattedAs_yyyy_MM_dd; }
-	constexpr const char* BuildConfiguration() { return PEEPO_DEBUG ? "Debug" : PEEPO_RELEASE ? "Release" : "Unknown"; }
+	constexpr cstr CompilationTime() { return TimeFormattedAs_mm_hh_ss; }
+	constexpr cstr CompilationDate() { return DateFormattedAs_yyyy_MM_dd; }
+	constexpr cstr BuildConfiguration() { return PEEPO_DEBUG ? "Debug" : PEEPO_RELEASE ? "Release" : "Unknown"; }
 }

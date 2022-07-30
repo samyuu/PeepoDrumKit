@@ -50,12 +50,12 @@ namespace PeepoDrumKit
 		inline f32 GetPlaybackSpeed() { return SongVoice.GetPlaybackSpeed(); }
 		inline void SetPlaybackSpeed(f32 newSpeed) { if (!ApproxmiatelySame(SongVoice.GetPlaybackSpeed(), newSpeed)) SongVoice.SetPlaybackSpeed(newSpeed); }
 
-		inline bool GetIsPlayback() const
+		inline b8 GetIsPlayback() const
 		{
 			return SongVoice.GetIsPlaying();
 		}
 
-		inline void SetIsPlayback(bool newIsPlaying)
+		inline void SetIsPlayback(b8 newIsPlaying)
 		{
 			if (SongVoice.GetIsPlaying() == newIsPlaying)
 				return;

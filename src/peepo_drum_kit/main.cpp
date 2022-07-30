@@ -61,7 +61,7 @@ namespace PeepoDrumKit
 	enum class LoadSettingsResponse { AllGood, ErrorAbort, ErrorRetry, ErrorIgnore };
 
 	template <typename T>
-	static LoadSettingsResponse ReadParseSettingsIniFile(const char* iniFilePath, T& out)
+	static LoadSettingsResponse ReadParseSettingsIniFile(cstr iniFilePath, T& out)
 	{
 		auto fileContent = File::ReadAllBytes(iniFilePath);
 		if (fileContent.Content == nullptr || fileContent.Size <= 0)

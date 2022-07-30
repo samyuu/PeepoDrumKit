@@ -13,13 +13,14 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
+#include "core_types.h"
 
 // HACK: Non pixel aligned text rendering https://github.com/ocornut/imgui/issues/2291
-inline bool IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
+inline b8 IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = false;
 
 namespace ImGui
 {
-	inline void DisableFontPixelSnap(bool disabled) { IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = disabled; }
+	inline void DisableFontPixelSnap(b8 disabled) { IMGUI_HACKS_GLOBAL_DISABLE_FONT_PIXEL_SNAPPING = disabled; }
 }
 
 // HACK: Because the X buttons aren't defined by default :/
@@ -101,7 +102,6 @@ enum ImGuiMouseButtonEx_ : ImGuiMouseButton
 
 //---- Define constructor and implicit cast operators to convert back<>forth between your math types and ImVec2/ImVec4.
 // This will be inlined as part of ImVec2 and ImVec4 class declarations.
-#include "core_types.h"
 #define IM_VEC2_CLASS_EXTRA                                                     \
         constexpr ImVec2(const vec2& f) : x(f.x), y(f.y) {}						\
         operator vec2() const { return vec2(x, y); }

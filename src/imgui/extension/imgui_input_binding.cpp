@@ -4,9 +4,9 @@
 struct ImGuiKeyInfo
 {
 	ImGuiKey KeyEnum;
-	const char* EnumName;
-	const char* DisplayName;
-	const char* DisplayNameAlt;
+	cstr EnumName;
+	cstr DisplayName;
+	cstr DisplayNameAlt;
 };
 
 static constexpr ImGuiKeyInfo NamedImGuiKeyInfoTable[] =
@@ -148,7 +148,7 @@ static constexpr ImGuiKeyInfo NamedImGuiKeyInfoTable[] =
 	{ ImGuiKey_ModSuper, "ModSuper", "Super", },
 };
 
-static constexpr bool CompileTimeValidateNamedImGuiKeyInfoTable(const ImGuiKeyInfo* namedImGuiKeyInfoTable)
+static constexpr b8 CompileTimeValidateNamedImGuiKeyInfoTable(const ImGuiKeyInfo* namedImGuiKeyInfoTable)
 {
 	for (i32 i = 0; i < ImGuiKey_NamedKey_COUNT; i++)
 	{
@@ -173,7 +173,7 @@ static constexpr ImGuiKeyInfo GetImGuikeyInfo(ImGuiKey key)
 		return NamedImGuiKeyInfoTable[key - ImGuiKey_NamedKey_BEGIN];
 }
 
-static constexpr const char* ImGuiMouseButtonToCString(ImGuiMouseButton button)
+static constexpr cstr ImGuiMouseButtonToCString(ImGuiMouseButton button)
 {
 	switch (button)
 	{
@@ -208,7 +208,7 @@ InputFormatBuffer ToShortcutString(ImGuiKey key, ImGuiModFlags modifiers)
 	char* bufferWriteHead = out.Data;
 	char* const bufferEnd = out.Data + ArrayCount(out.Data);
 
-	auto append = [&](const char* stringToAppend)
+	auto append = [&](cstr stringToAppend)
 	{
 		if (stringToAppend != nullptr && stringToAppend[0] != '\0')
 		{
@@ -281,14 +281,14 @@ void InputBindingToStorageString(const MultiInputBinding& in, std::string& strin
 	}
 }
 
-bool InputBindingFromStorageString(std::string_view stringToParse, MultiInputBinding& out)
+b8 InputBindingFromStorageString(std::string_view stringToParse, MultiInputBinding& out)
 {
 	out = MultiInputBinding {};
 	if (stringToParse.empty())
 		return true;
 
 	// NOTE: This assumes the KeyInfo EnumName itself won't contain a comma itself (which it shouldn't due to being a c++ type name)
-	bool outSuccess = true;
+	b8 outSuccess = true;
 	ASCII::ForEachInCommaSeparatedList(stringToParse, [&](std::string_view in)
 	{
 		in = ASCII::Trim(in);
@@ -349,32 +349,32 @@ void ImGui_UpdateInternalInputExtraDataAtEndOfFrame()
 
 namespace ImGui
 {
-	static bool Internal_IsKeyDownAfterAllModifiers(ImGuiKey key)
+	static b8 Internal_IsKeyDownAfterAllModifiers(ImGuiKey key)
 	{
 		const f32 keyDuration = ImGui::IsNamedKey(key) ? ImGui::GetKeyData(key)->DownDuration : 0.0f;
 		return ThisFrameInputExData.TimeSinceLastModifiersChange >= keyDuration;
 	}
 
-	static bool Internal_AreModifiersDownFirst(ImGuiKey key, ImGuiModFlags modifiers)
+	static b8 Internal_AreModifiersDownFirst(ImGuiKey key, ImGuiModFlags modifiers)
 	{
 		const f32 keyDuration = ImGui::IsNamedKey(key) ? ImGui::GetKeyData(key)->DownDuration : 0.0f;
-		bool allLonger = true;
+		b8 allLonger = true;
 		ForEachImGuiKeyInKeyModFlags(modifiers, [&](ImGuiKey modifierKey) { allLonger &= (ImGui::GetKeyData(modifierKey)->DownDuration >= keyDuration); });
 		return allLonger;
 	}
 
-	bool AreAllModifiersDown(ImGuiModFlags modifiers)
+	b8 AreAllModifiersDown(ImGuiModFlags modifiers)
 	{
 		return ((GImGui->IO.KeyMods & modifiers) == modifiers);
 	}
 
-	bool AreOnlyModifiersDown(ImGuiModFlags modifiers)
+	b8 AreOnlyModifiersDown(ImGuiModFlags modifiers)
 	{
 		return (GImGui->IO.KeyMods == modifiers);
 	}
 
 	// BUG: Regular bindings with modifier keys as primary keys aren't triggered correctly
-	bool IsDown(const InputBinding& binding, InputModifierBehavior behavior)
+	b8 IsDown(const InputBinding& binding, InputModifierBehavior behavior)
 	{
 		if (binding.Type == InputBindingType::None)
 		{
@@ -398,7 +398,7 @@ namespace ImGui
 		}
 	}
 
-	bool IsPressed(const InputBinding& binding, bool repeat, InputModifierBehavior behavior)
+	b8 IsPressed(const InputBinding& binding, b8 repeat, InputModifierBehavior behavior)
 	{
 		if (binding.Type == InputBindingType::None)
 		{
@@ -423,7 +423,7 @@ namespace ImGui
 		}
 	}
 
-	bool IsAnyDown(const MultiInputBinding& binding, InputModifierBehavior behavior)
+	b8 IsAnyDown(const MultiInputBinding& binding, InputModifierBehavior behavior)
 	{
 		for (size_t i = 0; i < binding.Count; i++)
 			if (IsDown(binding.Slots[i], behavior))
@@ -431,7 +431,7 @@ namespace ImGui
 		return false;
 	}
 
-	bool IsAnyPressed(const MultiInputBinding& binding, bool repeat, InputModifierBehavior behavior)
+	b8 IsAnyPressed(const MultiInputBinding& binding, b8 repeat, InputModifierBehavior behavior)
 	{
 		for (size_t i = 0; i < binding.Count; i++)
 			if (IsPressed(binding.Slots[i], repeat, behavior))

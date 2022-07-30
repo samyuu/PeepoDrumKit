@@ -26,12 +26,13 @@ namespace PeepoDrumKit
 		Count
 	};
 
-	constexpr bool IsDonNote(NoteType v) { return (v == NoteType::Don) || (v == NoteType::DonBig); }
-	constexpr bool IsKaNote(NoteType v) { return (v == NoteType::Ka) || (v == NoteType::KaBig); }
-	constexpr bool IsBigNote(NoteType v) { return (v == NoteType::DonBig) || (v == NoteType::KaBig) || (v == NoteType::DrumrollBig) || (v == NoteType::BalloonSpecial); }
-	constexpr bool IsDrumrollNote(NoteType v) { return (v == NoteType::Drumroll) || (v == NoteType::DrumrollBig); }
-	constexpr bool IsBalloonNote(NoteType v) { return (v == NoteType::Balloon) || (v == NoteType::BalloonSpecial); }
-	constexpr bool IsLongNote(NoteType v) { return IsDrumrollNote(v) || IsBalloonNote(v); }
+	constexpr b8 IsDonNote(NoteType v) { return (v == NoteType::Don) || (v == NoteType::DonBig); }
+	constexpr b8 IsKaNote(NoteType v) { return (v == NoteType::Ka) || (v == NoteType::KaBig); }
+	constexpr b8 IsSmallNote(NoteType v) { return (v == NoteType::Don) || (v == NoteType::Ka) || (v == NoteType::Drumroll) || (v == NoteType::Balloon); }
+	constexpr b8 IsBigNote(NoteType v) { return !IsSmallNote(v); }
+	constexpr b8 IsDrumrollNote(NoteType v) { return (v == NoteType::Drumroll) || (v == NoteType::DrumrollBig); }
+	constexpr b8 IsBalloonNote(NoteType v) { return (v == NoteType::Balloon) || (v == NoteType::BalloonSpecial); }
+	constexpr b8 IsLongNote(NoteType v) { return IsDrumrollNote(v) || IsBalloonNote(v); }
 
 	constexpr NoteType ToSmallNote(NoteType v)
 	{
@@ -65,8 +66,8 @@ namespace PeepoDrumKit
 		}
 	}
 
-	constexpr NoteType ToSmallNoteIf(NoteType v, bool condition) { return condition ? ToSmallNote(v) : v; }
-	constexpr NoteType ToBigNoteIf(NoteType v, bool condition) { return condition ? ToBigNote(v) : v; }
+	constexpr NoteType ToSmallNoteIf(NoteType v, b8 condition) { return condition ? ToSmallNote(v) : v; }
+	constexpr NoteType ToBigNoteIf(NoteType v, b8 condition) { return condition ? ToBigNote(v) : v; }
 
 	constexpr i32 DefaultBalloonPopCount(Beat beatDuration, i32 gridBarDivision) { return (beatDuration.Ticks / GetGridBeatSnap(gridBarDivision).Ticks); }
 
@@ -80,7 +81,7 @@ namespace PeepoDrumKit
 		Count
 	};
 
-	constexpr const char* DifficultyTypeNames[EnumCount<DifficultyType>] =
+	constexpr cstr DifficultyTypeNames[EnumCount<DifficultyType>] =
 	{
 		"Easy",
 		"Normal",
@@ -111,7 +112,7 @@ namespace PeepoDrumKit
 		Time TimeOffset;
 		i16 BalloonPopCount;
 		NoteType Type;
-		bool IsSelected;
+		b8 IsSelected;
 		f32 ClickAnimationTimeRemaining;
 		f32 ClickAnimationTimeDuration;
 
@@ -130,7 +131,7 @@ namespace PeepoDrumKit
 	struct BarLineChange
 	{
 		Beat BeatTime;
-		bool IsVisible;
+		b8 IsVisible;
 	};
 
 	struct GoGoRange
@@ -148,7 +149,7 @@ namespace PeepoDrumKit
 	{
 		Beat BeatTime;
 		std::string Lyric;
-		bool IsSelected;
+		b8 IsSelected;
 	};
 
 	using SortedNotesList = BeatSortedList<Note>;
@@ -167,6 +168,10 @@ namespace PeepoDrumKit
 	constexpr Beat GetBeatDuration(const BarLineChange& v) { return Beat::Zero(); }
 	constexpr Beat GetBeatDuration(const GoGoRange& v) { return v.BeatDuration; }
 	constexpr Beat GetBeatDuration(const LyricChange& v) { return Beat::Zero(); }
+
+	constexpr b8 VisibleOrDefault(const BarLineChange* v) { return (v == nullptr) ? true : v->IsVisible; };
+	constexpr f32 ScrollOrDefault(const ScrollChange* v) { return (v == nullptr) ? 1.0f : v->ScrollSpeed; };
+	constexpr Tempo TempoOrDefault(const TempoChange* v) { return (v == nullptr) ? FallbackTempo : v->Tempo; };
 
 	enum class Language : u8 { Base, JA, EN, CN, TW, KO, Count };
 	struct PerLanguageString
@@ -234,6 +239,6 @@ namespace PeepoDrumKit
 	};
 
 	Beat FindCourseMaxUsedBeat(const ChartCourse& course);
-	bool CreateChartProjectFromTJA(const TJA::ParsedTJA& inTJA, ChartProject& out);
-	bool ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out);
+	b8 CreateChartProjectFromTJA(const TJA::ParsedTJA& inTJA, ChartProject& out);
+	b8 ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out);
 }

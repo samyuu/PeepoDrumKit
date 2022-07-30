@@ -210,10 +210,6 @@ namespace PeepoDrumKit
 
 namespace PeepoDrumKit
 {
-	static constexpr bool VisibleOrDefault(const BarLineChange* v) { return (v == nullptr) ? true : v->IsVisible; };
-	static constexpr f32 ScrollOrDefault(const ScrollChange* v) { return (v == nullptr) ? 1.0f : v->ScrollSpeed; };
-	static inline Tempo TempoOrDefault(const TempoChange* v) { return (v == nullptr) ? FallbackTempo : v->Tempo; };
-
 	struct ForEachBarLaneData
 	{
 		Time Time;
@@ -295,7 +291,7 @@ namespace PeepoDrumKit
 		ImDrawList* drawList = Gui::GetWindowDrawList();
 		drawList->PushClipRect(baseClipRect.TL, baseClipRect.BR, false);
 		{
-			const bool isPlayback = context.GetIsPlayback();
+			const b8 isPlayback = context.GetIsPlayback();
 			const BeatAndTime exactCursorBeatAndTime = context.GetCursorBeatAndTime();
 			const Time cursorTimeOrAnimated = isPlayback ? exactCursorBeatAndTime.Time : animatedCursorTime;
 			const Beat cursorBeatOrAnimated = isPlayback ? exactCursorBeatAndTime.Beat : context.TimeToBeat(animatedCursorTime);

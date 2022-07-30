@@ -50,7 +50,7 @@ namespace Undo
 	{
 		std::vector<std::unique_ptr<Command>> UndoStack, RedoStack;
 		std::vector<std::unique_ptr<Command>> CommandsToExecutedAtEndOfFrame;
-		bool HasPendingChanges = false;
+		b8 HasPendingChanges = false;
 		i32 NumberOfChangesMade = 0;
 
 		i32 NumberOfCommandsToDisallowMergesFor = 0;
@@ -80,8 +80,8 @@ namespace Undo
 		void Redo(size_t count = 1);
 		void ClearAll();
 
-		inline bool CanUndo() const { return !UndoStack.empty(); }
-		inline bool CanRedo() const { return !RedoStack.empty(); }
+		inline b8 CanUndo() const { return !UndoStack.empty(); }
+		inline b8 CanRedo() const { return !RedoStack.empty(); }
 		inline void NotifyChangesWereMade() { HasPendingChanges = true; NumberOfChangesMade++; }
 		inline void ClearChangesWereMade() { HasPendingChanges = false; NumberOfChangesMade = 0; }
 

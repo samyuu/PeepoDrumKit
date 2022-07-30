@@ -11,7 +11,7 @@ namespace PeepoDrumKit
 		~AudioTestWindow() { RemoveSourcePreviewVoice(); }
 
 	public:
-		void DrawGui(bool* isOpen);
+		void DrawGui(b8* isOpen);
 
 	private:
 		void AudioEngineTabContent();
@@ -24,7 +24,7 @@ namespace PeepoDrumKit
 		void RemoveSourcePreviewVoice();
 
 	private:
-		bool sourcePreviewVoiceHasBeenAdded = false;
+		b8 sourcePreviewVoiceHasBeenAdded = false;
 		Audio::Voice sourcePreviewVoice = Audio::VoiceHandle::Invalid;
 		std::string voiceFlagsBuffer;
 		u32 newBufferFrameCount = 64;

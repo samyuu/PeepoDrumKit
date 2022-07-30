@@ -5,7 +5,7 @@ namespace Undo
 	using VoidVFPtr = void(**)();
 	struct PolymorphicLayoutTest { i32 DummyField; virtual void VirtualFunc() = 0; };
 
-	inline bool CommandsHaveSameVFPtr(const Command& commandA, const Command& commandB)
+	inline b8 CommandsHaveSameVFPtr(const Command& commandA, const Command& commandB)
 	{
 		// HACK: This ""technically"" may not work on different compilers as the vfptr might not be stored at the start of the object (or at all)
 		//		 and even a static_assert() of an offsetof() isn't *technically* allowed (?) although it seems to be supported by all major compilers
@@ -52,9 +52,9 @@ namespace Undo
 		const Time timeSinceLastCommand = LastExecutedCommandStopwatch.Restart();
 		Command* lastCommand = (!UndoStack.empty() ? UndoStack.back().get() : nullptr);
 
-		const bool mergeDisallowedByTypeMismatch = (lastCommand == nullptr || !CommandsHaveSameVFPtr(*commandToExecute, *lastCommand));
-		const bool mergeDisallowedByTimeOut = (CommandMergeTimeThreshold > Time::Zero()) && (timeSinceLastCommand > CommandMergeTimeThreshold);
-		const bool mergeDisallowedByCounter = (NumberOfCommandsToDisallowMergesFor > 0);
+		const b8 mergeDisallowedByTypeMismatch = (lastCommand == nullptr || !CommandsHaveSameVFPtr(*commandToExecute, *lastCommand));
+		const b8 mergeDisallowedByTimeOut = (CommandMergeTimeThreshold > Time::Zero()) && (timeSinceLastCommand > CommandMergeTimeThreshold);
+		const b8 mergeDisallowedByCounter = (NumberOfCommandsToDisallowMergesFor > 0);
 		if (NumberOfCommandsToDisallowMergesFor > 0) NumberOfCommandsToDisallowMergesFor--;
 
 		if (!mergeDisallowedByTypeMismatch && !mergeDisallowedByTimeOut && !mergeDisallowedByCounter)

@@ -122,8 +122,8 @@ namespace PeepoDrumKit
 		inline f32 RefToScreenScale(f32 refScale) const { return refScale * RefToScreenScaleFactor; }
 		inline vec2 RefToScreenScale(vec2 refSpace) const { return refSpace * RefToScreenScaleFactor; }
 		inline vec2 RefToScreenSpace(vec2 refSpace) const { return ScreenSpaceLaneRect.TL + (refSpace * RefToScreenScaleFactor); }
-		inline bool IsPointVisibleOnLane(f32 refX, f32 refThreshold = 280.0f) const { return (refX >= -refThreshold) && (refX <= (GameRefLaneSize.x + refThreshold)); }
-		inline bool IsRangeVisibleOnLane(f32 refHeadX, f32 refTailX, f32 refThreshold = 280.0f) const { return (refTailX >= -refThreshold) && (refHeadX <= (GameRefLaneSize.x + refThreshold)); }
+		inline b8 IsPointVisibleOnLane(f32 refX, f32 refThreshold = 280.0f) const { return (refX >= -refThreshold) && (refX <= (GameRefLaneSize.x + refThreshold)); }
+		inline b8 IsRangeVisibleOnLane(f32 refHeadX, f32 refTailX, f32 refThreshold = 280.0f) const { return (refTailX >= -refThreshold) && (refHeadX <= (GameRefLaneSize.x + refThreshold)); }
 	};
 
 	constexpr f32 TimeToNoteLaneRefSpaceX(Time cursorTime, Time noteTime, Tempo tempo, f32 scrollSpeed)

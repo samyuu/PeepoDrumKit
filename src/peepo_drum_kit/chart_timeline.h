@@ -147,24 +147,24 @@ namespace PeepoDrumKit
 		ImDrawList* DrawListContentHeader = nullptr;
 		ImDrawList* DrawListContent = nullptr;
 
-		bool IsAnyChildWindowFocused = false;
-		bool IsContentHeaderWindowHovered = false;
-		// bool IsContentHeaderWindowFocused = false;
-		bool IsContentWindowHovered = false;
-		bool IsContentWindowFocused = false;
-		bool IsSidebarWindowHovered = false;
-		// bool IsSidebarWindowFocused = false;
+		b8 IsAnyChildWindowFocused = false;
+		b8 IsContentHeaderWindowHovered = false;
+		// b8 IsContentHeaderWindowFocused = false;
+		b8 IsContentWindowHovered = false;
+		b8 IsContentWindowFocused = false;
+		b8 IsSidebarWindowHovered = false;
+		// b8 IsSidebarWindowFocused = false;
 
 		vec2 MousePosThisFrame = {};
 		vec2 MousePosLastFrame = {};
 
-		bool IsCameraMouseGrabActive = false;
-		bool IsCursorMouseScrubActive = false;
+		b8 IsCameraMouseGrabActive = false;
+		b8 IsCursorMouseScrubActive = false;
 
 		struct SelectedItemDragData
 		{
-			bool IsActive;
-			bool IsHovering;
+			b8 IsActive;
+			b8 IsHovering;
 			Beat MouseBeatThisFrame;
 			Beat MouseBeatLastFrame;
 			Beat BeatOnMouseDown;
@@ -173,20 +173,20 @@ namespace PeepoDrumKit
 
 		struct LongNotePlacementData
 		{
-			bool IsActive;
+			b8 IsActive;
 			Beat CursorBeatHead;
 			Beat CursorBeatTail;
 			NoteType NoteType;
 			inline Beat GetMin() const { return ClampBot(Min(CursorBeatHead, CursorBeatTail), Beat::Zero()); }
 			inline Beat GetMax() const { return ClampBot(Max(CursorBeatHead, CursorBeatTail), Beat::Zero()); }
 		} LongNotePlacement = {};
-		bool PlaceBalloonBindingDownThisFrame = false, PlaceBalloonBindingDownLastFrame = false;
-		bool PlaceDrumrollBindingDownThisFrame = false, PlaceDrumrollBindingDownLastFrame = false;
+		b8 PlaceBalloonBindingDownThisFrame = false, PlaceBalloonBindingDownLastFrame = false;
+		b8 PlaceDrumrollBindingDownThisFrame = false, PlaceDrumrollBindingDownLastFrame = false;
 
 		enum class BoxSelectionAction : u8 { Clear, Add, Remove };
 		struct BoxSelectionData
 		{
-			bool IsActive;
+			b8 IsActive;
 			BoxSelectionAction Action;
 			Rect WorldSpaceRect;
 		} BoxSelection = {};
@@ -194,8 +194,8 @@ namespace PeepoDrumKit
 		struct RangeSelectionData
 		{
 			Beat Start, End;
-			bool HasEnd;
-			bool IsActive;
+			b8 HasEnd;
+			b8 IsActive;
 			inline Beat GetMin() const { return ClampBot(Min(Start, End), Beat::Zero()); }
 			inline Beat GetMax() const { return ClampBot(Max(Start, End), Beat::Zero()); }
 		} RangeSelection = {};
@@ -205,11 +205,11 @@ namespace PeepoDrumKit
 		f32 WorldSpaceCursorXAnimationCurrent = 0.0f;
 		f32 GridSnapLineAnimationCurrent = 1.0f;
 
-		bool PlaybackSoundsEnabled = true;
+		b8 PlaybackSoundsEnabled = true;
 		struct MetronomeData
 		{
-			bool IsEnabled = false;
-			bool HasOnPlaybackStartTimeBeenPlayed = false;
+			b8 IsEnabled = false;
+			b8 HasOnPlaybackStartTimeBeenPlayed = false;
 			Time LastProvidedNonSmoothCursorTime = {};
 			Time LastPlayedBeatTime = {};
 		} Metronome = {};
@@ -223,7 +223,7 @@ namespace PeepoDrumKit
 
 	public:
 		// TODO: Make sure this'll work correctly with popup windows too (context menu, etc.)
-		inline bool HasKeyboardFocus() const { return IsAnyChildWindowFocused /*IsContentWindowFocused | IsContentHeaderWindowFocused*/; }
+		inline b8 HasKeyboardFocus() const { return IsAnyChildWindowFocused /*IsContentWindowFocused | IsContentHeaderWindowFocused*/; }
 
 		inline Beat FloorBeatToCurrentGrid(Beat beat) const { return FloorBeatToGrid(beat, GetGridBeatSnap(CurrentGridBarDivision)); }
 		inline Beat RoundBeatToCurrentGrid(Beat beat) const { return RoundBeatToGrid(beat, GetGridBeatSnap(CurrentGridBarDivision)); }

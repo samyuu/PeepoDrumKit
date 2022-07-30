@@ -33,7 +33,7 @@ namespace Audio
 		constexpr operator VoiceHandle() const { return Handle; }
 
 	public:
-		bool IsValid() const;
+		b8 IsValid() const;
 
 		f32 GetVolume() const;
 		void SetVolume(f32 value);
@@ -50,20 +50,20 @@ namespace Audio
 
 		Time GetSourceDuration() const;
 
-		bool GetIsPlaying() const;
-		void SetIsPlaying(bool value);
+		b8 GetIsPlaying() const;
+		void SetIsPlaying(b8 value);
 
-		bool GetIsLooping() const;
-		void SetIsLooping(bool value);
+		b8 GetIsLooping() const;
+		void SetIsLooping(b8 value);
 
-		bool GetPlayPastEnd() const;
-		void SetPlayPastEnd(bool value);
+		b8 GetPlayPastEnd() const;
+		void SetPlayPastEnd(b8 value);
 
-		bool GetRemoveOnEnd() const;
-		void SetRemoveOnEnd(bool value);
+		b8 GetRemoveOnEnd() const;
+		void SetRemoveOnEnd(b8 value);
 
-		bool GetPauseOnEnd() const;
-		void SetPauseOnEnd(bool value);
+		b8 GetPauseOnEnd() const;
+		void SetPauseOnEnd(b8 value);
 
 		std::string_view GetName() const;
 
@@ -71,8 +71,8 @@ namespace Audio
 		void SetVolumeMap(Time startTime, Time endTime, f32 startVolume, f32 endVolume);
 
 	private:
-		bool GetInternalFlag(u16 flag) const;
-		void SetInternalFlag(u16 flag, bool value);
+		b8 GetInternalFlag(u16 flag) const;
+		void SetInternalFlag(u16 flag, b8 value);
 	};
 
 	enum class Backend : u8
@@ -85,7 +85,7 @@ namespace Audio
 		Default = WASAPI_Shared,
 	};
 
-	constexpr const char* BackendNames[EnumCount<Backend>] =
+	constexpr cstr BackendNames[EnumCount<Backend>] =
 	{
 		"WASAPI (Shared)",
 		"WASAPI (Exclusive)",
@@ -140,7 +140,7 @@ namespace Audio
 		void SetSourceName(SourceHandle source, std::string_view newName);
 
 		// NOTE: Add a voice and keep a handle to it
-		VoiceHandle AddVoice(SourceHandle source, std::string_view name, bool playing, f32 volume = MaxVolume, bool playPastEnd = false);
+		VoiceHandle AddVoice(SourceHandle source, std::string_view name, b8 playing, f32 volume = MaxVolume, b8 playPastEnd = false);
 		void RemoveVoice(VoiceHandle voice);
 
 		// NOTE: Add a voice, play it once then discard
@@ -150,8 +150,8 @@ namespace Audio
 		Backend GetBackend() const;
 		void SetBackend(Backend value);
 
-		bool GetIsStreamOpenRunning() const;
-		bool GetAllVoicesAreIdle() const;
+		b8 GetIsStreamOpenRunning() const;
+		b8 GetAllVoicesAreIdle() const;
 
 		f32 GetMasterVolume() const;
 		void SetMasterVolume(f32 value);

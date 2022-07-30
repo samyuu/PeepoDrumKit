@@ -29,8 +29,8 @@ struct InputBinding
 	explicit constexpr InputBinding(ImGuiKey key, ImGuiModFlags modifiers) : Type(InputBindingType::Keyboard), Keyboard({ key, modifiers }) {}
 	explicit constexpr InputBinding(ImGuiMouseButton mouseButton) : Type(InputBindingType::Mouse), Mouse({ mouseButton }) {}
 
-	constexpr bool operator!=(const InputBinding& other) const { return !(*this == other); }
-	constexpr bool operator==(const InputBinding& other) const
+	constexpr b8 operator!=(const InputBinding& other) const { return !(*this == other); }
+	constexpr b8 operator==(const InputBinding& other) const
 	{
 		return (Type != other.Type) ? false :
 			(Type == InputBindingType::None) ? true :
@@ -78,7 +78,7 @@ InputFormatBuffer ToShortcutString(const InputBinding& binding);
 InputFormatBuffer ToShortcutString(const MultiInputBinding& binding);
 
 void InputBindingToStorageString(const MultiInputBinding& in, std::string& stringToAppendTo);
-bool InputBindingFromStorageString(std::string_view stringToParse, MultiInputBinding& out);
+b8 InputBindingFromStorageString(std::string_view stringToParse, MultiInputBinding& out);
 
 // NOTE: Must be called once at the start / end of the frame by the backend!
 void ImGui_UpdateInternalInputExtraDataAtStartOfFrame();
@@ -86,12 +86,12 @@ void ImGui_UpdateInternalInputExtraDataAtEndOfFrame();
 
 namespace ImGui
 {
-	bool AreAllModifiersDown(ImGuiModFlags modifiers);
-	bool AreOnlyModifiersDown(ImGuiModFlags modifiers);
+	b8 AreAllModifiersDown(ImGuiModFlags modifiers);
+	b8 AreOnlyModifiersDown(ImGuiModFlags modifiers);
 
-	bool IsDown(const InputBinding& binding, InputModifierBehavior behavior = InputModifierBehavior::Strict);
-	bool IsPressed(const InputBinding& binding, bool repeat = true, InputModifierBehavior behavior = InputModifierBehavior::Strict);
+	b8 IsDown(const InputBinding& binding, InputModifierBehavior behavior = InputModifierBehavior::Strict);
+	b8 IsPressed(const InputBinding& binding, b8 repeat = true, InputModifierBehavior behavior = InputModifierBehavior::Strict);
 
-	bool IsAnyDown(const MultiInputBinding& binding, InputModifierBehavior behavior = InputModifierBehavior::Strict);
-	bool IsAnyPressed(const MultiInputBinding& binding, bool repeat = true, InputModifierBehavior behavior = InputModifierBehavior::Strict);
+	b8 IsAnyDown(const MultiInputBinding& binding, InputModifierBehavior behavior = InputModifierBehavior::Strict);
+	b8 IsAnyPressed(const MultiInputBinding& binding, b8 repeat = true, InputModifierBehavior behavior = InputModifierBehavior::Strict);
 }

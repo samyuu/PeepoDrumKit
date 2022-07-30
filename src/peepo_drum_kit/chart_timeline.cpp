@@ -36,7 +36,7 @@ namespace PeepoDrumKit
 
 		if (Gui::CollapsingHeader("Colors", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			struct NamedColorU32Pointer { const char* Label; u32* ColorPtr; u32 Default; };
+			struct NamedColorU32Pointer { cstr Label; u32* ColorPtr; u32 Default; };
 			static NamedColorU32Pointer namedColors[] =
 			{
 				{ "Timeline Background", &TimelineBackgroundColor },
@@ -103,7 +103,7 @@ namespace PeepoDrumKit
 				{ "Drag Text (Active)", &DragTextActiveColor },
 			};
 
-			if (static bool firstFrame = true; firstFrame) { for (auto& e : namedColors) { e.Default = (e.ColorPtr != nullptr) ? *e.ColorPtr : 0xFFFF00FF; } firstFrame = false; }
+			if (static b8 firstFrame = true; firstFrame) { for (auto& e : namedColors) { e.Default = (e.ColorPtr != nullptr) ? *e.ColorPtr : 0xFFFF00FF; } firstFrame = false; }
 
 			static ImGuiTextFilter colorFilter;
 			Gui::SetNextItemWidth(-1.0f);
@@ -143,7 +143,7 @@ namespace PeepoDrumKit
 
 		if (Gui::CollapsingHeader("Size Variables", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			struct NamedVariablePtr { const char* Label; f32* ValuePtr; f32 Default; };
+			struct NamedVariablePtr { cstr Label; f32* ValuePtr; f32 Default; };
 			static NamedVariablePtr namedVariables[] =
 			{
 				{ "TimelineRowHeight", &TimelineRowHeight, },
@@ -171,7 +171,7 @@ namespace PeepoDrumKit
 				{ "GameRefNoteRadiiBig.ColorInner", &GameRefNoteRadiiBig.ColorInner,	 },
 			};
 
-			if (static bool firstFrame = true; firstFrame) { for (auto& e : namedVariables) { e.Default = (e.ValuePtr != nullptr) ? *e.ValuePtr : 0.0f; } firstFrame = false; }
+			if (static b8 firstFrame = true; firstFrame) { for (auto& e : namedVariables) { e.Default = (e.ValuePtr != nullptr) ? *e.ValuePtr : 0.0f; } firstFrame = false; }
 
 			static ImGuiTextFilter variableFilter;
 			Gui::SetNextItemWidth(-1.0f);
@@ -213,7 +213,7 @@ namespace PeepoDrumKit
 		{
 			if (Gui::Property::BeginTable(tableFlags))
 			{
-				static constexpr auto animationSpeed = [](const char* label, WithDefault<f32>* inOutSpeed)
+				static constexpr auto animationSpeed = [](cstr label, WithDefault<f32>* inOutSpeed)
 				{
 					Gui::Property::PropertyTextValueFunc(label, [&] { Gui::SetNextItemWidth(-1.0f); if (Gui::DragFloat(label, &inOutSpeed->Value, 0.1f, 0.0f, 100.0f)) { inOutSpeed->HasValue = true; } });
 				};
@@ -229,7 +229,7 @@ namespace PeepoDrumKit
 
 		if (Gui::CollapsingHeader("Highlight Region"))
 		{
-			auto region = [](const char* name, Rect region) { Gui::Selectable(name); if (Gui::IsItemHovered()) { Gui::GetForegroundDrawList()->AddRect(region.TL, region.BR, ImColor(1.0f, 0.0f, 1.0f)); } };
+			auto region = [](cstr name, Rect region) { Gui::Selectable(name); if (Gui::IsItemHovered()) { Gui::GetForegroundDrawList()->AddRect(region.TL, region.BR, ImColor(1.0f, 0.0f, 1.0f)); } };
 			region("Regions.Window", timeline.Regions.Window);
 			region("Regions.SidebarHeader", timeline.Regions.SidebarHeader);
 			region("Regions.Sidebar", timeline.Regions.Sidebar);
@@ -255,12 +255,11 @@ namespace PeepoDrumKit
 	static void ForEachTimelineRow(ChartTimeline& timeline, Func perRowFunc)
 	{
 		f32 localY = 0.0f;
-		for (size_t i = 0; i < EnumCount<TimelineRowType>; i++)
+		for (TimelineRowType rowType = {}; rowType < TimelineRowType::Count; IncrementEnum(rowType))
 		{
-			const auto rowType = static_cast<TimelineRowType>(i);
 			const f32 localHeight = GuiScale((rowType >= TimelineRowType::NoteBranches_First && rowType <= TimelineRowType::NoteBranches_Last) ? TimelineRowHeightNotes : TimelineRowHeight);
 
-			perRowFunc(ForEachRowData { rowType, localY, localHeight, TimelineRowTypeNames[i] });
+			perRowFunc(ForEachRowData { rowType, localY, localHeight, TimelineRowTypeNames[EnumToIndex(rowType)] });
 			localY += localHeight;
 		}
 	}
@@ -276,7 +275,7 @@ namespace PeepoDrumKit
 	{
 		Time Time;
 		i32 BarIndex;
-		bool IsBar;
+		b8 IsBar;
 	};
 
 	template <typename Func>
@@ -354,7 +353,7 @@ namespace PeepoDrumKit
 		return IsKaNote(noteType) ? SoundEffectType::TaikoKa : SoundEffectType::TaikoDon;
 	}
 
-	static bool IsTimelineCursorVisibleOnScreen(const TimelineCamera& camera, const TimelineRegions& regions, const Time cursorTime, const f32 edgePixelThreshold = 0.0f)
+	static b8 IsTimelineCursorVisibleOnScreen(const TimelineCamera& camera, const TimelineRegions& regions, const Time cursorTime, const f32 edgePixelThreshold = 0.0f)
 	{
 		assert(edgePixelThreshold >= 0.0f);
 		const f32 cursorLocalSpaceX = camera.TimeToLocalSpaceX(cursorTime);
@@ -496,7 +495,7 @@ namespace PeepoDrumKit
 		}
 	}
 
-	static void UpdateTimelinePlaybackAndMetronomneSounds(ChartContext& context, bool playbackSoundsEnabled, ChartTimeline::MetronomeData& metronome)
+	static void UpdateTimelinePlaybackAndMetronomneSounds(ChartContext& context, b8 playbackSoundsEnabled, ChartTimeline::MetronomeData& metronome)
 	{
 		static constexpr Time frameTimeThresholdAtWhichPlayingSoundsMakesNoSense = Time::FromMilliseconds(250.0);
 		static constexpr Time playbackSoundFutureOffset = Time::FromSeconds(1.0 / 25.0);
@@ -653,7 +652,7 @@ namespace PeepoDrumKit
 		Regions.Content = Rect::FromTLSize(Regions.ContentHeader.GetBL(), Max(vec2(0.0f), vec2(Regions.Window.GetWidth() - sidebarWidth, Regions.Window.GetHeight() - sidebarHeight - scrollbarHeight)));
 		Regions.ContentScrollbarX = Rect::FromTLSize(Regions.Content.GetBL(), vec2(Regions.Content.GetWidth(), scrollbarHeight));
 
-		auto timelineRegionBegin = [](const Rect region, const char* name, bool padding = false)
+		auto timelineRegionBegin = [](const Rect region, cstr name, b8 padding = false)
 		{
 			if (!padding) Gui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0.0f, 0.0f });
 
@@ -746,7 +745,7 @@ namespace PeepoDrumKit
 				{
 					const Time cursorTime = context.GetCursorTime();
 					const Time chartDuration = context.Chart.GetDurationOrDefault();
-					const bool isPlayback = context.GetIsPlayback();
+					const b8 isPlayback = context.GetIsPlayback();
 
 					if (!context.SongWaveformL.IsEmpty())
 						DrawTimelineScrollbarXWaveform(*this, Gui::GetWindowDrawList(), context.Chart.SongOffset, chartDuration, context.SongWaveformL, context.SongWaveformR, context.SongWaveformFadeAnimationCurrent);
@@ -797,7 +796,7 @@ namespace PeepoDrumKit
 
 	void ChartTimeline::PlayNoteSoundAndHitAnimationsAtBeat(ChartContext& context, Beat cursorBeat)
 	{
-		bool soundHasBeenPlayed = false;
+		b8 soundHasBeenPlayed = false;
 		for (Note& note : context.ChartSelectedCourse->GetNotes(context.ChartSelectedBranch))
 		{
 			if (note.BeatTime == cursorBeat)
@@ -1132,7 +1131,7 @@ namespace PeepoDrumKit
 					// printf("localAutoScrollLockX: %f\n", localAutoScrollLockX);
 
 					// TODO: Should this be a condition too..?
-					// const bool clickedForward = (newCursorTime >= oldCursorTime);
+					// const b8 clickedForward = (newCursorTime >= oldCursorTime);
 
 					const f32 distanceFromAutoScrollPositionX = (localCursorX - localAutoScrollLockX);
 					if (/*clickedForward &&*/ distanceFromAutoScrollPositionX > 0.0f)
@@ -1255,8 +1254,8 @@ namespace PeepoDrumKit
 				i32 currentGridDivisionIndex = 0;
 				for (const i32& it : AllowedGridBarDivisions) if (it == CurrentGridBarDivision) currentGridDivisionIndex = ArrayItToIndexI32(&it, &AllowedGridBarDivisions[0]);
 
-				const bool increaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X2, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_IncreaseGridDivision, true, InputModifierBehavior::Relaxed));
-				const bool decreaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X1, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_DecreaseGridDivision, true, InputModifierBehavior::Relaxed));
+				const b8 increaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X2, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_IncreaseGridDivision, true, InputModifierBehavior::Relaxed));
+				const b8 decreaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X1, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_DecreaseGridDivision, true, InputModifierBehavior::Relaxed));
 				if (increaseGrid) CurrentGridBarDivision = AllowedGridBarDivisions[Clamp(currentGridDivisionIndex + 1, 0, ArrayCountI32(AllowedGridBarDivisions) - 1)];
 				if (decreaseGrid) CurrentGridBarDivision = AllowedGridBarDivisions[Clamp(currentGridDivisionIndex - 1, 0, ArrayCountI32(AllowedGridBarDivisions) - 1)];
 			}
@@ -1326,7 +1325,7 @@ namespace PeepoDrumKit
 					}
 					else
 					{
-						const bool isPlayback = context.GetIsPlayback();
+						const b8 isPlayback = context.GetIsPlayback();
 						const Beat cursorBeat = isPlayback ? RoundBeatToCurrentGrid(context.GetCursorBeat()) : FloorBeatToCurrentGrid(context.GetCursorBeat());
 
 						Note* existingNoteAtCursor = notes.TryFindOverlappingBeat(cursorBeat);
@@ -1344,7 +1343,7 @@ namespace PeepoDrumKit
 									}
 									else
 									{
-										context.Undo.Execute<Commands::ChangeSingleNoteType>(&notes, Commands::ChangeSingleNoteType::Data { existingNoteAtCursor->StableID, noteTypeToInsert });
+										context.Undo.Execute<Commands::ChangeSingleNoteType>(&notes, Commands::ChangeSingleNoteType::Data { ArrayItToIndex(existingNoteAtCursor, &notes[0]), noteTypeToInsert });
 										context.Undo.DisallowMergeForLastCommand();
 									}
 								}
@@ -1415,7 +1414,7 @@ namespace PeepoDrumKit
 				context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(longNoteType));
 			};
 
-			const bool activeFocusedAndHasLength = HasKeyboardFocus() && LongNotePlacement.IsActive && (LongNotePlacement.CursorBeatHead != LongNotePlacement.CursorBeatTail);
+			const b8 activeFocusedAndHasLength = HasKeyboardFocus() && LongNotePlacement.IsActive && (LongNotePlacement.CursorBeatHead != LongNotePlacement.CursorBeatTail);
 			if (PlaceBalloonBindingDownLastFrame && !PlaceBalloonBindingDownThisFrame) { if (activeFocusedAndHasLength) placeLongNoteOnBindingRelease(LongNotePlacement.NoteType); LongNotePlacement = {}; }
 			if (PlaceDrumrollBindingDownLastFrame && !PlaceDrumrollBindingDownThisFrame) { if (activeFocusedAndHasLength) placeLongNoteOnBindingRelease(LongNotePlacement.NoteType); LongNotePlacement = {}; }
 		}
@@ -1521,7 +1520,7 @@ namespace PeepoDrumKit
 
 	void ChartTimeline::DrawAllAtEndOfFrame(ChartContext& context)
 	{
-		const bool isPlayback = context.GetIsPlayback();
+		const b8 isPlayback = context.GetIsPlayback();
 		const BeatAndTime cursorBeatAndTime = context.GetCursorBeatAndTime();
 		const Time cursorTime = cursorBeatAndTime.Time;
 		const Beat cursorBeat = cursorBeatAndTime.Beat;
@@ -1693,7 +1692,7 @@ namespace PeepoDrumKit
 					const vec2 screenSpaceTextPosition = sidebarScreenSpaceTL + vec2((Gui::GetStyle().FramePadding.x * 2.0f), Floor((rowIt.LocalHeight * 0.5f) - (textHeight * 0.5f)));
 
 					// HACK: Use TextDisable for now to make it clear that these aren't really implemented yet
-					const bool isThisRowImplemented = !(rowIt.RowType == TimelineRowType::Notes_Expert || rowIt.RowType == TimelineRowType::Notes_Master);
+					const b8 isThisRowImplemented = !(rowIt.RowType == TimelineRowType::Notes_Expert || rowIt.RowType == TimelineRowType::Notes_Master);
 
 					Gui::DisableFontPixelSnap(true);
 					DrawListSidebar->AddText(screenSpaceTextPosition, Gui::GetColorU32(isThisRowImplemented ? ImGuiCol_Text : ImGuiCol_TextDisabled), Gui::StringViewStart(rowIt.Label), Gui::StringViewEnd(rowIt.Label));
@@ -1705,14 +1704,14 @@ namespace PeepoDrumKit
 					DrawListContent->AddLine(screenSpaceBL, screenSpaceBL + vec2(Regions.Content.GetWidth(), 0.0f), TimelineHorizontalRowLineColor);
 
 					static constexpr f32 compactFormatStringZoomLevelThreshold = 0.25f;
-					const bool useCompactFormat = (Camera.ZoomTarget.x < compactFormatStringZoomLevelThreshold);
+					const b8 useCompactFormat = (Camera.ZoomTarget.x < compactFormatStringZoomLevelThreshold);
 
 					// TODO: Do culling by first determining min/max visible beat times then use those to continue / break inside loop (although problematic with TimeOffset?)
 					switch (rowIt.RowType)
 					{
 					case TimelineRowType::Tempo:
 					{
-						for (const auto& tempoChange : context.ChartSelectedCourse->TempoMap.TempoChanges)
+						for (const auto& tempoChange : context.ChartSelectedCourse->TempoMap.Tempo)
 						{
 							const Time startTime = context.BeatToTime(tempoChange.Beat);
 							if (startTime < visibleTime.Min || startTime > visibleTime.Max)
@@ -1738,7 +1737,7 @@ namespace PeepoDrumKit
 
 					case TimelineRowType::TimeSignature:
 					{
-						for (const auto& signatureChange : context.ChartSelectedCourse->TempoMap.SignatureChanges)
+						for (const auto& signatureChange : context.ChartSelectedCourse->TempoMap.Signature)
 						{
 							const Time startTime = context.BeatToTime(signatureChange.Beat);
 							if (startTime < visibleTime.Min || startTime > visibleTime.Max)

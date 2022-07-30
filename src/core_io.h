@@ -8,26 +8,26 @@ namespace Path
 {
 	constexpr char ExtensionSeparator = '.';
 	constexpr char DirectorySeparator = '/', DirectorySeparatorWin32 = '\\';
-	constexpr const char* DirectorySeparators = "/\\";
+	constexpr cstr DirectorySeparators = "/\\";
 
 	constexpr char InvalidPathCharacters[] = { '\"', '<', '>', '|', '\0', };
 	constexpr char InvalidFileNameCharacters[] = { '\"', '<', '>', '|', ':', '*', '?', '\\', '/', '\0', };
 
-	constexpr bool IsValidPathChar(char charToCheck) { for (char invalid : InvalidFileNameCharacters) { if (charToCheck == invalid) return false; } return true; }
+	constexpr b8 IsValidPathChar(char charToCheck) { for (char invalid : InvalidFileNameCharacters) { if (charToCheck == invalid) return false; } return true; }
 
 	std::string_view GetExtension(std::string_view filePath);
 	std::string_view TrimExtension(std::string_view filePath);
 
 	// NOTE: Case insensitive
-	bool HasExtension(std::string_view filePath, std::string_view extension);
+	b8 HasExtension(std::string_view filePath, std::string_view extension);
 	// NOTE: Case insensitive, packed extensions to be separated by a semicolon (Example: ".wav;.flac;.ogg;.mp3")
-	bool HasAnyExtension(std::string_view filePath, std::string_view packedExtensions);
+	b8 HasAnyExtension(std::string_view filePath, std::string_view packedExtensions);
 
-	std::string_view GetFileName(std::string_view filePath, bool includeExtension = true);
+	std::string_view GetFileName(std::string_view filePath, b8 includeExtension = true);
 	std::string_view GetDirectoryName(std::string_view filePath);
 
-	bool IsRelative(std::string_view filePath);
-	bool IsDirectory(std::string_view filePath);
+	b8 IsRelative(std::string_view filePath);
+	b8 IsDirectory(std::string_view filePath);
 
 	std::string TryMakeAbsolute(std::string_view relativePath, std::string_view baseFileOrDirectory);
 	std::string TryMakeRelative(std::string_view absolutePath, std::string_view baseFileOrDirectory);
@@ -49,19 +49,19 @@ namespace File
 	};
 
 	UniqueFileContent ReadAllBytes(std::string_view filePath);
-	bool WriteAllBytes(std::string_view filePath, const void* fileContent, size_t fileSize);
-	bool WriteAllBytes(std::string_view filePath, const UniqueFileContent& uniqueFileContent);
-	bool WriteAllBytes(std::string_view filePath, const std::string_view textFileContent);
+	b8 WriteAllBytes(std::string_view filePath, const void* fileContent, size_t fileSize);
+	b8 WriteAllBytes(std::string_view filePath, const UniqueFileContent& uniqueFileContent);
+	b8 WriteAllBytes(std::string_view filePath, const std::string_view textFileContent);
 
-	bool Exists(std::string_view filePath);
-	bool Copy(std::string_view source, std::string_view destination, bool overwriteExisting = false);
+	b8 Exists(std::string_view filePath);
+	b8 Copy(std::string_view source, std::string_view destination, b8 overwriteExisting = false);
 }
 
 namespace Directory
 {
 	// TODO: CreateNested, Exists, WIN32FINDFILE wrapper, etc.
-	bool Create(std::string_view directoryPath);
-	bool Exists(std::string_view directoryPath);
+	b8 Create(std::string_view directoryPath);
+	b8 Exists(std::string_view directoryPath);
 
 	std::string GetExecutablePath();
 	std::string GetExecutableDirectory();
@@ -84,7 +84,7 @@ namespace CommandLine
 namespace Shell
 {
 	// constexpr std::string_view FileLinkExtension = ".lnk";
-	// bool IsFileLink(std::string filePath);
+	// b8 IsFileLink(std::string filePath);
 	// std::string ResolveFileLink(std::string_view lnkFilePath);
 
 	void OpenInExplorer(std::string_view filePath);
@@ -104,7 +104,7 @@ namespace Shell
 		std::string_view Label;
 		struct ItemData
 		{
-			bool* CheckboxChecked;
+			b8* CheckboxChecked;
 		} InOut;
 	};
 

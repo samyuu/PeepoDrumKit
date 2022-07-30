@@ -2,25 +2,25 @@
 
 namespace PeepoDrumKit
 {
-	static constexpr const char* TJATokenTypeNames[] = { "???", "...", "// comment", "Key:Value", "# Chart Command", "Chart Data" };
+	static constexpr cstr TJATokenTypeNames[] = { "???", "...", "// comment", "Key:Value", "# Chart Command", "Chart Data" };
 	static_assert(ArrayCount(TJATokenTypeNames) == EnumCount<TJA::TokenType>);
 
-	static constexpr const char* TJADifficultyTypeNames[] = { "Easy", "Normal", "Hard", "Oni", "Oni (Ura)", "Tower", "Dan", };
+	static constexpr cstr TJADifficultyTypeNames[] = { "Easy", "Normal", "Hard", "Oni", "Oni (Ura)", "Tower", "Dan", };
 	static_assert(ArrayCount(TJADifficultyTypeNames) == EnumCount<TJA::DifficultyType>);
 
-	static constexpr const char* TJAScoreModeNames[] = { "AC1 - AC7", "AC8 - AC14", "AC0", };
+	static constexpr cstr TJAScoreModeNames[] = { "AC1 - AC7", "AC8 - AC14", "AC0", };
 	static_assert(ArrayCount(TJAScoreModeNames) == EnumCount<TJA::ScoreMode>);
 
-	static constexpr const char* TJASongSelectSideNames[] = { "Normal", "Ex", "Both", };
+	static constexpr cstr TJASongSelectSideNames[] = { "Normal", "Ex", "Both", };
 	static_assert(ArrayCount(TJASongSelectSideNames) == EnumCount<TJA::SongSelectSide>);
 
-	static constexpr const char* TJAGameTypeNames[] = { "Taiko", "Jubeat", };
+	static constexpr cstr TJAGameTypeNames[] = { "Taiko", "Jubeat", };
 	static_assert(ArrayCount(TJAGameTypeNames) == EnumCount<TJA::GameType>);
 
-	static constexpr const char* TJAStyleModeNames[] = { "Single", "Double", };
+	static constexpr cstr TJAStyleModeNames[] = { "Single", "Double", };
 	static_assert(ArrayCount(TJAStyleModeNames) == EnumCount<TJA::StyleMode>);
 
-	static constexpr const char* TJAParsedChartCommandTypeNames[] =
+	static constexpr cstr TJAParsedChartCommandTypeNames[] =
 	{
 		"UNKNOWN",
 		"Notes",
@@ -50,7 +50,7 @@ namespace PeepoDrumKit
 	};
 	static_assert(ArrayCount(TJAParsedChartCommandTypeNames) == EnumCount<TJA::ParsedChartCommandType>);
 
-	static constexpr const char* TJANoteTypeNames[] =
+	static constexpr cstr TJANoteTypeNames[] =
 	{
 		u8"_",
 		u8"o",
@@ -110,7 +110,7 @@ namespace PeepoDrumKit
 		outTextEditor.SetErrorMarkers(errorMarkers);
 	}
 
-	void TJATestWindows::DrawGui(bool* isOpen)
+	void TJATestWindows::DrawGui(b8* isOpen)
 	{
 		WasTJAEditedThisFrame = false;
 
@@ -144,7 +144,7 @@ namespace PeepoDrumKit
 		DrawGuiParsedWindow(isOpen);
 	}
 
-	void TJATestWindows::DrawGuiFileContentWindow(bool* isOpen)
+	void TJATestWindows::DrawGuiFileContentWindow(b8* isOpen)
 	{
 		if (Gui::Begin("TJA Test - File Content", isOpen, ImGuiWindowFlags_None))
 		{
@@ -211,7 +211,7 @@ namespace PeepoDrumKit
 		Gui::End();
 	}
 
-	void TJATestWindows::DrawGuiTokensWindow(bool* isOpen)
+	void TJATestWindows::DrawGuiTokensWindow(b8* isOpen)
 	{
 		if (Gui::Begin("TJA Test - Tokens", isOpen, ImGuiWindowFlags_None))
 		{
@@ -264,7 +264,7 @@ namespace PeepoDrumKit
 		Gui::End();
 	}
 
-	void TJATestWindows::DrawGuiParsedWindow(bool* isOpen)
+	void TJATestWindows::DrawGuiParsedWindow(b8* isOpen)
 	{
 		if (Gui::Begin("TJA Test - Parsed", isOpen, ImGuiWindowFlags_None))
 		{

@@ -42,7 +42,7 @@ namespace ApplicationHost
 	//		 Hardcoded for now but should probably be passed in as a parameter / updated dynamically as the ImGui style changes (?)
 	static constexpr u32 Win32WindowBackgroundColor = 0x001F1F1F;
 	static constexpr f32 D3D11SwapChainClearColor[4] = { 0.12f, 0.12f, 0.12f, 1.0f };
-	static constexpr const char* FontFilePath = "assets/NotoSansCJKjp-Regular.otf";
+	static constexpr cstr FontFilePath = "assets/NotoSansCJKjp-Regular.otf";
 
 	static LRESULT WINAPI MainWindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -54,15 +54,15 @@ namespace ApplicationHost
 	static UpdateFunc				GlobalOnUserUpdate = nullptr;
 	static WindowCloseRequestFunc	GlobalOnUserWindowCloseRequest = nullptr;
 	static WINDOWPLACEMENT			GlobalPreFullscreenWindowPlacement = {};
-	static bool						GlobalIsWindowMinimized = false;
-	static bool						GlobalIsWindowBeingDragged = false;
+	static b8						GlobalIsWindowMinimized = false;
+	static b8						GlobalIsWindowBeingDragged = false;
 	static UINT_PTR					GlobalWindowRedrawTimerID = {};
 	static HANDLE					GlobalSwapChainWaitableObject = NULL;
 	static struct { const ImWchar *JP, *EN; } GlobalGlyphRanges = {};
 	static ImGuiStyle				GlobalOriginalScaleStyle = {};
-	static bool						GlobalIsFirstFrameAfterFontRebuild = true;
+	static b8						GlobalIsFirstFrameAfterFontRebuild = true;
 
-	static bool CreateGlobalD3D11(const StartupParam& startupParam, HWND hWnd);
+	static b8 CreateGlobalD3D11(const StartupParam& startupParam, HWND hWnd);
 	static void CleanupGlobalD3D11();
 	static void CreateGlobalD3D11SwapchainRenderTarget();
 	static void CleanupGlobalD3D11SwapchainRenderTarget();
@@ -120,7 +120,7 @@ namespace ApplicationHost
 			}
 		};
 
-		const bool rebuild = !io.Fonts->Fonts.empty();
+		const b8 rebuild = !io.Fonts->Fonts.empty();
 		if (rebuild)
 			io.Fonts->Clear();
 
@@ -284,7 +284,7 @@ namespace ApplicationHost
 		if (!ApproxmiatelySame(GuiScaleFactor, 1.0f))
 			ImGui::GetStyle().ScaleAllSizes(GuiScaleFactor);
 
-		bool done = false;
+		b8 done = false;
 		while (!done)
 		{
 			if (GlobalState.RequestExitNextFrame.has_value())
@@ -384,7 +384,7 @@ namespace ApplicationHost
 		return 0;
 	}
 
-	static bool CreateGlobalD3D11(const StartupParam& startupParam, HWND hWnd)
+	static b8 CreateGlobalD3D11(const StartupParam& startupParam, HWND hWnd)
 	{
 		DXGI_SWAP_CHAIN_DESC sd = {};
 		sd.BufferCount = 2;

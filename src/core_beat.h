@@ -20,12 +20,12 @@ struct Beat
 	static constexpr Beat FromBars(i32 bars, i32 beatsPerBar = 4) { return FromBeats(bars * beatsPerBar); }
 	static constexpr Beat FromBeatsFraction(f64 fraction) { return FromTicks(static_cast<i32>(Round(fraction * static_cast<f64>(TicksPerBeat)))); }
 
-	constexpr bool operator==(const Beat& other) const { return Ticks == other.Ticks; }
-	constexpr bool operator!=(const Beat& other) const { return Ticks != other.Ticks; }
-	constexpr bool operator<=(const Beat& other) const { return Ticks <= other.Ticks; }
-	constexpr bool operator>=(const Beat& other) const { return Ticks >= other.Ticks; }
-	constexpr bool operator<(const Beat& other) const { return Ticks < other.Ticks; }
-	constexpr bool operator>(const Beat& other) const { return Ticks > other.Ticks; }
+	constexpr b8 operator==(const Beat& other) const { return Ticks == other.Ticks; }
+	constexpr b8 operator!=(const Beat& other) const { return Ticks != other.Ticks; }
+	constexpr b8 operator<=(const Beat& other) const { return Ticks <= other.Ticks; }
+	constexpr b8 operator>=(const Beat& other) const { return Ticks >= other.Ticks; }
+	constexpr b8 operator<(const Beat& other) const { return Ticks < other.Ticks; }
+	constexpr b8 operator>(const Beat& other) const { return Ticks > other.Ticks; }
 
 	constexpr Beat operator+(const Beat& other) const { return Beat(Ticks + other.Ticks); }
 	constexpr Beat operator-(const Beat& other) const { return Beat(Ticks - other.Ticks); }
@@ -46,7 +46,7 @@ inline Beat FloorBeatToGrid(Beat beat, Beat grid) { return Beat::FromTicks(stati
 inline Beat RoundBeatToGrid(Beat beat, Beat grid) { return Beat::FromTicks(static_cast<i32>(Round(static_cast<f64>(beat.Ticks) / static_cast<f64>(grid.Ticks))) * grid.Ticks); }
 inline Beat CeilBeatToGrid(Beat beat, Beat grid) { return Beat::FromTicks(static_cast<i32>(Ceil(static_cast<f64>(beat.Ticks) / static_cast<f64>(grid.Ticks))) * grid.Ticks); }
 constexpr Beat GetGridBeatSnap(i32 gridBarDivision) { return Beat::FromBars(1) / gridBarDivision; }
-constexpr auto IsTupletBarDivision(i32 gridBarDivision) -> bool { return (gridBarDivision % 3 == 0); };
+constexpr b8 IsTupletBarDivision(i32 gridBarDivision) { return (gridBarDivision % 3 == 0); }
 
 struct Tempo
 {
@@ -70,11 +70,11 @@ struct TimeSignature
 	constexpr Beat GetDurationPerBeat() const { return Beat::FromBars(1) / Denominator; }
 	constexpr Beat GetDurationPerBar() const { return GetDurationPerBeat() * GetBeatsPerBar(); }
 
-	constexpr bool operator==(const TimeSignature& other) const { return (Numerator == other.Numerator) && (Denominator == other.Denominator); }
-	constexpr bool operator!=(const TimeSignature& other) const { return (Numerator != other.Numerator) || (Denominator != other.Denominator); }
+	constexpr b8 operator==(const TimeSignature& other) const { return (Numerator == other.Numerator) && (Denominator == other.Denominator); }
+	constexpr b8 operator!=(const TimeSignature& other) const { return (Numerator != other.Numerator) || (Denominator != other.Denominator); }
 };
 
-constexpr bool IsTimeSignatureSupported(TimeSignature v) { return (v.Numerator > 0 && v.Denominator > 0) && (Beat::FromBars(1).Ticks % v.Denominator) == 0; }
+constexpr b8 IsTimeSignatureSupported(TimeSignature v) { return (v.Numerator > 0 && v.Denominator > 0) && (Beat::FromBars(1).Ticks % v.Denominator) == 0; }
 
 struct TempoChange
 {
@@ -129,7 +129,7 @@ public:
 	void RemoveAtBeat(Beat beatToFindAndRemove);
 	void RemoveAtIndex(size_t indexToRemove);
 
-	inline bool empty() const { return Sorted.empty(); }
+	inline b8 empty() const { return Sorted.empty(); }
 	inline auto begin() { return Sorted.begin(); }
 	inline auto end() { return Sorted.end(); }
 	inline auto begin() const { return Sorted.begin(); }
@@ -177,7 +177,7 @@ public:
 	inline Time BeatToTime(Beat beat) const { return AccelerationStructure.ConvertBeatToTimeUsingLookupTableIndexing(beat); }
 	inline Beat TimeToBeat(Time time) const { return AccelerationStructure.ConvertTimeToBeatUsingLookupTableBinarySearch(time); }
 
-	struct ForEachBeatBarData { TimeSignature Signature; Beat Beat; i32 BarIndex; bool IsBar; };
+	struct ForEachBeatBarData { TimeSignature Signature; Beat Beat; i32 BarIndex; b8 IsBar; };
 	template <typename Func>
 	inline void ForEachBeatBar(Func perBeatBarFunc) const
 	{
@@ -310,7 +310,7 @@ inline size_t LinearlySearchForInsertionIndex(const BeatSortedList<T>& sortedLis
 }
 
 template <typename T>
-inline bool ValidateIsSortedByBeat(const BeatSortedList<T>& sortedList)
+inline b8 ValidateIsSortedByBeat(const BeatSortedList<T>& sortedList)
 {
 	return std::is_sorted(sortedList.begin(), sortedList.end(), [](const T& a, const T& b) { return GetBeat(a) < GetBeat(b); });
 }

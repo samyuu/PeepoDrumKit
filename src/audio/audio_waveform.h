@@ -65,7 +65,7 @@ namespace Audio
 
 		WaveformMip AllMips[MaxMipLevels] {};
 
-		inline bool IsEmpty() const
+		inline b8 IsEmpty() const
 		{
 			return AllMips[0].PowerOfTwoSampleCount == 0;
 		}
@@ -103,7 +103,7 @@ namespace Audio
 			return mip.AverageNormalizedSampleInTimeRange(time, time + timePerPixel);
 		}
 
-		inline void GenerateEntireMipChainFromSampleBuffer(const PCMSampleBuffer& inSampleBuffer, u32 channelIndex, bool includeFullSizeMip = false)
+		inline void GenerateEntireMipChainFromSampleBuffer(const PCMSampleBuffer& inSampleBuffer, u32 channelIndex, b8 includeFullSizeMip = false)
 		{
 			assert(inSampleBuffer.InterleavedSamples != nullptr && channelIndex < inSampleBuffer.ChannelCount);
 

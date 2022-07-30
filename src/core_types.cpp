@@ -1,6 +1,14 @@
 #include "core_types.h"
 #include <stdio.h>
 
+static_assert(BitsPerByte == 8);
+static_assert((sizeof(u8) * BitsPerByte) == 8 && (sizeof(i8) * BitsPerByte) == 8);
+static_assert((sizeof(u16) * BitsPerByte) == 16 && (sizeof(i16) * BitsPerByte) == 16);
+static_assert((sizeof(u32) * BitsPerByte) == 32 && (sizeof(i32) * BitsPerByte) == 32);
+static_assert((sizeof(u64) * BitsPerByte) == 64 && (sizeof(i64) * BitsPerByte) == 64);
+static_assert((sizeof(f32) * BitsPerByte) == 32 && (sizeof(f64) * BitsPerByte) == 64);
+static_assert((sizeof(b8) * BitsPerByte) == 8);
+
 static constexpr Time RoundToMilliseconds(Time value) { return Time::FromSeconds((value.Seconds * 1000.0 + 0.5) * 0.001); }
 
 i32 Time::ToString(char* outBuffer, size_t bufferSize) const
@@ -34,12 +42,12 @@ Time::FormatBuffer Time::ToString() const
 	return buffer;
 }
 
-Time Time::FromString(const char* inBuffer)
+Time Time::FromString(cstr inBuffer)
 {
 	if (inBuffer == nullptr || inBuffer[0] == '\0')
 		return Time::Zero();
 
-	bool isNegative = false;
+	b8 isNegative = false;
 	if (inBuffer[0] == '-') { isNegative = true; inBuffer++; }
 	else if (inBuffer[0] == '+') { isNegative = false; inBuffer++; }
 

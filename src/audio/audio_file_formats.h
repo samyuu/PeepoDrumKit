@@ -22,7 +22,7 @@ namespace Audio
 		".mp3",
 	};
 
-	constexpr const char* SupportedFileFormatExtensionsPacked = ".ogg;.wav;.flac;.mp3";
+	constexpr cstr SupportedFileFormatExtensionsPacked = ".ogg;.wav;.flac;.mp3";
 
 	enum class DecodeFileResult : u8
 	{

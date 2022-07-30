@@ -7,7 +7,7 @@
 #define StrViewFmtString "%.*s"
 #define FmtStrViewArgs(stringView) static_cast<i32>(stringView.size()), stringView.data()
 
-constexpr const char* BoolToStringLiteral(bool value) { return value ? "true" : "false"; }
+constexpr cstr BoolToCStr(b8 value) { return value ? "true" : "false"; }
 
 // NOTE: To correctly handle potentially missing null terminator in a fixed-sized char[] buffer
 template <size_t BufferSize>
@@ -42,7 +42,7 @@ namespace UTF8
 	constexpr const char BOM_UTF32_LE[4] = { '\xFF', '\xFE', '\x00', '\x00' };
 	constexpr const char BOM_UTF32_BE[4] = { '\x00', '\x00', '\xFE', '\xFF' };
 
-	constexpr bool HasBOM(std::string_view input) { return (input.size() >= sizeof(BOM_UTF8)) && (input.substr(0, sizeof(BOM_UTF8)) == std::string_view(BOM_UTF8, sizeof(BOM_UTF8))); }
+	constexpr b8 HasBOM(std::string_view input) { return (input.size() >= sizeof(BOM_UTF8)) && (input.substr(0, sizeof(BOM_UTF8)) == std::string_view(BOM_UTF8, sizeof(BOM_UTF8))); }
 	constexpr std::string_view TrimBOM(std::string_view inputWithBOM) { return inputWithBOM.substr(sizeof(BOM_UTF8)); }
 
 	// NOTE: Convert UTF-16 to UTF-8
@@ -81,20 +81,20 @@ namespace ShiftJIS
 
 namespace ASCII
 {
-	constexpr const char WhitespaceCharacters[] = " \t\r\n";
+	constexpr char WhitespaceCharacters[] = " \t\r\n";
 	constexpr char CaseDifference = ('A' - 'a');
 	constexpr char LowerCaseMin = 'a', LowerCaseMax = 'z';
 	constexpr char UpperCaseMin = 'A', UpperCaseMax = 'Z';
 
-	constexpr bool IsWhitespace(char c) { return (c == ' ' || c == '\t' || c == '\r' || c == '\n'); }
-	constexpr bool IsAllWhitespace(std::string_view v) { for (const char c : v) { if (!IsWhitespace(c)) return false; } return true; }
+	constexpr b8 IsWhitespace(char c) { return (c == ' ' || c == '\t' || c == '\r' || c == '\n'); }
+	constexpr b8 IsAllWhitespace(std::string_view v) { for (const char c : v) { if (!IsWhitespace(c)) return false; } return true; }
 
-	constexpr bool IsLowerCase(char c) { return (c >= LowerCaseMin && c <= LowerCaseMax); }
-	constexpr bool IsUpperCase(char c) { return (c >= UpperCaseMin && c <= UpperCaseMax); }
+	constexpr b8 IsLowerCase(char c) { return (c >= LowerCaseMin && c <= LowerCaseMax); }
+	constexpr b8 IsUpperCase(char c) { return (c >= UpperCaseMin && c <= UpperCaseMax); }
 	constexpr char ToLowerCase(char c) { return IsUpperCase(c) ? (c - CaseDifference) : c; }
 	constexpr char ToUpperCase(char c) { return IsLowerCase(c) ? (c + CaseDifference) : c; }
 
-	constexpr bool MatchesInsensitive(std::string_view a, std::string_view b)
+	constexpr b8 MatchesInsensitive(std::string_view a, std::string_view b)
 	{
 		if (a.size() != b.size())
 			return false;
@@ -107,12 +107,12 @@ namespace ASCII
 		return true;
 	}
 
-	constexpr bool StartsWith(std::string_view v, char prefix) { return (!v.empty() && v.front() == prefix); }
-	constexpr bool StartsWith(std::string_view v, std::string_view prefix) { return (v.size() >= prefix.size() && (v.substr(0, prefix.size()) == prefix)); }
-	constexpr bool StartsWithInsensitive(std::string_view v, std::string_view prefix) { return (v.size() >= prefix.size() && MatchesInsensitive(v.substr(0, prefix.size()), prefix)); }
-	constexpr bool EndsWith(std::string_view v, char suffix) { return (!v.empty() && v.back() == suffix); }
-	constexpr bool EndsWith(std::string_view v, std::string_view suffix) { return (v.size() >= suffix.size() && (v.substr(v.size() - suffix.size()) == suffix)); }
-	constexpr bool EndsWithInsensitive(std::string_view v, std::string_view suffix) { return (v.size() >= suffix.size() && MatchesInsensitive(v.substr(v.size() - suffix.size()), suffix)); }
+	constexpr b8 StartsWith(std::string_view v, char prefix) { return (!v.empty() && v.front() == prefix); }
+	constexpr b8 StartsWith(std::string_view v, std::string_view prefix) { return (v.size() >= prefix.size() && (v.substr(0, prefix.size()) == prefix)); }
+	constexpr b8 StartsWithInsensitive(std::string_view v, std::string_view prefix) { return (v.size() >= prefix.size() && MatchesInsensitive(v.substr(0, prefix.size()), prefix)); }
+	constexpr b8 EndsWith(std::string_view v, char suffix) { return (!v.empty() && v.back() == suffix); }
+	constexpr b8 EndsWith(std::string_view v, std::string_view suffix) { return (v.size() >= suffix.size() && (v.substr(v.size() - suffix.size()) == suffix)); }
+	constexpr b8 EndsWithInsensitive(std::string_view v, std::string_view suffix) { return (v.size() >= suffix.size() && MatchesInsensitive(v.substr(v.size() - suffix.size()), suffix)); }
 
 	constexpr std::string_view TrimLeft(std::string_view v) { size_t nonWS = v.find_first_not_of(WhitespaceCharacters); return (nonWS == std::string_view::npos) ? v : v.substr(nonWS); }
 	constexpr std::string_view TrimRight(std::string_view v) { size_t nonWS = v.find_last_not_of(WhitespaceCharacters); return (nonWS == std::string_view::npos) ? v : v.substr(0, nonWS + 1); }
@@ -123,7 +123,7 @@ namespace ASCII
 	constexpr std::string_view TrimSuffixInsensitive(std::string_view v, std::string_view suffix) { return EndsWithInsensitive(v, suffix) ? v.substr(0, v.size() - suffix.size()) : v; }
 
 	template <typename Func>
-	void ForEachLineInMultiLineString(std::string_view multiLineString, bool includeEmptyTrailingLine, Func perLineFunc)
+	void ForEachLineInMultiLineString(std::string_view multiLineString, b8 includeEmptyTrailingLine, Func perLineFunc)
 	{
 		const char* const begin = multiLineString.data();
 		const char* const end = multiLineString.data() + multiLineString.size();
@@ -170,10 +170,10 @@ namespace ASCII
 	template <typename Func>
 	void ForEachInSpaceSeparatedList(std::string_view spaceSeparatedList, Func perValueFunc) { return ForEachInCharSeparatedList(spaceSeparatedList, ' ', perValueFunc); }
 
-	bool TryParseU32(std::string_view string, u32& out);
-	bool TryParseI32(std::string_view string, i32& out);
-	bool TryParseU64(std::string_view string, u64& out);
-	bool TryParseI64(std::string_view string, i64& out);
-	bool TryParseF32(std::string_view string, f32& out);
-	bool TryParseF64(std::string_view string, f64& out);
+	b8 TryParseU32(std::string_view string, u32& out);
+	b8 TryParseI32(std::string_view string, i32& out);
+	b8 TryParseU64(std::string_view string, u64& out);
+	b8 TryParseI64(std::string_view string, i64& out);
+	b8 TryParseF32(std::string_view string, f32& out);
+	b8 TryParseF64(std::string_view string, f64& out);
 }

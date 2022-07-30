@@ -53,15 +53,15 @@ namespace PeepoDrumKit
 
 		void CreateNewChart(ChartContext& context);
 		void SaveChart(ChartContext& context, std::string_view filePath = "");
-		bool OpenChartSaveAsDialog(ChartContext& context);
-		bool TrySaveChartOrOpenSaveAsDialog(ChartContext& context);
+		b8 OpenChartSaveAsDialog(ChartContext& context);
+		b8 TrySaveChartOrOpenSaveAsDialog(ChartContext& context);
 
 		void StartAsyncImportingChartFile(std::string_view absoluteChartFilePath);
 		void StartAsyncLoadingSongAudioFile(std::string_view absoluteAudioFilePath);
 		void SetAndStartLoadingChartSongFileName(std::string_view relativeOrAbsoluteAudioFilePath, Undo::UndoHistory& undo);
 
-		bool OpenLoadChartFileDialog(ChartContext& context);
-		bool OpenLoadAudioFileDialog(Undo::UndoHistory& undo);
+		b8 OpenLoadChartFileDialog(ChartContext& context);
+		b8 OpenLoadAudioFileDialog(Undo::UndoHistory& undo);
 
 		void CheckOpenSaveConfirmationPopupThenCall(std::function<void()> onSuccess);
 
@@ -78,11 +78,11 @@ namespace PeepoDrumKit
 		std::future<AsyncLoadSongResult> loadSongFuture {};
 		CPUStopwatch loadSongStopwatch = {};
 
-		bool tryToCloseApplicationOnNextFrame = false;
-		bool showHelpWindow = false;
+		b8 tryToCloseApplicationOnNextFrame = false;
+		b8 showHelpWindow = false;
 
-		bool showSettingsWindow = true;
-		bool focusSettingsWindowNextFrame = false;
+		b8 showSettingsWindow = true;
+		b8 focusSettingsWindowNextFrame = false;
 
 		ChartHelpWindow helpWindow = {};
 		ChartUndoHistoryWindow undoHistoryWindow = {};
@@ -94,7 +94,7 @@ namespace PeepoDrumKit
 
 		struct ZoomPopupData
 		{
-			bool IsOpen;
+			b8 IsOpen;
 			Time TimeSinceOpen;
 			Time TimeSinceLastChange;
 			inline void Open() { IsOpen = true; TimeSinceOpen = TimeSinceLastChange = {}; }
@@ -103,24 +103,24 @@ namespace PeepoDrumKit
 
 		struct SaveConfirmationPopupData
 		{
-			bool OpenOnNextFrame;
+			b8 OpenOnNextFrame;
 			std::function<void()> OnSuccessFunction;
 		} saveConfirmationPopup = {};
 
 		struct TestData
 		{
-			bool ShowAudioTestWindow;
-			bool ShowTJATestWindows;
-			bool ShowTJAExportDebugView;
-			bool ShowImGuiDemoWindow;
-			bool ShowImGuiStyleEditor;
+			b8 ShowAudioTestWindow;
+			b8 ShowTJATestWindows;
+			b8 ShowTJAExportDebugView;
+			b8 ShowImGuiDemoWindow;
+			b8 ShowImGuiStyleEditor;
 			AudioTestWindow AudioTestWindow;
 			TJATestWindows TJATestGui;
 		} test = {};
 
 		struct PerformanceData
 		{
-			bool ShowOverlay;
+			b8 ShowOverlay;
 			f32 FrameTimesMS[256];
 			size_t FrameTimeIndex;
 			size_t FrameTimeCount;

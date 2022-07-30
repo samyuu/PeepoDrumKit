@@ -10,11 +10,11 @@ namespace PeepoDrumKit
 {
 	struct LoadingTextAnimation
 	{
-		bool WasLoadingLastFrame = false;
+		b8 WasLoadingLastFrame = false;
 		u8 RingIndex = 0;
 		f32 AccumulatedTimeSec = 0.0f;
 
-		const char* UpdateFrameAndGetText(bool isLoadingThisFrame, f32 deltaTimeSec);
+		cstr UpdateFrameAndGetText(b8 isLoadingThisFrame, f32 deltaTimeSec);
 	};
 
 	struct TempoTapCalculator
@@ -26,7 +26,7 @@ namespace PeepoDrumKit
 		CPUStopwatch LastTap = CPUStopwatch::StartNew();
 		Time ResetThreshold = Time::FromSeconds(2.0);
 
-		inline bool HasTimedOut() const { return ResetThreshold > Time::Zero() && LastTap.GetElapsed() >= ResetThreshold; }
+		inline b8 HasTimedOut() const { return ResetThreshold > Time::Zero() && LastTap.GetElapsed() >= ResetThreshold; }
 		inline void Reset() { FirstTap.Stop(); TapCount = 0; LastTempo = LastTempoMin = LastTempoMax = Tempo(0.0f); }
 		inline void Tap()
 		{
@@ -57,14 +57,14 @@ namespace PeepoDrumKit
 		void DrawGui(ChartContext& context);
 	};
 
-	struct ChartPropertiesWindowIn { bool IsSongAsyncLoading; };
-	struct ChartPropertiesWindowOut { bool BrowseOpenSong; bool LoadNewSong; std::string NewSongFilePath; };
+	struct ChartPropertiesWindowIn { b8 IsSongAsyncLoading; };
+	struct ChartPropertiesWindowOut { b8 BrowseOpenSong; b8 LoadNewSong; std::string NewSongFilePath; };
 	struct ChartPropertiesWindow
 	{
 		std::string SongFileNameInputBuffer;
 		LoadingTextAnimation SongLoadingTextAnimation {};
-		bool DifficultySliderStarsFitOnScreenLastFrame = false;
-		bool DifficultySliderStarsWasHoveredLastFrame = false;
+		b8 DifficultySliderStarsFitOnScreenLastFrame = false;
+		b8 DifficultySliderStarsWasHoveredLastFrame = false;
 
 		void DrawGui(ChartContext& context, const ChartPropertiesWindowIn& in, ChartPropertiesWindowOut& out);
 	};

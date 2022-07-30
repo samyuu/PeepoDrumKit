@@ -19,6 +19,8 @@ using u64 = uint64_t;
 using f32 = float;
 using f64 = double;
 
+using b8 = bool;
+
 constexpr i32 BitsPerByte = CHAR_BIT;
 
 constexpr i8 I8Min = INT8_MIN;
@@ -46,6 +48,9 @@ constexpr f32 F32Max = FLT_MAX;
 
 constexpr f64 F64Min = DBL_MIN;
 constexpr f64 F64Max = DBL_MAX;
+
+// NOTE: Null terminated sequence of characters (always assumed to be UTF-8)
+using cstr = const char*;
 
 #include <assert.h>
 #include <type_traits>
@@ -81,6 +86,15 @@ constexpr __forceinline size_t EnumToIndex(EnumType enumValue)
 	return static_cast<size_t>(enumValue);
 }
 
+// NOTE: Basically "++enum", specifically to be used inside for loops. Return void to not add any confusion with the inOut& param
+//		 Example: for (CoolEnum enum = {}; enum < CoolEnum::Count; IncrementEnum(enum)) { ... }
+template <typename EnumType>
+constexpr __forceinline void IncrementEnum(EnumType& inOutEnum)
+{
+	static_assert(std::is_enum_v<EnumType>);
+	inOutEnum = static_cast<EnumType>(static_cast<std::underlying_type_t<EnumType>>(inOutEnum) + 1);
+}
+
 // NOTE: Example: ArrayCount("example_string_literal")
 template <typename ArrayType>
 constexpr __forceinline size_t ArrayCount(const ArrayType& cStyleArray)
@@ -96,7 +110,7 @@ constexpr __forceinline i32 ArrayCountI32(const ArrayType& cStyleArray)
 }
 
 template <typename IndexType, typename ArrayType>
-constexpr __forceinline bool InBounds(const IndexType index, const ArrayType& array)
+constexpr __forceinline b8 InBounds(const IndexType index, const ArrayType& array)
 {
 	static_assert(std::is_integral_v<IndexType>);
 	using SizeType = decltype(array.size());
@@ -165,8 +179,8 @@ struct ivec2
 	constexpr ivec2(i32 x, i32 y) : x(x), y(y) {}
 	constexpr ivec2(const ivec2& other) : x(other.x), y(other.y) {}
 
-	constexpr bool operator==(const ivec2& other) const { return (x == other.x) && (y == other.y); }
-	constexpr bool operator!=(const ivec2& other) const { return !(*this == other); }
+	constexpr b8 operator==(const ivec2& other) const { return (x == other.x) && (y == other.y); }
+	constexpr b8 operator!=(const ivec2& other) const { return !(*this == other); }
 
 	constexpr ivec2 operator+(const ivec2& other) const { return { (x + other.x), (y + other.y) }; }
 	constexpr ivec2 operator-(const ivec2& other) const { return { (x - other.x), (y - other.y) }; }
@@ -288,9 +302,9 @@ struct Rect
 	constexpr vec2 GetMin() const { return vec2(((BR.x < TL.x) ? BR.x : TL.x), ((BR.y < TL.y) ? BR.y : TL.y)); }
 	constexpr vec2 GetMax() const { return vec2(((TL.x < BR.x) ? BR.x : TL.x), ((TL.y < BR.y) ? BR.y : TL.y)); }
 
-	constexpr bool Contains(vec2 point) const { return (point.x >= TL.x) && (point.y >= TL.y) && (point.x < BR.x) && (point.y < BR.y); }
-	constexpr bool Contains(const Rect& rect) const { return (rect.TL.x >= TL.x) && (rect.TL.y >= TL.y) && (rect.BR.x <= BR.x) && (rect.BR.y <= BR.y); }
-	constexpr bool Overlaps(const Rect& rect) const { return (rect.TL.y < BR.y) && (rect.BR.y > TL.y) && (rect.TL.x < BR.x) && (rect.BR.x > TL.x); }
+	constexpr b8 Contains(vec2 point) const { return (point.x >= TL.x) && (point.y >= TL.y) && (point.x < BR.x) && (point.y < BR.y); }
+	constexpr b8 Contains(const Rect& rect) const { return (rect.TL.x >= TL.x) && (rect.TL.y >= TL.y) && (rect.BR.x <= BR.x) && (rect.BR.y <= BR.y); }
+	constexpr b8 Overlaps(const Rect& rect) const { return (rect.TL.y < BR.y) && (rect.BR.y > TL.y) && (rect.TL.x < BR.x) && (rect.BR.x > TL.x); }
 };
 
 inline f32 Floor(f32 value) { return ::floorf(value); }
@@ -328,9 +342,9 @@ inline i64 Absolute(i64 value) { return (value >= static_cast<i64>(0)) ? value :
 inline f32 Absolute(f32 value) { return ::fabsf(value); }
 inline f64 Absolute(f64 value) { return ::fabs(value); }
 
-inline bool ApproxmiatelySame(f32 a, f32 b, f32 threshold = 0.0001f) { return Absolute(a - b) < threshold; }
-inline bool ApproxmiatelySame(f64 a, f64 b, f64 threshold = 0.0001) { return Absolute(a - b) < threshold; }
-inline bool ApproxmiatelySame(vec2 a, vec2 b, f32 threshold = 0.0001f) { return ApproxmiatelySame(a.x, b.x, threshold) && ApproxmiatelySame(a.y, b.y, threshold); }
+inline b8 ApproxmiatelySame(f32 a, f32 b, f32 threshold = 0.0001f) { return Absolute(a - b) < threshold; }
+inline b8 ApproxmiatelySame(f64 a, f64 b, f64 threshold = 0.0001) { return Absolute(a - b) < threshold; }
+inline b8 ApproxmiatelySame(vec2 a, vec2 b, f32 threshold = 0.0001f) { return ApproxmiatelySame(a.x, b.x, threshold) && ApproxmiatelySame(a.y, b.y, threshold); }
 
 constexpr f32 ToPercent(f32 value) { return (value * 100.0f); }
 constexpr f32 FromPercent(f32 percent) { return (percent * 0.01f); }
@@ -398,12 +412,12 @@ struct Time
 	constexpr f64 TotalMilliseconds() const { return Seconds * 1000.0; }
 	constexpr f32 ToFrames(f32 fps = 60.0f) const { return static_cast<f32>(Seconds * static_cast<f64>(fps)); }
 
-	constexpr bool operator==(const Time& other) const { return Seconds == other.Seconds; }
-	constexpr bool operator!=(const Time& other) const { return Seconds != other.Seconds; }
-	constexpr bool operator<=(const Time& other) const { return Seconds <= other.Seconds; }
-	constexpr bool operator>=(const Time& other) const { return Seconds >= other.Seconds; }
-	constexpr bool operator<(const Time& other) const { return Seconds < other.Seconds; }
-	constexpr bool operator>(const Time& other) const { return Seconds > other.Seconds; }
+	constexpr b8 operator==(const Time& other) const { return Seconds == other.Seconds; }
+	constexpr b8 operator!=(const Time& other) const { return Seconds != other.Seconds; }
+	constexpr b8 operator<=(const Time& other) const { return Seconds <= other.Seconds; }
+	constexpr b8 operator>=(const Time& other) const { return Seconds >= other.Seconds; }
+	constexpr b8 operator<(const Time& other) const { return Seconds < other.Seconds; }
+	constexpr b8 operator>(const Time& other) const { return Seconds > other.Seconds; }
 
 	constexpr Time operator+(const Time other) const { return FromSeconds(Seconds + other.Seconds); }
 	constexpr Time operator-(const Time other) const { return FromSeconds(Seconds - other.Seconds); }
@@ -425,7 +439,7 @@ struct Time
 	struct FormatBuffer { char Data[12]; };
 	i32 ToString(char* outBuffer, size_t bufferSize) const;
 	FormatBuffer ToString() const;
-	static Time FromString(const char* inBuffer);
+	static Time FromString(cstr inBuffer);
 };
 
 struct CPUTime
@@ -442,7 +456,7 @@ struct CPUTime
 
 struct CPUStopwatch
 {
-	bool IsRunning = false;
+	b8 IsRunning = false;
 	CPUTime StartTime = {};
 
 	void Start() { if (!IsRunning) { StartTime = CPUTime::GetNow(); IsRunning = true; } }

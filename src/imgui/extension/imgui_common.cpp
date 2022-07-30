@@ -28,7 +28,7 @@ namespace ImGui
 		return 0;
 	}
 
-	ImVec2 CalcTextSize(std::string_view text, bool hide_text_after_double_hash, float wrap_width)
+	ImVec2 CalcTextSize(std::string_view text, b8 hide_text_after_double_hash, float wrap_width)
 	{
 		return ImGui::CalcTextSize(StringViewStart(text), StringViewEnd(text), hide_text_after_double_hash, wrap_width);
 	}
@@ -67,7 +67,7 @@ namespace ImGui
 		drawList->AddText(font, fontSize, textPosition, textColor, StringViewStart(text), StringViewEnd(text), wrap_width, cpu_fine_clip_rect);
 	}
 
-	bool InputText(const char* label, std::string* str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
+	b8 InputText(cstr label, std::string* str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 	{
 		IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
 		flags |= ImGuiInputTextFlags_CallbackResize;
@@ -79,7 +79,7 @@ namespace ImGui
 		return ImGui::InputText(label, str->data(), str->capacity() + 1, flags, InputTextStdStringCallback, &cb_user_data);
 	}
 
-	bool InputTextMultiline(const char* label, std::string* str, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
+	b8 InputTextMultiline(cstr label, std::string* str, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 	{
 		IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
 		flags |= ImGuiInputTextFlags_CallbackResize;
@@ -91,7 +91,7 @@ namespace ImGui
 		return ImGui::InputTextMultiline(label, str->data(), str->capacity() + 1, size, flags, InputTextStdStringCallback, &cb_user_data);
 	}
 
-	bool InputTextMultilineWithHint(const char* label, const char* hint, std::string* str, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
+	b8 InputTextMultilineWithHint(cstr label, cstr hint, std::string* str, const ImVec2& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 	{
 		IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
 		flags |= ImGuiInputTextFlags_CallbackResize;
@@ -103,7 +103,7 @@ namespace ImGui
 		return ImGui::InputTextEx(label, hint, str->data(), static_cast<int>(str->capacity() + 1), size, flags | ImGuiInputTextFlags_Multiline, InputTextStdStringCallback, &cb_user_data);
 	}
 
-	bool InputTextWithHint(const char* label, const char* hint, std::string* str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
+	b8 InputTextWithHint(cstr label, cstr hint, std::string* str, ImGuiInputTextFlags flags, ImGuiInputTextCallback callback, void* user_data)
 	{
 		IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
 		flags |= ImGuiInputTextFlags_CallbackResize;
@@ -125,7 +125,7 @@ namespace ImGui
 		return 0;
 	}
 
-	bool PathInputTextWithHint(const char* label, const char* hint, std::string* str, ImGuiInputTextFlags flags)
+	b8 PathInputTextWithHint(cstr label, cstr hint, std::string* str, ImGuiInputTextFlags flags)
 	{
 		IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
 		flags |= ImGuiInputTextFlags_CallbackResize;

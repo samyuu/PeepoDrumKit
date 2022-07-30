@@ -41,10 +41,10 @@ static void ConvertToEscapeSequences(const std::string_view in, std::string& out
 namespace PeepoDrumKit
 {
 	struct MultiWidgetIt { i32 Index; };
-	struct MultiWidgetResult { bool ValueChanged; i32 ChangedIndex; };
+	struct MultiWidgetResult { b8 ValueChanged; i32 ChangedIndex; };
 
 	template <typename Func>
-	static MultiWidgetResult GuiMultiWidget(i32 itemCount, Func onWidgetFunc)
+	static MultiWidgetResult GuiSameLineMultiWidget(i32 itemCount, Func onWidgetFunc)
 	{
 		i32 changedIndex = -1;
 		Gui::BeginGroup();
@@ -61,9 +61,9 @@ namespace PeepoDrumKit
 		return MultiWidgetResult { (changedIndex != -1), changedIndex };
 	}
 
-	static bool GuiDragFloatLabel(std::string_view label, f32* inOutValue, f32 speed, f32 min, f32 max, const char* format, ImGuiSliderFlags flags)
+	static b8 GuiDragFloatLabel(std::string_view label, f32* inOutValue, f32 speed, f32 min, f32 max, cstr format, ImGuiSliderFlags flags)
 	{
-		bool valueChanged = false;
+		b8 valueChanged = false;
 		Gui::BeginGroup();
 		Gui::PushID(Gui::StringViewStart(label), Gui::StringViewEnd(label));
 		{
@@ -85,7 +85,7 @@ namespace PeepoDrumKit
 		return valueChanged;
 	}
 
-	static bool GuiInputFraction(const char* label, ivec2* inOutValue, std::optional<ivec2> valueRange)
+	static b8 GuiInputFraction(cstr label, ivec2* inOutValue, std::optional<ivec2> valueRange)
 	{
 		static constexpr i32 componentCount = 2;
 
@@ -93,12 +93,12 @@ namespace PeepoDrumKit
 		const f32 divisionLabelWidth = Gui::CalcTextSize(Gui::StringViewStart(divisionText), Gui::StringViewEnd(divisionText)).x;
 		const f32 perComponentInputFloatWidth = Floor(((Gui::GetContentRegionAvail().x - divisionLabelWidth) / static_cast<f32>(componentCount)));
 
-		bool anyValueChanged = false;
+		b8 anyValueChanged = false;
 		for (i32 component = 0; component < componentCount; component++)
 		{
 			Gui::PushID(&(*inOutValue)[component]);
 
-			const bool isLastComponent = ((component + 1) == componentCount);
+			const b8 isLastComponent = ((component + 1) == componentCount);
 			Gui::SetNextItemWidth(isLastComponent ? (Gui::GetContentRegionAvail().x - 1.0f) : perComponentInputFloatWidth);
 
 			if (Gui::InputScalar("##Component", ImGuiDataType_S32, &(*inOutValue)[component], nullptr, nullptr, "%d", ImGuiInputTextFlags_None))
@@ -119,9 +119,9 @@ namespace PeepoDrumKit
 		return anyValueChanged;
 	}
 
-	static bool GuiDifficultyLevelStarSliderWidget(const char* label, DifficultyLevel* inOutLevel, bool& inOutFitOnScreenLastFrame, bool& inOutHoveredLastFrame)
+	static b8 GuiDifficultyLevelStarSliderWidget(cstr label, DifficultyLevel* inOutLevel, b8& inOutFitOnScreenLastFrame, b8& inOutHoveredLastFrame)
 	{
-		bool valueWasChanged = false;
+		b8 valueWasChanged = false;
 
 		// NOTE: Make text transparent instead of using an empty slider format string 
 		//		 so that the slider can still convert the input to a string on the same frame it is turned into an InputText (due to the frame delayed starsFitOnScreen)
@@ -142,7 +142,7 @@ namespace PeepoDrumKit
 		const f32 availableWidth = sliderRect.GetWidth();
 		const vec2 starSize = vec2(availableWidth / static_cast<f32>(DifficultyLevel::Max), Gui::GetFrameHeight());
 
-		const bool starsFitOnScreen = (starSize.x >= Gui::GetFrameHeight()) && !Gui::IsItemBeingEditedAsText();
+		const b8 starsFitOnScreen = (starSize.x >= Gui::GetFrameHeight()) && !Gui::IsItemBeingEditedAsText();
 
 		// NOTE: Use the last frame result here too to match the slider text as it has already been drawn
 		if (inOutFitOnScreenLastFrame)
@@ -179,9 +179,9 @@ namespace PeepoDrumKit
 	static constexpr f32 MinBPM = 30.0f;
 	static constexpr f32 MaxBPM = 960.0f;
 
-	const char* LoadingTextAnimation::UpdateFrameAndGetText(bool isLoadingThisFrame, f32 deltaTimeSec)
+	cstr LoadingTextAnimation::UpdateFrameAndGetText(b8 isLoadingThisFrame, f32 deltaTimeSec)
 	{
-		static constexpr const char* TextFrames[] = { "Loading o....", "Loading .o...", "Loading ..o..", "Loading ...o.", "Loading ....o", "Loading ...o.", "Loading ..o..", "Loading .o..." };
+		static constexpr cstr TextFrames[] = { "Loading o....", "Loading .o...", "Loading ..o..", "Loading ...o.", "Loading ....o", "Loading ...o.", "Loading ..o..", "Loading .o..." };
 		static constexpr f32 FrameIntervalSec = (1.0f / 12.0f);
 
 		if (!WasLoadingLastFrame && isLoadingThisFrame)
@@ -191,7 +191,7 @@ namespace PeepoDrumKit
 		if (isLoadingThisFrame)
 			AccumulatedTimeSec += deltaTimeSec;
 
-		const char* loadingText = TextFrames[RingIndex];
+		cstr loadingText = TextFrames[RingIndex];
 		if (AccumulatedTimeSec >= FrameIntervalSec)
 		{
 			AccumulatedTimeSec -= FrameIntervalSec;
@@ -211,7 +211,7 @@ namespace PeepoDrumKit
 			u32 RedBright = 0xFF93B2E7; // 0xFFBAC2E4; // 0xFF6363DE;
 			u32 WhiteDark = 0xFF95DCDC; // 0xFFEAEAEA;
 			u32 WhiteBright = 0xFFBBD3D3; // 0xFFEAEAEA;
-			bool Show = false;
+			b8 Show = false;
 		} colors;
 #if PEEPO_DEBUG
 		if (Gui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && Gui::IsKeyPressed(ImGuiKey_GraveAccent))
@@ -369,12 +369,12 @@ namespace PeepoDrumKit
 			Gui::TableHeadersRow();
 			Gui::PopFont();
 
-			static constexpr auto undoCommandRow = [](Undo::CommandInfo commandInfo, CPUTime creationTime, const void* id, bool isSelected)
+			static constexpr auto undoCommandRow = [](Undo::CommandInfo commandInfo, CPUTime creationTime, const void* id, b8 isSelected)
 			{
 				Gui::TableNextRow();
 				Gui::TableSetColumnIndex(0);
 				char labelBuffer[256]; sprintf_s(labelBuffer, "%.*s###%p", FmtStrViewArgs(commandInfo.Description), id);
-				const bool clicked = Gui::Selectable(labelBuffer, isSelected, ImGuiSelectableFlags_SpanAllColumns);
+				const b8 clicked = Gui::Selectable(labelBuffer, isSelected, ImGuiSelectableFlags_SpanAllColumns);
 
 				// TODO: Display as formatted local time instead of time relative to program startup (?)
 				Gui::TableSetColumnIndex(1);
@@ -434,10 +434,10 @@ namespace PeepoDrumKit
 		Gui::PushStyleColor(ImGuiCol_ButtonHovered, Gui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
 		Gui::PushStyleColor(ImGuiCol_ButtonActive, Gui::GetStyleColorVec4(ImGuiCol_HeaderActive));
 		{
-			const bool windowFocused = Gui::IsWindowFocused() && (Gui::GetActiveID() == 0);
-			const bool tapPressed = windowFocused && Gui::IsAnyPressed(*Settings.Input.TempoCalculator_Tap, false);
-			const bool resetPressed = windowFocused && Gui::IsAnyPressed(*Settings.Input.TempoCalculator_Reset, false);
-			const bool resetDown = windowFocused && Gui::IsAnyDown(*Settings.Input.TempoCalculator_Reset);
+			const b8 windowFocused = Gui::IsWindowFocused() && (Gui::GetActiveID() == 0);
+			const b8 tapPressed = windowFocused && Gui::IsAnyPressed(*Settings.Input.TempoCalculator_Tap, false);
+			const b8 resetPressed = windowFocused && Gui::IsAnyPressed(*Settings.Input.TempoCalculator_Reset, false);
+			const b8 resetDown = windowFocused && Gui::IsAnyDown(*Settings.Input.TempoCalculator_Reset);
 
 			Gui::PushFont(FontLarge_EN);
 			{
@@ -445,7 +445,7 @@ namespace PeepoDrumKit
 				const f32 tapBeatLerpT = ImSaturate((Calculator.TapCount == 0) ? 1.0f : static_cast<f32>(Calculator.LastTap.GetElapsed() / lastBeatDuration));
 				const ImVec4 animatedButtonColor = ImLerp(Gui::GetStyleColorVec4(ImGuiCol_ButtonActive), Gui::GetStyleColorVec4(ImGuiCol_Button), tapBeatLerpT);
 
-				const bool hasTimedOut = Calculator.HasTimedOut();
+				const b8 hasTimedOut = Calculator.HasTimedOut();
 				Gui::PushStyleColor(ImGuiCol_Text, Gui::GetColorU32(ImGuiCol_Text, (Calculator.TapCount > 0 && hasTimedOut) ? 0.8f : 1.0f));
 				Gui::PushStyleColor(ImGuiCol_Button, animatedButtonColor);
 				Gui::PushStyleColor(ImGuiCol_ButtonHovered, (Calculator.TapCount > 0 && !hasTimedOut) ? animatedButtonColor : Gui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
@@ -478,8 +478,8 @@ namespace PeepoDrumKit
 		Gui::PushFont(FontMedium_EN);
 		if (Gui::BeginTable("Table", 2, ImGuiTableFlags_BordersInner | ImGuiTableFlags_NoSavedSettings, Gui::GetContentRegionAvail()))
 		{
-			const char* formatStrBPM_g = (Calculator.TapCount > 1) ? "%g BPM" : "--.-- BPM";
-			const char* formatStrBPM_2f = (Calculator.TapCount > 1) ? "%.2f BPM" : "--.-- BPM";
+			cstr formatStrBPM_g = (Calculator.TapCount > 1) ? "%g BPM" : "--.-- BPM";
+			cstr formatStrBPM_2f = (Calculator.TapCount > 1) ? "%.2f BPM" : "--.-- BPM";
 			static constexpr auto row = [&](auto funcLeft, auto funcRight)
 			{
 				Gui::TableNextRow();
@@ -541,8 +541,8 @@ namespace PeepoDrumKit
 				});
 				Gui::Property::PropertyTextValueFunc("Song File Name", [&]
 				{
-					const bool songIsLoading = in.IsSongAsyncLoading;
-					const char* loadingText = SongLoadingTextAnimation.UpdateFrameAndGetText(songIsLoading, Gui::DeltaTime());
+					const b8 songIsLoading = in.IsSongAsyncLoading;
+					cstr loadingText = SongLoadingTextAnimation.UpdateFrameAndGetText(songIsLoading, Gui::DeltaTime());
 					SongFileNameInputBuffer = songIsLoading ? "" : chart.SongFileName;
 
 					Gui::BeginDisabled(songIsLoading);
@@ -618,10 +618,10 @@ namespace PeepoDrumKit
 			if (Gui::Property::BeginTable(ImGuiTableFlags_BordersInner))
 			{
 				enum class TimeSpace : u8 { Chart, Song };
-				static constexpr auto guiDragTimeAndSetCursorTimeButtonWidgets = [](ChartContext& context, const TimelineCamera& camera, const char* label, Time* inOutValue, TimeSpace timeSpace) -> bool
+				static constexpr auto guiDragTimeAndSetCursorTimeButtonWidgets = [](ChartContext& context, const TimelineCamera& camera, cstr label, Time* inOutValue, TimeSpace timeSpace) -> b8
 				{
 					const Time timeSpaceOffset = (timeSpace == TimeSpace::Song) ? context.Chart.SongOffset : Time::Zero();
-					Gui::PushID(label); const auto result = GuiMultiWidget(2, [&](const MultiWidgetIt& i)
+					Gui::PushID(label); const auto result = GuiSameLineMultiWidget(2, [&](const MultiWidgetIt& i)
 					{
 						static_assert(sizeof(Time::Seconds) == sizeof(double));
 						const Time min = timeSpaceOffset, max = Time::FromSeconds(F64Max);
@@ -733,7 +733,7 @@ namespace PeepoDrumKit
 					const ScrollChange* scrollChangeChangeAtCursor = course.ScrollChanges.TryFindLastAtBeat(cursorBeat);
 
 					std::optional<f32> newScrollSpeed = {};
-					Gui::SetNextItemWidth(-1.0f); GuiMultiWidget(2, [&](const MultiWidgetIt& i)
+					Gui::SetNextItemWidth(-1.0f); GuiSameLineMultiWidget(2, [&](const MultiWidgetIt& i)
 					{
 						if (i.Index == 0)
 						{
@@ -768,10 +768,10 @@ namespace PeepoDrumKit
 				{
 					const BarLineChange* barLineChangeAtCursor = course.BarLineChanges.TryFindLastAtBeat(cursorBeat);
 
-					static constexpr auto guiOnOffButton = [](const char* label, const char* onLabel, const char* offLabel, bool* inOutIsOn) -> bool
+					static constexpr auto guiOnOffButton = [](cstr label, cstr onLabel, cstr offLabel, b8* inOutIsOn) -> b8
 					{
-						bool valueChanged = false;
-						Gui::PushID(label); GuiMultiWidget(2, [&](const MultiWidgetIt& i)
+						b8 valueChanged = false;
+						Gui::PushID(label); GuiSameLineMultiWidget(2, [&](const MultiWidgetIt& i)
 						{
 							const f32 alphaFactor = ((i.Index == 0) == *inOutIsOn) ? 1.0f : 0.5f;
 							Gui::PushStyleColor(ImGuiCol_Button, Gui::GetColorU32(ImGuiCol_Button, alphaFactor));
@@ -785,7 +785,7 @@ namespace PeepoDrumKit
 					};
 
 					Gui::SetNextItemWidth(-1.0f);
-					if (bool v = (barLineChangeAtCursor == nullptr) ? true : barLineChangeAtCursor->IsVisible;
+					if (b8 v = (barLineChangeAtCursor == nullptr) ? true : barLineChangeAtCursor->IsVisible;
 						guiOnOffButton("##OnOffBarLineAtCursor", "Visible", "Hidden", &v))
 					{
 						if (barLineChangeAtCursor == nullptr || barLineChangeAtCursor->BeatTime != cursorBeat)
@@ -804,7 +804,7 @@ namespace PeepoDrumKit
 				{
 					const GoGoRange* gogoRangeAtCursor = course.GoGoRanges.TryFindOverlappingBeat(cursorBeat);
 
-					const bool hasRangeSelection = (timeline.RangeSelection.IsActive && timeline.RangeSelection.HasEnd);
+					const b8 hasRangeSelection = (timeline.RangeSelection.IsActive && timeline.RangeSelection.HasEnd);
 					Gui::BeginDisabled(!hasRangeSelection);
 					if (Gui::Button("Set from Range Selection##GoGoAtCursor", vec2(-1.0f, 0.0f)))
 					{
@@ -845,9 +845,9 @@ namespace PeepoDrumKit
 		const LyricChange* lyricChangeAtCursor = context.ChartSelectedCourse->Lyrics.TryFindLastAtBeat(cursorBeat);
 		Gui::BeginDisabled(cursorBeat.Ticks < 0);
 
-		static constexpr auto guiDoubleButton = [](const char* labelA, const char* labelB) -> i32
+		static constexpr auto guiDoubleButton = [](cstr labelA, cstr labelB) -> i32
 		{
-			return GuiMultiWidget(2, [&](const MultiWidgetIt& i) { return Gui::Button((i.Index == 0) ? labelA : labelB, { Gui::CalcItemWidth(), 0.0f }); }).ChangedIndex;
+			return GuiSameLineMultiWidget(2, [&](const MultiWidgetIt& i) { return Gui::Button((i.Index == 0) ? labelA : labelB, { Gui::CalcItemWidth(), 0.0f }); }).ChangedIndex;
 		};
 
 		// TODO: Handle inside the tja format code instead (?)

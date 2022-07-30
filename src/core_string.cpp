@@ -104,19 +104,19 @@ namespace ShiftJIS
 namespace ASCII
 {
 	template <typename T>
-	static inline bool TryParsePrimitiveTypeT(std::string_view string, T& out)
+	static inline b8 TryParsePrimitiveTypeT(std::string_view string, T& out)
 	{
 		const std::from_chars_result result = std::from_chars(string.data(), string.data() + string.size(), out);
-		const bool hasNoError = (result.ec == std::errc {});
-		const bool parsedFully = (result.ptr == string.data() + string.size());
+		const b8 hasNoError = (result.ec == std::errc {});
+		const b8 parsedFully = (result.ptr == string.data() + string.size());
 
 		return hasNoError && parsedFully;
 	}
 
-	bool TryParseU32(std::string_view string, u32& out) { return TryParsePrimitiveTypeT(string, out); }
-	bool TryParseI32(std::string_view string, i32& out) { return TryParsePrimitiveTypeT(string, out); }
-	bool TryParseU64(std::string_view string, u64& out) { return TryParsePrimitiveTypeT(string, out); }
-	bool TryParseI64(std::string_view string, i64& out) { return TryParsePrimitiveTypeT(string, out); }
-	bool TryParseF32(std::string_view string, f32& out) { return TryParsePrimitiveTypeT(string, out); }
-	bool TryParseF64(std::string_view string, f64& out) { return TryParsePrimitiveTypeT(string, out); }
+	b8 TryParseU32(std::string_view string, u32& out) { return TryParsePrimitiveTypeT(string, out); }
+	b8 TryParseI32(std::string_view string, i32& out) { return TryParsePrimitiveTypeT(string, out); }
+	b8 TryParseU64(std::string_view string, u64& out) { return TryParsePrimitiveTypeT(string, out); }
+	b8 TryParseI64(std::string_view string, i64& out) { return TryParsePrimitiveTypeT(string, out); }
+	b8 TryParseF32(std::string_view string, f32& out) { return TryParsePrimitiveTypeT(string, out); }
+	b8 TryParseF64(std::string_view string, f64& out) { return TryParsePrimitiveTypeT(string, out); }
 }

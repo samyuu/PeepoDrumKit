@@ -5,7 +5,7 @@
 
 namespace PeepoDrumKit
 {
-	void RecentFilesList::Add(std::string newFilePath, bool addToEnd)
+	void RecentFilesList::Add(std::string newFilePath, b8 addToEnd)
 	{
 		Path::NormalizeInPlace(newFilePath);
 		erase_remove_if(SortedPaths, [&](const auto& path) { return ASCII::MatchesInsensitive(path, newFilePath); });
@@ -86,12 +86,12 @@ namespace PeepoDrumKit
 		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.50f);
 	}
 
-	static const char* BoolToString(bool in)
+	static cstr BoolToString(b8 in)
 	{
 		return in ? "true" : "false";
 	}
 
-	static bool BoolFromString(std::string_view in, bool& out)
+	static b8 BoolFromString(std::string_view in, b8& out)
 	{
 		if (in == "true") { out = true; return true; }
 		if (in == "false") { out = false; return true; }
@@ -104,9 +104,9 @@ namespace PeepoDrumKit
 		return sprintf_s(buffer, bufferSize, "%g, %g, %g, %g", in.TL.x, in.TL.y, in.GetWidth(), in.GetHeight());
 	}
 
-	static bool RectFromTLSizeString(std::string_view in, Rect& out)
+	static b8 RectFromTLSizeString(std::string_view in, Rect& out)
 	{
-		bool outSuccess = true; vec2 outTL {}, outSize {};
+		b8 outSuccess = true; vec2 outTL {}, outSize {};
 		ASCII::ForEachInCommaSeparatedList(in, [&, index = 0](std::string_view value) mutable
 		{
 			value = ASCII::Trim(value);
@@ -121,7 +121,7 @@ namespace PeepoDrumKit
 
 	namespace Ini
 	{
-		constexpr IniMemberParseResult MemberParseError(const char* errorMessage) { return IniMemberParseResult { true, errorMessage }; }
+		constexpr IniMemberParseResult MemberParseError(cstr errorMessage) { return IniMemberParseResult { true, errorMessage }; }
 
 		static IniMemberParseResult FromString(std::string_view stringToParse, i32& out)
 		{
@@ -143,12 +143,12 @@ namespace PeepoDrumKit
 			char b[64]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%g", in));
 		}
 
-		static IniMemberParseResult FromString(std::string_view stringToParse, bool& out)
+		static IniMemberParseResult FromString(std::string_view stringToParse, b8& out)
 		{
 			return BoolFromString(stringToParse, out) ? IniMemberParseResult {} : MemberParseError("Invalid bool");
 		}
 
-		static void ToString(const bool& in, std::string& stringToAppendTo)
+		static void ToString(const b8& in, std::string& stringToAppendTo)
 		{
 			stringToAppendTo += BoolToString(in);
 		}
@@ -204,7 +204,7 @@ namespace PeepoDrumKit
 			i32 LineIndex = 0;
 			std::string_view CurrentSection = "";
 
-			inline void Error(const char* errorMessage) { Result.HasError = true; Result.ErrorLineIndex = LineIndex; Result.ErrorMessage = errorMessage; }
+			inline void Error(cstr errorMessage) { Result.HasError = true; Result.ErrorLineIndex = LineIndex; Result.ErrorMessage = errorMessage; }
 			inline void Error_InvalidInt() { Error("Invalid int"); }
 			inline void Error_InvalidFloat() { Error("Invalid float"); }
 			inline void Error_InvalidRect() { Error("Invalid rect"); }
@@ -382,7 +382,7 @@ namespace PeepoDrumKit
 				{
 					const IniMemberParseResult memberParseResult = member.FromStringFunc(it.Value, { reinterpret_cast<u8*>(&out) + member.ByteOffsetValue, member.ByteSizeValue });
 					if (!memberParseResult.HasError)
-						*(reinterpret_cast<bool*>(reinterpret_cast<u8*>(&out) + member.ByteOffsetHasValueBool)) = true;
+						*(reinterpret_cast<b8*>(reinterpret_cast<u8*>(&out) + member.ByteOffsetHasValueB8)) = true;
 					else
 						return parser.Error(memberParseResult.ErrorMessage);
 					break;
@@ -402,14 +402,14 @@ namespace PeepoDrumKit
 		std::string strBuffer; strBuffer.reserve(256);
 
 		writer.LineKeyValue_Str("file_version", std::string_view(b, sprintf_s(b, "%d.%d.%d", 1, 0, 0)));
-		const char* lastSection = nullptr;
+		cstr lastSection = nullptr;
 
 		for (size_t i = 0; i < AppSettingsReflectionMap.MemberCount; i++)
 		{
 			const auto& member = AppSettingsReflectionMap.MemberSlots[i];
 			if (member.SerializedSection != lastSection) { writer.Line(); writer.LineSection(member.SerializedSection); lastSection = member.SerializedSection; }
 
-			if (!*(reinterpret_cast<const bool*>(reinterpret_cast<const u8*>(&in) + member.ByteOffsetHasValueBool)))
+			if (!*(reinterpret_cast<const b8*>(reinterpret_cast<const u8*>(&in) + member.ByteOffsetHasValueB8)))
 			{
 				writer.Comment();
 				member.ToStringFunc({ const_cast<u8*>(reinterpret_cast<const u8*>(&in)) + member.ByteOffsetDefault, member.ByteSizeValue }, strBuffer);
@@ -428,7 +428,7 @@ namespace PeepoDrumKit
 	{
 		// TODO: Static assert size to not forget about adding new members
 		SettingsReflectionMap outMap {};
-		const char* currentSection = "";
+		cstr currentSection = "";
 
 #define SECTION(serializedSection) do { currentSection = serializedSection; } while (false)
 #define X(member, serializedName) do																			\
@@ -437,7 +437,7 @@ namespace PeepoDrumKit
 			out.ByteSizeValue = static_cast<u16>(sizeof(UserSettingsData::member.Value));						\
 			out.ByteOffsetDefault = static_cast<u16>(offsetof(UserSettingsData, member.Default));				\
 			out.ByteOffsetValue = static_cast<u16>(offsetof(UserSettingsData, member.Value));					\
-			out.ByteOffsetHasValueBool = static_cast<u16>(offsetof(UserSettingsData, member.HasValue));			\
+			out.ByteOffsetHasValueB8 = static_cast<u16>(offsetof(UserSettingsData, member.HasValue));			\
 			out.SourceCodeName = #member;																		\
 			out.SerializedSection = currentSection;																\
 			out.SerializedName = serializedName;																\

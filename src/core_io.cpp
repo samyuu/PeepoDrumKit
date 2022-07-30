@@ -29,19 +29,19 @@ namespace Path
 		return filePath.substr(0, filePath.size() - filePathExtension.size());
 	}
 
-	bool HasExtension(std::string_view filePath, std::string_view extension)
+	b8 HasExtension(std::string_view filePath, std::string_view extension)
 	{
 		const std::string_view filePathExtension = GetExtension(filePath);
 		return ASCII::MatchesInsensitive(filePathExtension, extension);
 	}
 
-	bool HasAnyExtension(std::string_view filePath, std::string_view packedExtensions)
+	b8 HasAnyExtension(std::string_view filePath, std::string_view packedExtensions)
 	{
 		const std::string_view filePathExtension = GetExtension(filePath);
 		if (filePathExtension.empty() || packedExtensions.empty())
 			return false;
 
-		bool anyExtensionMatches = false;
+		b8 anyExtensionMatches = false;
 		ASCII::ForEachInCharSeparatedList(packedExtensions, ';', [&](std::string_view extension)
 		{
 			if (extension.empty()) { assert(!"Accidental invalid packedExtensions format (?)"); return; }
@@ -51,7 +51,7 @@ namespace Path
 		return anyExtensionMatches;
 	}
 
-	std::string_view GetFileName(std::string_view filePath, bool includeExtension)
+	std::string_view GetFileName(std::string_view filePath, b8 includeExtension)
 	{
 		const size_t lastDirectoryIndex = filePath.find_last_of(DirectorySeparators);
 		const std::string_view fileName = (lastDirectoryIndex == std::string_view::npos) ? filePath : filePath.substr(lastDirectoryIndex + 1);
@@ -64,12 +64,12 @@ namespace Path
 		return fileName.empty() ? filePath : filePath.substr(0, filePath.size() - fileName.size() - 1);
 	}
 
-	bool IsRelative(std::string_view filePath)
+	b8 IsRelative(std::string_view filePath)
 	{
 		return ::PathIsRelativeW(UTF8::WideArg(filePath).c_str());
 	}
 
-	bool IsDirectory(std::string_view filePath)
+	b8 IsDirectory(std::string_view filePath)
 	{
 		return ::PathIsDirectoryW(UTF8::WideArg(filePath).c_str());
 	}
@@ -159,7 +159,7 @@ namespace File
 		return UniqueFileContent { std::move(fileContent), fileSize };
 	}
 
-	bool WriteAllBytes(std::string_view filePath, const void* fileContent, size_t fileSize)
+	b8 WriteAllBytes(std::string_view filePath, const void* fileContent, size_t fileSize)
 	{
 		if (filePath.empty() || fileContent == nullptr)
 			return false;
@@ -178,23 +178,23 @@ namespace File
 		return true;
 	}
 
-	bool WriteAllBytes(std::string_view filePath, const UniqueFileContent& uniqueFileContent)
+	b8 WriteAllBytes(std::string_view filePath, const UniqueFileContent& uniqueFileContent)
 	{
 		return WriteAllBytes(filePath, uniqueFileContent.Content.get(), uniqueFileContent.Size);
 	}
 
-	bool WriteAllBytes(std::string_view filePath, const std::string_view textFileContent)
+	b8 WriteAllBytes(std::string_view filePath, const std::string_view textFileContent)
 	{
 		return WriteAllBytes(filePath, textFileContent.data(), textFileContent.size());
 	}
 
-	bool Exists(std::string_view filePath)
+	b8 Exists(std::string_view filePath)
 	{
 		const DWORD attributes = ::GetFileAttributesW(UTF8::WideArg(filePath).c_str());
 		return (attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY));
 	}
 
-	bool Copy(std::string_view source, std::string_view destination, bool overwriteExisting)
+	b8 Copy(std::string_view source, std::string_view destination, b8 overwriteExisting)
 	{
 		return ::CopyFileW(UTF8::WideArg(source).c_str(), UTF8::WideArg(destination).c_str(), !overwriteExisting);
 	}
@@ -204,7 +204,7 @@ namespace CommandLine
 {
 	CommandLineArrayView GetCommandLineUTF8()
 	{
-		static bool initialized = false;
+		static b8 initialized = false;
 		static std::vector<std::string> argvString;
 		static std::vector<std::string_view> argvStringViews;
 
@@ -229,7 +229,7 @@ namespace CommandLine
 
 namespace Directory
 {
-	bool Create(std::string_view directoryPath)
+	b8 Create(std::string_view directoryPath)
 	{
 		if (directoryPath.empty())
 			return false;
@@ -237,7 +237,7 @@ namespace Directory
 		return ::CreateDirectoryW(UTF8::WideArg(directoryPath).c_str(), 0);
 	}
 
-	bool Exists(std::string_view directoryPath)
+	b8 Exists(std::string_view directoryPath)
 	{
 		if (directoryPath.empty())
 			return false;

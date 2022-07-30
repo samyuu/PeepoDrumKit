@@ -13,7 +13,7 @@ namespace PeepoDrumKit
 		std::vector<std::string> SortedPaths;
 
 		// NOTE: Either add new item or move existing item to top
-		void Add(std::string newFilePath, bool addToEnd = false);
+		void Add(std::string newFilePath, b8 addToEnd = false);
 		void Remove(std::string filePathToRemove);
 	};
 
@@ -30,7 +30,7 @@ namespace PeepoDrumKit
 		T Default;
 		// NOTE: Value is either a *valid* copy of Default or user defined (to avoid always having to check HasValue first)
 		T Value;
-		bool HasValue;
+		b8 HasValue;
 
 		template<typename... Args>
 		constexpr WithDefault(Args&&... args) : Default(std::forward<Args>(args)...), Value(Default), HasValue(false) {}
@@ -52,8 +52,8 @@ namespace PeepoDrumKit
 			i32 WindowSwapInterval = 1;
 			Rect WindowRegion = {};
 			Rect WindowRegionRestore = {};
-			bool WindowIsFullscreen = false;
-			bool WindowIsMaximized = false;
+			b8 WindowIsFullscreen = false;
+			b8 WindowIsMaximized = false;
 		} LastSession = {};
 
 		RecentFilesList RecentFiles;
@@ -78,9 +78,9 @@ namespace PeepoDrumKit
 		struct AudioData
 		{
 			// TODO: ...
-			WithDefault<bool> OpenDeviceOnStartup = true;
-			WithDefault<bool> CloseDeviceOnIdleFocusLoss = false;
-			WithDefault<bool> RequestExclusiveDeviceAccess = false;
+			WithDefault<b8> OpenDeviceOnStartup = true;
+			WithDefault<b8> CloseDeviceOnIdleFocusLoss = false;
+			WithDefault<b8> RequestExclusiveDeviceAccess = false;
 		} Audio;
 
 		struct AnimationData
@@ -151,14 +151,14 @@ namespace PeepoDrumKit
 	// TODO: Implement loading and saving...
 
 	// NOTE: Load and save on every application startup and exit
-	constexpr const char* PersistentAppIniFileName = "settings_app.ini";
+	constexpr cstr PersistentAppIniFileName = "settings_app.ini";
 	inline PersistentAppData PersistentApp = {};
 
 	// NOTE: Load on application startup but only saved after making changes
-	constexpr const char* SettingsIniFileName = "settings_user.ini";
+	constexpr cstr SettingsIniFileName = "settings_user.ini";
 	inline UserSettingsData Settings = {};
 
-	struct SettingsParseResult { bool HasError; i32 ErrorLineIndex; std::string ErrorMessage; };
+	struct SettingsParseResult { b8 HasError; i32 ErrorLineIndex; std::string ErrorMessage; };
 
 	SettingsParseResult ParseSettingsIni(std::string_view fileContent, PersistentAppData& out);
 	void SettingsToIni(const PersistentAppData& in, std::string& out);
@@ -167,7 +167,7 @@ namespace PeepoDrumKit
 	void SettingsToIni(const UserSettingsData& in, std::string& out);
 
 	struct IniMemberVoidPtr { void* Address; size_t ByteSize; };
-	struct IniMemberParseResult { bool HasError; const char* ErrorMessage; };
+	struct IniMemberParseResult { b8 HasError; cstr ErrorMessage; };
 	using IniVoidPtrTypeFromStringFunc = IniMemberParseResult(*)(std::string_view stringToParse, IniMemberVoidPtr out);
 	using IniVoidPtrTypeToStringFunc = void(*)(IniMemberVoidPtr in, std::string& stringToAppendTo);
 
@@ -176,10 +176,10 @@ namespace PeepoDrumKit
 		u16 ByteSizeValue;
 		u16 ByteOffsetDefault;
 		u16 ByteOffsetValue;
-		u16 ByteOffsetHasValueBool;
-		const char* SourceCodeName;
-		const char* SerializedSection;
-		const char* SerializedName;
+		u16 ByteOffsetHasValueB8;
+		cstr SourceCodeName;
+		cstr SerializedSection;
+		cstr SerializedName;
 		IniVoidPtrTypeFromStringFunc FromStringFunc;
 		IniVoidPtrTypeToStringFunc ToStringFunc;
 	};

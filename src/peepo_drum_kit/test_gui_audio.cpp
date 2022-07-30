@@ -3,7 +3,7 @@
 
 namespace PeepoDrumKit
 {
-	void AudioTestWindow::DrawGui(bool* isOpen)
+	void AudioTestWindow::DrawGui(b8* isOpen)
 	{
 		if (Gui::Begin("Audio Test", isOpen, ImGuiWindowFlags_None))
 		{
@@ -139,11 +139,11 @@ namespace PeepoDrumKit
 
 	void AudioTestWindow::ActiveVoicesTabContent()
 	{
-		static constexpr const char* voiceTableFields[] = { "Name", "Position", "Smooth", "Duration", "Volume", "Speed", "Voice", "Source", "Flags", };
+		static constexpr cstr voiceTableFields[] = { "Name", "Position", "Smooth", "Duration", "Volume", "Speed", "Voice", "Source", "Flags", };
 		if (Gui::BeginTable("VoicesTable", ArrayCountI32(voiceTableFields), ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
 		{
 			Gui::TableSetupScrollFreeze(0, 1);
-			for (const char* name : voiceTableFields)
+			for (cstr name : voiceTableFields)
 				Gui::TableSetupColumn(name, ImGuiTableColumnFlags_None);
 			Gui::TableHeadersRow();
 
@@ -151,7 +151,7 @@ namespace PeepoDrumKit
 			for (size_t i = 0; i < allActiveVoices.Count; i++)
 			{
 				const Audio::Voice voiceIt = allActiveVoices.Slots[i];
-				const bool voiceIsPlaying = voiceIt.GetIsPlaying();
+				const b8 voiceIsPlaying = voiceIt.GetIsPlaying();
 				if (!voiceIsPlaying) Gui::PushStyleColor(ImGuiCol_Text, Gui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 
 				Gui::TableNextRow();
@@ -184,11 +184,11 @@ namespace PeepoDrumKit
 
 	void AudioTestWindow::LoadedSourcesTabContent()
 	{
-		static constexpr const char* sourcesTableFields[] = { "Name", "Handle", "Base Volume", "Instances", "Channels", "Sample Rate", "Duration" };
+		static constexpr cstr sourcesTableFields[] = { "Name", "Handle", "Base Volume", "Instances", "Channels", "Sample Rate", "Duration" };
 		if (Gui::BeginTable("SourcesTable", ArrayCountI32(sourcesTableFields), ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
 		{
 			Gui::TableSetupScrollFreeze(0, 1);
-			for (const char* name : sourcesTableFields)
+			for (cstr name : sourcesTableFields)
 				Gui::TableSetupColumn(name, ImGuiTableColumnFlags_None);
 			Gui::TableHeadersRow();
 
@@ -205,16 +205,16 @@ namespace PeepoDrumKit
 					sourceItInstanceCount--;
 
 				Gui::PushID(allLoadedSources.Slots + i);
-				bool sourceIsPreviewing = (sourcePreviewVoice.GetIsPlaying() && sourcePreviewVoice.GetSource() == sourceIt);
-				const bool pushTextColor = !sourceIsPreviewing;
+				b8 sourceIsPreviewing = (sourcePreviewVoice.GetIsPlaying() && sourcePreviewVoice.GetSource() == sourceIt);
+				const b8 pushTextColor = !sourceIsPreviewing;
 				if (pushTextColor) Gui::PushStyleColor(ImGuiCol_Text, Gui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 
 				Gui::TableNextRow();
 				Gui::TableNextColumn();
 				{
-					const bool selectableClicked = Gui::Selectable("##SourcePreview", sourceIsPreviewing, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap);
-					const bool selectableHovered = Gui::IsItemHovered();
-					const bool selectableRightClicked = (selectableHovered && Gui::IsMouseClicked(ImGuiMouseButton_Right));
+					const b8 selectableClicked = Gui::Selectable("##SourcePreview", sourceIsPreviewing, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap);
+					const b8 selectableHovered = Gui::IsItemHovered();
+					const b8 selectableRightClicked = (selectableHovered && Gui::IsMouseClicked(ImGuiMouseButton_Right));
 					const Rect selectableRect = Gui::GetItemRect();
 					const f32 nameColumnWidth = ClampBot(1.0f, Gui::GetContentRegionAvail().x + (Gui::GetStyle().CellPadding.x * 2.0f));
 

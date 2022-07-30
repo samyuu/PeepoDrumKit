@@ -26,7 +26,7 @@ namespace PeepoDrumKit
 
 		std::vector<TJA::ConvertedCourse> ConvertedCourses;
 
-		inline bool LoadFromFile(std::string_view filePath)
+		inline b8 LoadFromFile(std::string_view filePath)
 		{
 			FilePath = filePath;
 			FileContentBytes = File::ReadAllBytes(filePath);
@@ -41,7 +41,7 @@ namespace PeepoDrumKit
 			return (FileContentBytes.Content != nullptr);
 		}
 
-		inline bool DebugReloadFromModifiedFileContentUTF8()
+		inline b8 DebugReloadFromModifiedFileContentUTF8()
 		{
 			Lines = TJA::SplitLines(FileContentUTF8);
 			Tokens = TJA::TokenizeLines(Lines);
@@ -72,15 +72,15 @@ namespace PeepoDrumKit
 
 		::TextEditor TJATextEditor = CreateImGuiColorTextEditWithNiceTheme();
 		
-		bool IsFirstFrame = true;
-		bool WasTJAEditedThisFrame = false;
+		b8 IsFirstFrame = true;
+		b8 WasTJAEditedThisFrame = false;
 
 	public:
-		void DrawGui(bool* isOpen);
+		void DrawGui(b8* isOpen);
 
 	private:
-		void DrawGuiFileContentWindow(bool* isOpen);
-		void DrawGuiTokensWindow(bool* isOpen);
-		void DrawGuiParsedWindow(bool* isOpen);
+		void DrawGuiFileContentWindow(b8* isOpen);
+		void DrawGuiTokensWindow(b8* isOpen);
+		void DrawGuiParsedWindow(b8* isOpen);
 	};
 }
