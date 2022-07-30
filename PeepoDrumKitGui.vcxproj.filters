@@ -66,9 +66,6 @@
     <ClCompile Include="src\audio\audio_file_formats.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\audio\3rdparty\stb_vorbis.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\audio\audio_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -115,6 +112,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\audio\audio_backend_wasapi.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\audio\audio_file_formats_vorbis.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -186,15 +186,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\audio\audio_common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\audio\3rdparty\dr_flac.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\audio\3rdparty\dr_mp3.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\audio\3rdparty\dr_wav.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\audio\audio_engine.h">

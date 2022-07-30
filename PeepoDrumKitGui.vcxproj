@@ -58,7 +58,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src_3rdparty</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
@@ -80,7 +80,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)src_3rdparty</AdditionalIncludeDirectories>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
@@ -97,11 +97,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\audio\3rdparty\stb_vorbis.c">
-      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
-      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
-    </ClCompile>
     <ClCompile Include="src\audio\audio_common.cpp" />
     <ClCompile Include="src\audio\audio_engine.cpp" />
     <ClCompile Include="src\audio\audio_file_formats.cpp">
@@ -110,6 +105,11 @@
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
     </ClCompile>
     <ClCompile Include="src\audio\audio_backend_wasapi.cpp" />
+    <ClCompile Include="src\audio\audio_file_formats_vorbis.c">
+      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
+    </ClCompile>
     <ClCompile Include="src\core_io.cpp" />
     <ClCompile Include="src\core_string.cpp" />
     <ClCompile Include="src\core_beat.cpp" />
@@ -144,9 +144,6 @@
     <ClInclude Include="src\peepo_drum_kit\chart_editor_settings_gui.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_widgets.h" />
     <ClInclude Include="src_res\resource.h" />
-    <ClInclude Include="src\audio\3rdparty\dr_flac.h" />
-    <ClInclude Include="src\audio\3rdparty\dr_mp3.h" />
-    <ClInclude Include="src\audio\3rdparty\dr_wav.h" />
     <ClInclude Include="src\audio\audio_common.h" />
     <ClInclude Include="src\audio\audio_engine.h" />
     <ClInclude Include="src\audio\audio_file_formats.h" />

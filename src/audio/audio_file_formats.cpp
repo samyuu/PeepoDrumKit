@@ -2,18 +2,18 @@
 #include "core_io.h"
 
 #define DR_MP3_IMPLEMENTATION
-#include "3rdparty/dr_mp3.h"
+#include <dr_libs/dr_mp3.h>
 
 #define DR_FLAC_IMPLEMENTATION
-#include "3rdparty/dr_flac.h"
+#include <dr_libs/dr_flac.h>
 
 #define DR_WAV_IMPLEMENTATION
-#include "3rdparty/dr_wav.h"
+#include <dr_libs/dr_wav.h>
 
 // #define STB_VORBIS_NO_PUSHDATA_API
 // #define STB_VORBIS_NO_PULLDATA_API
 // #define STB_VORBIS_NO_STDIO
-// #include "3rdparty/stb_vorbis.c"
+// #include <stb/stb_vorbis.c>
 
 // TODO: Forward declare because visual studio is having a stroke parsing the C header (something about the typedef union { ... } Floor; ???)
 //		 even though it was working perfectly fine in a different C++ project before :PeepoShrug:
