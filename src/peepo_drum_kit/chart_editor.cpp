@@ -6,7 +6,34 @@
 namespace PeepoDrumKit
 {
 	static constexpr std::string_view UntitledChartFileName = "Untitled Chart.tja";
-	static constexpr f32 ScaleFactorIncrementStep = FromPercent(10.0f); // 20.0f;
+
+#if 0 // NOTE: Fixed step zoom increment
+	static constexpr f32 GuiScaleFactorIncrementStep = FromPercent(10.0f);
+
+	static bool CanZoomInGuiScale() { return (GuiScaleFactor < GuiScaleFactorMax); }
+	static bool CanZoomOutGuiScale() { return (GuiScaleFactor > GuiScaleFactorMin); }
+	static bool CanZoomResetGuiScale() { return (GuiScaleFactor != 1.0f); }
+	static void ZoomInGuiScale() { GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor + GuiScaleFactorIncrementStep); }
+	static void ZoomOutGuiScale() { GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor - GuiScaleFactorIncrementStep); }
+	static void ZoomResetGuiScale() { GuiScaleFactorToSetNextFrame = 1.0f; }
+#else // NOTE: Preset zoom steps
+	static constexpr f32 PresetGuiScaleFactors[] = { 0.5, (2.0f / 3.0f), 0.75f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f, };
+	static constexpr f32 PresetGuiScaleFactorMin = PresetGuiScaleFactors[0];
+	static constexpr f32 PresetGuiScaleFactorMax = PresetGuiScaleFactors[ArrayCount(PresetGuiScaleFactors) - 1];
+	static constexpr f32 NextPresetGuiScaleFactor(f32 current, i32 direction)
+	{
+		i32 closest = 0;
+		for (const f32& it : PresetGuiScaleFactors) if (it <= current || ApproxmiatelySame(it, current)) closest = ArrayItToIndexI32(&it, &PresetGuiScaleFactors[0]);
+		return ClampRoundGuiScaleFactor(PresetGuiScaleFactors[Clamp(closest + direction, 0, ArrayCountI32(PresetGuiScaleFactors) - 1)]);
+	}
+
+	static bool CanZoomInGuiScale() { return (GuiScaleFactor < PresetGuiScaleFactorMax); }
+	static bool CanZoomOutGuiScale() { return (GuiScaleFactor > PresetGuiScaleFactorMin); }
+	static bool CanZoomResetGuiScale() { return (GuiScaleFactor != 1.0f); }
+	static void ZoomInGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactor, +1); }
+	static void ZoomOutGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactor, -1); }
+	static void ZoomResetGuiScale() { GuiScaleFactorToSetNextFrame = 1.0f; }
+#endif
 
 	static bool CanOpenChartDirectoryInFileExplorer(const ChartContext& context)
 	{
@@ -146,12 +173,9 @@ namespace PeepoDrumKit
 				if (Gui::BeginMenu("DPI Scale"))
 				{
 					const f32 guiScaleFactorToSetNextFrame = GuiScaleFactorToSetNextFrame;
-					if (Gui::MenuItem("Zoom In", ToShortcutString(*Settings.Input.Editor_IncreaseGuiScale).Data, nullptr, (GuiScaleFactor < GuiScaleFactorMax)))
-						GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep);
-					if (Gui::MenuItem("Zoom Out", ToShortcutString(*Settings.Input.Editor_DecreaseGuiScale).Data, nullptr, (GuiScaleFactor > GuiScaleFactorMin)))
-						GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor - ScaleFactorIncrementStep);
-					if (Gui::MenuItem("Reset Zoom", ToShortcutString(*Settings.Input.Editor_ResetGuiScale).Data, nullptr, (GuiScaleFactor != 1.0f)))
-						GuiScaleFactorToSetNextFrame = 1.0f;
+					if (Gui::MenuItem("Zoom In", ToShortcutString(*Settings.Input.Editor_IncreaseGuiScale).Data, nullptr, CanZoomInGuiScale())) ZoomInGuiScale();
+					if (Gui::MenuItem("Zoom Out", ToShortcutString(*Settings.Input.Editor_DecreaseGuiScale).Data, nullptr, CanZoomOutGuiScale())) ZoomOutGuiScale();
+					if (Gui::MenuItem("Reset Zoom", ToShortcutString(*Settings.Input.Editor_ResetGuiScale).Data, nullptr, CanZoomResetGuiScale())) ZoomResetGuiScale();
 
 					if (guiScaleFactorToSetNextFrame != GuiScaleFactorToSetNextFrame) { if (!zoomPopup.IsOpen) zoomPopup.Open(); zoomPopup.OnChange(); }
 
@@ -393,12 +417,9 @@ namespace PeepoDrumKit
 			if (noActiveID)
 			{
 				const f32 guiScaleFactorToSetNextFrame = GuiScaleFactorToSetNextFrame;
-				if (Gui::IsAnyPressed(*Settings.Input.Editor_IncreaseGuiScale, true))
-					GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep);
-				if (Gui::IsAnyPressed(*Settings.Input.Editor_DecreaseGuiScale, true))
-					GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor - ScaleFactorIncrementStep);
-				if (Gui::IsAnyPressed(*Settings.Input.Editor_ResetGuiScale, false))
-					GuiScaleFactorToSetNextFrame = 1.0f;
+				if (Gui::IsAnyPressed(*Settings.Input.Editor_IncreaseGuiScale, true)) ZoomInGuiScale();
+				if (Gui::IsAnyPressed(*Settings.Input.Editor_DecreaseGuiScale, true)) ZoomOutGuiScale();
+				if (Gui::IsAnyPressed(*Settings.Input.Editor_ResetGuiScale, false)) ZoomResetGuiScale();
 
 				if (guiScaleFactorToSetNextFrame != GuiScaleFactorToSetNextFrame) { if (!zoomPopup.IsOpen) zoomPopup.Open(); zoomPopup.OnChange(); }
 
@@ -589,18 +610,18 @@ namespace PeepoDrumKit
 				Gui::AlignTextToFramePadding();
 				Gui::Text("%g%% ", ToPercent(GuiScaleFactor));
 
-				Gui::BeginDisabled(GuiScaleFactor <= GuiScaleFactorMin);
+				Gui::BeginDisabled(!CanZoomOutGuiScale());
 				Gui::SameLine(0.0f, 0.0f);
-				if (Gui::Button("-", vec2(Gui::GetFrameHeight(), 0.0f))) { GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor - ScaleFactorIncrementStep); zoomPopup.OnChange(); }
+				if (Gui::Button("-", vec2(Gui::GetFrameHeight(), 0.0f))) { ZoomOutGuiScale(); zoomPopup.OnChange(); }
 				Gui::EndDisabled();
 
-				Gui::BeginDisabled(GuiScaleFactor >= GuiScaleFactorMax);
+				Gui::BeginDisabled(!CanZoomInGuiScale());
 				Gui::SameLine(0.0f, 0.0f);
-				if (Gui::Button("+", vec2(Gui::GetFrameHeight(), 0.0f))) { GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor + ScaleFactorIncrementStep); zoomPopup.OnChange(); }
+				if (Gui::Button("+", vec2(Gui::GetFrameHeight(), 0.0f))) { ZoomInGuiScale(); zoomPopup.OnChange(); }
 				Gui::EndDisabled();
 
 				Gui::SameLine(0.0f, 0.0f);
-				if (Gui::Button(" Reset ")) { GuiScaleFactorToSetNextFrame = 1.0f; zoomPopup.OnChange(); }
+				if (Gui::Button(" Reset ")) { ZoomResetGuiScale(); zoomPopup.OnChange(); }
 			}
 			Gui::End();
 
@@ -743,6 +764,7 @@ namespace PeepoDrumKit
 			context.ChartFilePath = filePath;
 			context.Undo.ClearChangesWereMade();
 
+			// BUG: Doesn't work correctly with PEEPODRUMKIT_FILE_SUFFIX (rework file suffix and instead create backup of original file if no PeepoDrumKit comment)
 			PersistentApp.RecentFiles.Add(std::string { filePath });
 		}
 	}
