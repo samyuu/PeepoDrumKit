@@ -232,6 +232,8 @@ namespace PeepoDrumKit
 		Gui::PopStyleColor(1);
 		defer { Gui::EndChild(); };
 
+		Gui::UpdateSmoothScrollWindow();
+
 		// TODO: Maybe use .md markup language to write instructions (?) (how feasable would it be to integrate peepo emotes inbetween text..?)
 		Gui::PushFont(FontLarge_EN);
 		{
@@ -513,6 +515,8 @@ namespace PeepoDrumKit
 
 	void ChartPropertiesWindow::DrawGui(ChartContext& context, const ChartPropertiesWindowIn& in, ChartPropertiesWindowOut& out)
 	{
+		Gui::UpdateSmoothScrollWindow();
+
 		assert(context.ChartSelectedCourse != nullptr);
 		auto& chart = context.Chart;
 		auto& course = *context.ChartSelectedCourse;
@@ -609,6 +613,8 @@ namespace PeepoDrumKit
 
 	void ChartTempoWindow::DrawGui(ChartContext& context, ChartTimeline& timeline)
 	{
+		Gui::UpdateSmoothScrollWindow();
+
 		assert(context.ChartSelectedCourse != nullptr);
 		auto& chart = context.Chart;
 		auto& course = *context.ChartSelectedCourse;

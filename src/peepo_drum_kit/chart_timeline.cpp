@@ -17,6 +17,8 @@ namespace PeepoDrumKit
 		Gui::BeginChild("BackgroundChild", Gui::GetContentRegionAvail(), true);
 		defer { Gui::EndChild(); Gui::PopStyleColor(2); };
 
+		Gui::UpdateSmoothScrollWindow();
+
 		if (Gui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			if (Gui::Property::BeginTable(tableFlags))

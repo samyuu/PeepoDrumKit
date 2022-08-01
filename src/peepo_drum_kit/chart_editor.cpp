@@ -516,12 +516,20 @@ namespace PeepoDrumKit
 		// NOTE: Test stuff
 		{
 			if (test.ShowImGuiDemoWindow)
+			{
+				if (auto* window = Gui::FindWindowByName("Dear ImGui Demo"))
+					Gui::UpdateSmoothScrollWindow(window);
+
 				Gui::ShowDemoWindow(&test.ShowImGuiDemoWindow);
+			}
 
 			if (test.ShowImGuiStyleEditor)
 			{
 				if (Gui::Begin("Style Editor", &test.ShowImGuiStyleEditor))
+				{
+					Gui::UpdateSmoothScrollWindow();
 					Gui::ShowStyleEditor();
+				}
 				Gui::End();
 			}
 

@@ -28,7 +28,45 @@ namespace ImGui
 		return 0;
 	}
 
-	ImVec2 CalcTextSize(std::string_view text, b8 hide_text_after_double_hash, float wrap_width)
+	void UpdateSmoothScrollWindow(ImGuiWindow* window, f32 animationSpeed)
+	{
+		struct VoidPtrStorage { f32 ScrollYTarget, ScrollYLastFrame; };
+		static_assert(sizeof(void*) == sizeof(VoidPtrStorage));
+
+		window = (window == nullptr) ? ImGui::GetCurrentWindowRead() : window;
+		auto* storage = reinterpret_cast<VoidPtrStorage*>(window->StateStorage.GetVoidPtrRef(ImGui::GetID("SmoothScrollStorage")));
+		if (storage == nullptr) { assert(false); return; }
+
+		f32& scrollYTarget = storage->ScrollYTarget;
+		f32& scrollYCurrentLastFrame = storage->ScrollYLastFrame;
+		f32& scrollYCurrent = window->Scroll.y;
+		AnimateExponential(&scrollYCurrent, scrollYTarget, animationSpeed);
+
+		if (ImGui::GetCurrentContext()->WheelingWindow == window)
+		{
+			if (!ImGui::GetIO().KeyCtrl)
+			{
+				// HACK: Take from "imgui.cpp -> ImGui::UpdateMouseWheel() -> Vertical Mouse Wheel scrolling"
+				const f32 max_step = window->InnerRect.GetHeight() * 0.67f;
+				const f32 scroll_step = ImFloor(ImMin(5 * window->CalcFontSize(), max_step));
+				const f32 wheel_y = ImGui::GetIO().MouseWheel;
+
+				// HACK: Adjust for the scroll amount that was already added by the native imgui scroll handling
+				scrollYTarget -= wheel_y * scroll_step;
+				scrollYTarget -= wheel_y * scroll_step;
+				scrollYTarget = Clamp(scrollYTarget, 0.0f, window->ScrollMax.y);
+			}
+		}
+		else
+		{
+			// HACK: Try to detect and adjust for external scroll changes (such as grabbing the scrollbar)
+			if (!ApproxmiatelySame(scrollYCurrentLastFrame, scrollYCurrent))
+				scrollYTarget = scrollYCurrent;
+		}
+		scrollYCurrentLastFrame = scrollYCurrent;
+	}
+
+	ImVec2 CalcTextSize(std::string_view text, b8 hide_text_after_double_hash, f32 wrap_width)
 	{
 		return ImGui::CalcTextSize(StringViewStart(text), StringViewEnd(text), hide_text_after_double_hash, wrap_width);
 	}
@@ -61,7 +99,7 @@ namespace ImGui
 		drawList->AddText(textPosition, textColor, StringViewStart(text), StringViewEnd(text));
 	}
 
-	void AddTextWithDropShadow(ImDrawList* drawList, const ImFont* font, float fontSize, vec2 textPosition, u32 textColor, std::string_view text, float wrap_width, const ImVec4* cpu_fine_clip_rect, u32 shadowColor, vec2 shadowOffset)
+	void AddTextWithDropShadow(ImDrawList* drawList, const ImFont* font, f32 fontSize, vec2 textPosition, u32 textColor, std::string_view text, f32 wrap_width, const ImVec4* cpu_fine_clip_rect, u32 shadowColor, vec2 shadowOffset)
 	{
 		drawList->AddText(font, fontSize, textPosition + shadowOffset, shadowColor, StringViewStart(text), StringViewEnd(text), wrap_width, cpu_fine_clip_rect);
 		drawList->AddText(font, fontSize, textPosition, textColor, StringViewStart(text), StringViewEnd(text), wrap_width, cpu_fine_clip_rect);

@@ -40,9 +40,10 @@ namespace ImGui
 	inline void AnimateExponential(f32* inOutCurrent, f32 target, f32 animationSpeed) { AnimateExponentialF32(inOutCurrent, target, animationSpeed, DeltaTime()); }
 	inline void AnimateExponential(vec2* inOutCurrent, vec2 target, f32 animationSpeed) { AnimateExponentialVec2(inOutCurrent, target, animationSpeed, DeltaTime()); }
 
-	inline Rect GetItemRect() { return Rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()); }
+	void UpdateSmoothScrollWindow(ImGuiWindow* window = nullptr, f32 animationSpeed = 20.0f);
 
-	ImVec2 CalcTextSize(std::string_view text, b8 hide_text_after_double_hash = false, float wrap_width = -1.0f);
+	inline Rect GetItemRect() { return Rect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()); }
+	ImVec2 CalcTextSize(std::string_view text, b8 hide_text_after_double_hash = false, f32 wrap_width = -1.0f);
 
 	inline ImU32 ColorU32WithAlpha(ImU32 colorU32, f32 alphaFactor) { ImVec4 v4 = ImGui::ColorConvertU32ToFloat4(colorU32); v4.w *= alphaFactor; return ImGui::ColorConvertFloat4ToU32(v4); }
 	inline ImU32 ColorU32WithNewAlpha(ImU32 colorU32, f32 newAlpha) { ImVec4 v4 = ImGui::ColorConvertU32ToFloat4(colorU32); v4.w = newAlpha; return ImGui::ColorConvertFloat4ToU32(v4); }
@@ -55,7 +56,7 @@ namespace ImGui
 	void AddTextCentered(ImDrawList* drawList, Rect rectToCenterWithin, std::string_view text, Rect clippingRect);
 
 	void AddTextWithDropShadow(ImDrawList* drawList, vec2 textPosition, u32 textColor, std::string_view text, u32 shadowColor = 0xFF000000, vec2 shadowOffset = vec2(1.0f));
-	void AddTextWithDropShadow(ImDrawList* drawList, const ImFont* font, float fontSize, vec2 textPosition, u32 textColor, std::string_view text, float wrap_width = 0.0f, const ImVec4* cpu_fine_clip_rect = nullptr, u32 shadowColor = 0xFF000000, vec2 shadowOffset = vec2(1.0f));
+	void AddTextWithDropShadow(ImDrawList* drawList, const ImFont* font, f32 fontSize, vec2 textPosition, u32 textColor, std::string_view text, f32 wrap_width = 0.0f, const ImVec4* cpu_fine_clip_rect = nullptr, u32 shadowColor = 0xFF000000, vec2 shadowOffset = vec2(1.0f));
 
 	b8 InputText(cstr label, std::string* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = nullptr, void* user_data = nullptr);
 	b8 InputTextMultiline(cstr label, std::string* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = nullptr, void* user_data = nullptr);
