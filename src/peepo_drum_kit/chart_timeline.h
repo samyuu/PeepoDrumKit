@@ -305,6 +305,9 @@ namespace PeepoDrumKit
 		//		 But this also means we have to store any of the window focus / active / hover states across frame boundary
 		void UpdateInputAtStartOfFrame(ChartContext& context);
 
+		// NOTE: Not entirely sure about this but updating *after* all user input seems to make the most sense..?
+		void UpdateAllAnimationsAfterUserInput(ChartContext& context);
+
 		void DrawAllAtEndOfFrame(ChartContext& context);
 	};
 }

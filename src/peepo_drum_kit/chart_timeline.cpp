@@ -609,34 +609,10 @@ namespace PeepoDrumKit
 
 	void ChartTimeline::DrawGui(ChartContext& context)
 	{
-		// BUG: Freaks out when zoomed in too far / the timeline is too long (16min song for example) float precision issue (?)
-		Camera.UpdateAnimations();
-		Gui::AnimateExponential(&context.SongWaveformFadeAnimationCurrent, context.SongWaveformFadeAnimationTarget, *Settings.Animation.TimelineWaveformFadeSpeed);
-		Gui::AnimateExponential(&RangeSelectionExpansionAnimationCurrent, RangeSelectionExpansionAnimationTarget, *Settings.Animation.TimelineRangeSelectionExpansionSpeed);
-
-		const f32 worldSpaceCursorXAnimationTarget = Camera.TimeToWorldSpaceX(context.GetCursorTime());
-		Gui::AnimateExponential(&WorldSpaceCursorXAnimationCurrent, worldSpaceCursorXAnimationTarget, *Settings.Animation.TimelineWorldSpaceCursorXSpeed);
-
-		const f32 elapsedAnimationTimeSec = Gui::DeltaTime();
-		for (size_t i = 0; i < EnumCount<BranchType>; i++)
-		{
-			for (Note& note : context.ChartSelectedCourse->GetNotes(static_cast<BranchType>(i)))
-				note.ClickAnimationTimeRemaining = ClampBot(note.ClickAnimationTimeRemaining - elapsedAnimationTimeSec, 0.0f);
-		}
-
-		if (!TempDeletedNoteAnimationsBuffer.empty())
-		{
-			for (auto& data : TempDeletedNoteAnimationsBuffer)
-				data.ElapsedTimeSec += Gui::DeltaTime();
-			erase_remove_if(TempDeletedNoteAnimationsBuffer, [](auto& v) { return (v.ElapsedTimeSec >= NoteDeleteAnimationDuration); });
-		}
-
-		for (auto& gogo : context.ChartSelectedCourse->GoGoRanges)
-			Gui::AnimateExponential(&gogo.ExpansionAnimationCurrent, gogo.ExpansionAnimationTarget, *Settings.Animation.TimelineGoGoRangeExpansionSpeed);
-
 		UpdateInputAtStartOfFrame(context);
+		UpdateAllAnimationsAfterUserInput(context);
 
-		// DEBUG:
+		// DEBUG: Submit empty window first for more natural tab order sorting
 		if (Gui::Begin("Chart Timeline - Debug")) { DrawTimelineDebugWindowContent(*this, context); } Gui::End();
 
 		const auto& style = Gui::GetStyle();
@@ -1520,6 +1496,42 @@ namespace PeepoDrumKit
 		}
 	}
 
+	void ChartTimeline::UpdateAllAnimationsAfterUserInput(ChartContext& context)
+	{
+		// BUG: Freaks out when zoomed in too far / the timeline is too long (16min song for example) float precision issue (?)
+		Camera.UpdateAnimations();
+		Gui::AnimateExponential(&context.SongWaveformFadeAnimationCurrent, context.SongWaveformFadeAnimationTarget, *Settings.Animation.TimelineWaveformFadeSpeed);
+		Gui::AnimateExponential(&RangeSelectionExpansionAnimationCurrent, RangeSelectionExpansionAnimationTarget, *Settings.Animation.TimelineRangeSelectionExpansionSpeed);
+
+		const f32 worldSpaceCursorXAnimationTarget = Camera.TimeToWorldSpaceX(context.GetCursorTime());
+		Gui::AnimateExponential(&WorldSpaceCursorXAnimationCurrent, worldSpaceCursorXAnimationTarget, *Settings.Animation.TimelineWorldSpaceCursorXSpeed);
+
+		for (auto& course : context.Chart.Courses)
+		{
+			const f32 elapsedAnimationTimeSec = Gui::DeltaTime();
+			for (BranchType branch = {}; branch < BranchType::Count; IncrementEnum(branch))
+			{
+				for (Note& note : course->GetNotes(branch))
+					note.ClickAnimationTimeRemaining = ClampBot(note.ClickAnimationTimeRemaining - elapsedAnimationTimeSec, 0.0f);
+			}
+
+			for (auto& gogo : course->GoGoRanges)
+				Gui::AnimateExponential(&gogo.ExpansionAnimationCurrent, gogo.ExpansionAnimationTarget, *Settings.Animation.TimelineGoGoRangeExpansionSpeed);
+		}
+
+		if (!TempDeletedNoteAnimationsBuffer.empty())
+		{
+			for (auto& data : TempDeletedNoteAnimationsBuffer)
+				data.ElapsedTimeSec += Gui::DeltaTime();
+			erase_remove_if(TempDeletedNoteAnimationsBuffer, [](auto& v) { return (v.ElapsedTimeSec >= NoteDeleteAnimationDuration); });
+		}
+
+		static constexpr f32 maxZoomLevelAtWhichToFadeOutGridBeatSnapLines = 0.5f;
+		const f32 gridBeatSnapLineAnimationTarget = (Camera.ZoomCurrent.x <= maxZoomLevelAtWhichToFadeOutGridBeatSnapLines) ? 0.0f : 1.0f;
+		Gui::AnimateExponential(&GridSnapLineAnimationCurrent, gridBeatSnapLineAnimationTarget, *Settings.Animation.TimelineGridSnapLineSpeed);
+		GridSnapLineAnimationCurrent = Clamp(GridSnapLineAnimationCurrent, 0.0f, 1.0f);
+	}
+
 	void ChartTimeline::DrawAllAtEndOfFrame(ChartContext& context)
 	{
 		const b8 isPlayback = context.GetIsPlayback();
@@ -1613,11 +1625,6 @@ namespace PeepoDrumKit
 
 		// NOTE: Grid snap beat lines
 		{
-			static constexpr f32 maxZoomLevelAtWhichToFadeOutGridBeatSnapLines = 0.5f;
-			const f32 gridBeatSnapLineAnimationTarget = (Camera.ZoomCurrent.x <= maxZoomLevelAtWhichToFadeOutGridBeatSnapLines) ? 0.0f : 1.0f;
-			Gui::AnimateExponential(&GridSnapLineAnimationCurrent, gridBeatSnapLineAnimationTarget, *Settings.Animation.TimelineGridSnapLineSpeed);
-			GridSnapLineAnimationCurrent = Clamp(GridSnapLineAnimationCurrent, 0.0f, 1.0f);
-
 			if (GridSnapLineAnimationCurrent > 0.0f)
 			{
 				const auto minMaxVisibleTime = GetMinMaxVisibleTime();
