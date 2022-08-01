@@ -55,9 +55,13 @@ struct MultiInputBinding
 	constexpr MultiInputBinding(InputBinding primary, InputBinding secondary) : Count(2), Slots { primary, secondary } {}
 	constexpr MultiInputBinding(InputBinding a, InputBinding b, InputBinding c) : Count(3), Slots { a, b, c } {}
 	constexpr MultiInputBinding(InputBinding a, InputBinding b, InputBinding c, InputBinding d) : Count(4), Slots { a, b, c, d } {}
+	constexpr void RemoveAt(i32 index) { if (index >= 0 && index < Count) { for (i32 i = index; i < static_cast<i32>(Count) - 1; i++) { Slots[i] = Slots[i + 1]; } Count--; } }
 
 	constexpr auto begin() const { return Slots; }
 	constexpr auto end() const { return Slots + Count; }
+
+	constexpr b8 operator!=(const MultiInputBinding& other) const { return !(*this == other); }
+	constexpr b8 operator==(const MultiInputBinding& other) const { if (Count != other.Count) { return false; } for (i32 i = 0; i < Count; i++) { if (Slots[i] != other.Slots[i]) return false; } return true; }
 };
 
 enum class InputModifierBehavior
