@@ -172,9 +172,9 @@ namespace PeepoDrumKit
 	constexpr Beat GetBeatDuration(const GoGoRange& v) { return v.BeatDuration; }
 	constexpr Beat GetBeatDuration(const LyricChange& v) { return Beat::Zero(); }
 
-	constexpr b8 VisibleOrDefault(const BarLineChange* v) { return (v == nullptr) ? true : v->IsVisible; };
-	constexpr f32 ScrollOrDefault(const ScrollChange* v) { return (v == nullptr) ? 1.0f : v->ScrollSpeed; };
-	constexpr Tempo TempoOrDefault(const TempoChange* v) { return (v == nullptr) ? FallbackTempo : v->Tempo; };
+	constexpr b8 VisibleOrDefault(const BarLineChange* v) { return (v == nullptr) ? true : v->IsVisible; }
+	constexpr f32 ScrollOrDefault(const ScrollChange* v) { return (v == nullptr) ? 1.0f : v->ScrollSpeed; }
+	constexpr Tempo TempoOrDefault(const TempoChange* v) { return (v == nullptr) ? FallbackTempo : v->Tempo; }
 
 	enum class Language : u8 { Base, JA, EN, CN, TW, KO, Count };
 	struct PerLanguageString

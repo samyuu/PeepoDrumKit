@@ -7,16 +7,6 @@ namespace PeepoDrumKit
 {
 	static constexpr std::string_view UntitledChartFileName = "Untitled Chart.tja";
 
-#if 0 // NOTE: Fixed step zoom increment
-	static constexpr f32 GuiScaleFactorIncrementStep = FromPercent(10.0f);
-
-	static b8 CanZoomInGuiScale() { return (GuiScaleFactor < GuiScaleFactorMax); }
-	static b8 CanZoomOutGuiScale() { return (GuiScaleFactor > GuiScaleFactorMin); }
-	static b8 CanZoomResetGuiScale() { return (GuiScaleFactor != 1.0f); }
-	static void ZoomInGuiScale() { GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor + GuiScaleFactorIncrementStep); }
-	static void ZoomOutGuiScale() { GuiScaleFactorToSetNextFrame = ClampRoundGuiScaleFactor(GuiScaleFactor - GuiScaleFactorIncrementStep); }
-	static void ZoomResetGuiScale() { GuiScaleFactorToSetNextFrame = 1.0f; }
-#else // NOTE: Preset zoom steps
 	static constexpr f32 PresetGuiScaleFactors[] = { 0.5, (2.0f / 3.0f), 0.75f, 0.8f, 0.9f, 1.0f, 1.1f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f, };
 	static constexpr f32 PresetGuiScaleFactorMin = PresetGuiScaleFactors[0];
 	static constexpr f32 PresetGuiScaleFactorMax = PresetGuiScaleFactors[ArrayCount(PresetGuiScaleFactors) - 1];
@@ -33,7 +23,6 @@ namespace PeepoDrumKit
 	static void ZoomInGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactor, +1); }
 	static void ZoomOutGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactor, -1); }
 	static void ZoomResetGuiScale() { GuiScaleFactorToSetNextFrame = 1.0f; }
-#endif
 
 	static b8 CanOpenChartDirectoryInFileExplorer(const ChartContext& context)
 	{
