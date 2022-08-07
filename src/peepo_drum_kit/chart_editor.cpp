@@ -456,7 +456,10 @@ namespace PeepoDrumKit
 		if (showSettingsWindow)
 		{
 			if (Gui::Begin("Settings", &showSettingsWindow, ImGuiWindowFlags_None))
-				settingsWindow.DrawGui(context, Settings);
+			{
+				if (settingsWindow.DrawGui(context, Settings_Mutable))
+					Settings_Mutable.IsDirty = true;
+			}
 			if (focusSettingsWindowNextFrame) { focusSettingsWindowNextFrame = false; Gui::SetWindowFocus(); }
 			Gui::End();
 		}

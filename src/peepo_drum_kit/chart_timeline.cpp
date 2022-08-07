@@ -214,24 +214,6 @@ namespace PeepoDrumKit
 			}
 		}
 
-		if (Gui::CollapsingHeader("User Settings", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			if (Gui::Property::BeginTable(tableFlags))
-			{
-				static constexpr auto animationSpeed = [](cstr label, WithDefault<f32>* inOutSpeed)
-				{
-					Gui::Property::PropertyTextValueFunc(label, [&] { Gui::SetNextItemWidth(-1.0f); if (Gui::DragFloat(label, &inOutSpeed->Value, 0.1f, 0.0f, 100.0f)) { inOutSpeed->HasValue = true; } });
-				};
-				animationSpeed("Animation.TimelineSmoothScrollSpeed", &Settings.Animation.TimelineSmoothScrollSpeed);
-				animationSpeed("Animation.TimelineWaveformFadeSpeed", &Settings.Animation.TimelineWaveformFadeSpeed);
-				animationSpeed("Animation.TimelineRangeSelectionExpansionSpeed", &Settings.Animation.TimelineRangeSelectionExpansionSpeed);
-				animationSpeed("Animation.TimelineWorldSpaceCursorXSpeed", &Settings.Animation.TimelineWorldSpaceCursorXSpeed);
-				animationSpeed("Animation.TimelineGridSnapLineSpeed", &Settings.Animation.TimelineGridSnapLineSpeed);
-				animationSpeed("Animation.TimelineGoGoRangeExpansionSpeed", &Settings.Animation.TimelineGoGoRangeExpansionSpeed);
-				Gui::Property::EndTable();
-			}
-		}
-
 		if (Gui::CollapsingHeader("Highlight Region"))
 		{
 			auto region = [](cstr name, Rect region) { Gui::Selectable(name); if (Gui::IsItemHovered()) { Gui::GetForegroundDrawList()->AddRect(region.TL, region.BR, ImColor(1.0f, 0.0f, 1.0f)); } };

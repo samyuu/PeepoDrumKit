@@ -4,7 +4,7 @@ namespace PeepoDrumKit
 {
 	static b8 GuiAssignableInputBindingButton(InputBinding& inOutBinding, vec2 buttonSize, ImGuiButtonFlags buttonFlags, InputBinding*& inOutAwaitInputBinding, CPUStopwatch& inOutAwaitInputStopwatch)
 	{
-		static constexpr u32 activeTextColor = 0xFF3DEBD2; // 0xFF3DCFCF; // ImVec4(0.814f, 0.814f, 0.242f, 1.0f);
+		static constexpr u32 activeTextColor = 0xFF3DEBD2;
 		static constexpr Time timeoutThreshold = Time::FromSeconds(4.0);
 		static constexpr Time mouseClickThreshold = Time::FromMilliseconds(200.0);
 		static constexpr auto animateBlink = [&](Time elapsed)
@@ -68,8 +68,10 @@ namespace PeepoDrumKit
 		return (inOutBinding != inBindingCopy);
 	}
 
-	void ChartSettingsWindow::DrawGui(ChartContext& context, UserSettingsData& settings)
+	b8 ChartSettingsWindow::DrawGui(ChartContext& context, UserSettingsData& settings)
 	{
+		b8 changesWereMade = false;
+
 		const ImVec2 originalFramePadding = Gui::GetStyle().FramePadding;
 		Gui::PushStyleVar(ImGuiStyleVar_FramePadding, GuiScale(vec2(10.0f, 5.0f)));
 		Gui::PushStyleColor(ImGuiCol_TabHovered, Gui::GetStyleColorVec4(ImGuiCol_HeaderActive));
@@ -79,16 +81,15 @@ namespace PeepoDrumKit
 			if (Gui::BeginTabItem("General Settings"))
 			{
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
-				DrawTabMain(context, settings);
+				changesWereMade |= DrawTabMain(context, settings);
 				Gui::PopStyleVar();
 				Gui::EndTabItem();
 			}
 
-			static b8 firstFrame = true; defer { firstFrame = false; };
-			if (Gui::BeginTabItem("Input Bindings", nullptr, /* // DEBUG: */ firstFrame ? ImGuiTabItemFlags_SetSelected : 0))
+			if (Gui::BeginTabItem("Input Bindings"))
 			{
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
-				DrawTabInput(context, settings.Input);
+				changesWereMade |= DrawTabInput(context, settings.Input);
 				Gui::PopStyleVar();
 				Gui::EndTabItem();
 			}
@@ -96,7 +97,7 @@ namespace PeepoDrumKit
 			if (Gui::BeginTabItem("Audio Settings"))
 			{
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
-				DrawTabAudio(context, settings.Audio);
+				changesWereMade |= DrawTabAudio(context, settings.Audio);
 				Gui::PopStyleVar();
 				Gui::EndTabItem();
 			}
@@ -105,15 +106,21 @@ namespace PeepoDrumKit
 		}
 		Gui::PopStyleColor(2);
 		Gui::PopStyleVar();
+
+		return changesWereMade;
 	}
 
-	void ChartSettingsWindow::DrawTabMain(ChartContext& context, UserSettingsData& settings)
+	b8 ChartSettingsWindow::DrawTabMain(ChartContext& context, UserSettingsData& settings)
 	{
+		b8 changesWereMade = false;
+
 		Gui::AlignTextToFramePadding();
 		Gui::TextDisabled("// TODO: ...");
+
+		return changesWereMade;
 	}
 
-	void ChartSettingsWindow::DrawTabInput(ChartContext& context, UserSettingsData::InputData& settings)
+	b8 ChartSettingsWindow::DrawTabInput(ChartContext& context, UserSettingsData::InputData& settings)
 	{
 		struct InputBindingDesc { WithDefault<MultiInputBinding>* Binding; cstr Name; };
 		const InputBindingDesc bindingsTable[] =
@@ -157,6 +164,7 @@ namespace PeepoDrumKit
 			{ &settings.Dialog_SelectPreviousTab, "Dialog: Select Previous Tab", },
 		};
 
+		b8 changesWereMade = false;
 		const auto& style = Gui::GetStyle();
 
 		// NOTE: Desperate attempt for the table row selectables to not having any spacing between them
@@ -169,8 +177,8 @@ namespace PeepoDrumKit
 		// TODO: CTRL+F keybinding for all search fields
 		// TODO: Also match shortcut strings themselves (and maybe draw in different color on match?)
 		Gui::SetNextItemWidth(-1.0f);
-		if (Gui::InputTextWithHint("##BindingsFilter", "Type to search...", BindingsFilter.InputBuf, ArrayCount(BindingsFilter.InputBuf)))
-			BindingsFilter.Build();
+		if (Gui::InputTextWithHint("##BindingsFilter", "Type to search...", bindingsFilter.InputBuf, ArrayCount(bindingsFilter.InputBuf)))
+			bindingsFilter.Build();
 
 		// TODO: Allow sorting table (?)
 		b8 openMultiBindingPopupAtEndOfFrame = false;
@@ -186,12 +194,12 @@ namespace PeepoDrumKit
 			Gui::TableHeadersRow();
 			Gui::PopFont();
 
-			Gui::PushStyleVar(ImGuiStyleVar_DisabledAlpha, ConvertRangeClampInput(0.0f, 1.0f, 1.0f, style.DisabledAlpha, MultiBindingPopupFadeCurrent));
-			Gui::BeginDisabled(MultiBindingPopupFadeTarget >= 0.001f);
+			Gui::PushStyleVar(ImGuiStyleVar_DisabledAlpha, ConvertRangeClampInput(0.0f, 1.0f, 1.0f, style.DisabledAlpha, multiBindingPopupFadeCurrent));
+			Gui::BeginDisabled(multiBindingPopupFadeTarget >= 0.001f);
 
 			for (const auto& it : bindingsTable)
 			{
-				if (!BindingsFilter.PassFilter(it.Name))
+				if (!bindingsFilter.PassFilter(it.Name))
 					continue;
 
 				Gui::PushID(it.Binding);
@@ -203,14 +211,17 @@ namespace PeepoDrumKit
 				Gui::TableSetColumnIndex(1);
 
 				const b8 clicked = Gui::Selectable(it.Name, false, ImGuiSelectableFlags_SpanAllColumns);
-				if (clicked) { SelectedMultiBinding = it.Binding; memcpy(&SelectedMultiBindingOnOpenCopy, it.Binding, sizeof(SelectedMultiBindingOnOpenCopy)); openMultiBindingPopupAtEndOfFrame = true; }
+				if (clicked) { selectedMultiBinding = it.Binding; memcpy(&selectedMultiBindingOnOpenCopy, it.Binding, sizeof(selectedMultiBindingOnOpenCopy)); openMultiBindingPopupAtEndOfFrame = true; }
 
 				if (Gui::BeginPopupContextItem("MultiBindingContextMenu"))
 				{
 					Gui::TextUnformatted(it.Name);
 					Gui::Separator();
 					if (Gui::MenuItem("Reset to Default", "", nullptr))
+					{
 						it.Binding->ResetToDefault();
+						changesWereMade = true;
+					}
 
 					Gui::EndPopup();
 				}
@@ -237,27 +248,27 @@ namespace PeepoDrumKit
 			Gui::EndTable();
 		}
 
-		Gui::AnimateExponential(&MultiBindingPopupFadeCurrent, MultiBindingPopupFadeTarget, 20.0f);
+		Gui::AnimateExponential(&multiBindingPopupFadeCurrent, multiBindingPopupFadeTarget, 20.0f);
 		if (openMultiBindingPopupAtEndOfFrame)
 		{
-			MultiBindingPopupFadeCurrent = MultiBindingPopupFadeTarget;
-			MultiBindingPopupFadeTarget = 1.0f;
+			multiBindingPopupFadeCurrent = multiBindingPopupFadeTarget;
+			multiBindingPopupFadeTarget = 1.0f;
 		}
 
-		if (MultiBindingPopupFadeCurrent >= 0.001f)
+		if (multiBindingPopupFadeCurrent >= 0.001f)
 		{
 			cstr selectedBindingName = "Unnamed";
 			for (const auto& it : bindingsTable)
-				if (it.Binding == SelectedMultiBinding)
+				if (it.Binding == selectedMultiBinding)
 					selectedBindingName = it.Name;
-			assert(SelectedMultiBinding != nullptr);
+			assert(selectedMultiBinding != nullptr);
 
 			char popupTitleBuffer[128];
 			sprintf_s(popupTitleBuffer, "%s###EditBindingPopup", selectedBindingName);
 
-			const ImGuiWindowFlags allowInputWindowFlag = (MultiBindingPopupFadeCurrent < 0.9f) ? ImGuiWindowFlags_NoInputs : ImGuiWindowFlags_None;
+			const ImGuiWindowFlags allowInputWindowFlag = (multiBindingPopupFadeCurrent < 0.9f) ? ImGuiWindowFlags_NoInputs : ImGuiWindowFlags_None;
 
-			Gui::PushStyleVar(ImGuiStyleVar_Alpha, MultiBindingPopupFadeCurrent);
+			Gui::PushStyleVar(ImGuiStyleVar_Alpha, multiBindingPopupFadeCurrent);
 			Gui::PushStyleVar(ImGuiStyleVar_WindowPadding, GuiScale(vec2(12.0f, 8.0f)));
 			Gui::PushStyleVar(ImGuiStyleVar_FramePadding, GuiScale(vec2(8.0f, 6.0f)));
 			Gui::PushStyleColor(ImGuiCol_Border, Gui::GetStyleColorVec4(ImGuiCol_TableBorderStrong));
@@ -266,11 +277,11 @@ namespace PeepoDrumKit
 			Gui::Begin(popupTitleBuffer, nullptr, allowInputWindowFlag | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
 			{
 				if ((Gui::IsMouseClicked(ImGuiMouseButton_Left, false) && !Gui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) ||
-					(Gui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && Gui::GetActiveID() == 0 && TempAssignedBinding == nullptr && Gui::IsAnyPressed(*Settings.Input.Dialog_Cancel, false)))
+					(Gui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && Gui::GetActiveID() == 0 && tempAssignedBinding == nullptr && Gui::IsAnyPressed(*Settings.Input.Dialog_Cancel, false)))
 				{
-					MultiBindingPopupFadeTarget = 0.0f;
-					AssignedBindingStopwatch.Stop();
-					TempAssignedBinding = nullptr;
+					multiBindingPopupFadeTarget = 0.0f;
+					assignedBindingStopwatch.Stop();
+					tempAssignedBinding = nullptr;
 				}
 
 				if (Gui::BeginTable("SelectedBindingTable", 4, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
@@ -281,17 +292,17 @@ namespace PeepoDrumKit
 					Gui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, Gui::CalcTextSize("xxx").x * 2.0f + Gui::GetFrameHeight());
 
 					i32 indexToMoveUp = -1, indexToMoveDown = -1, indexToRemove = -1;
-					for (i32 i = 0; i < SelectedMultiBinding->Value.Count; i++)
+					for (i32 i = 0; i < selectedMultiBinding->Value.Count; i++)
 					{
-						auto& it = SelectedMultiBinding->Value.Slots[i];
+						auto& it = selectedMultiBinding->Value.Slots[i];
 						Gui::PushID(&it);
 						Gui::TableNextRow();
 						{
 							Gui::TableSetColumnIndex(0);
-							if (GuiAssignableInputBindingButton(it, { Gui::GetContentRegionAvail().x, 0.0f }, ImGuiButtonFlags_None, TempAssignedBinding, AssignedBindingStopwatch))
+							if (GuiAssignableInputBindingButton(it, { Gui::GetContentRegionAvail().x, 0.0f }, ImGuiButtonFlags_None, tempAssignedBinding, assignedBindingStopwatch))
 							{
-								SelectedMultiBinding->HasValue = true;
-								SelectedMultiBinding->HasValue = (SelectedMultiBinding->Value != SelectedMultiBinding->Default);
+								selectedMultiBinding->HasValue = true;
+								selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
 							}
 						}
 						Gui::PushStyleColor(ImGuiCol_Button, Gui::GetStyleColorVec4(ImGuiCol_Header));
@@ -315,15 +326,16 @@ namespace PeepoDrumKit
 					Gui::TableNextRow();
 					{
 						Gui::TableSetColumnIndex(0);
-						Gui::BeginDisabled(SelectedMultiBinding->Value.Count >= MultiInputBinding::MaxCount);
+						Gui::BeginDisabled(selectedMultiBinding->Value.Count >= MultiInputBinding::MaxCount);
 						Gui::PushStyleColor(ImGuiCol_Button, Gui::GetStyleColorVec4(ImGuiCol_Header));
 						Gui::PushStyleColor(ImGuiCol_ButtonHovered, Gui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
 						Gui::PushStyleColor(ImGuiCol_ButtonActive, Gui::GetStyleColorVec4(ImGuiCol_HeaderActive));
-						if (InputBinding newBinding {}; GuiAssignableInputBindingButton(newBinding, { Gui::GetContentRegionAvail().x, 0.0f }, ImGuiButtonFlags_None, TempAssignedBinding, AssignedBindingStopwatch))
+						if (InputBinding newBinding {}; GuiAssignableInputBindingButton(newBinding, { Gui::GetContentRegionAvail().x, 0.0f }, ImGuiButtonFlags_None, tempAssignedBinding, assignedBindingStopwatch))
 						{
-							SelectedMultiBinding->Value.Slots[SelectedMultiBinding->Value.Count++] = newBinding;
-							SelectedMultiBinding->HasValue = true;
-							SelectedMultiBinding->HasValue = (SelectedMultiBinding->Value != SelectedMultiBinding->Default);
+							selectedMultiBinding->Value.Slots[selectedMultiBinding->Value.Count++] = newBinding;
+							selectedMultiBinding->HasValue = true;
+							selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+							changesWereMade = true;
 						}
 						Gui::PopStyleColor(3);
 						Gui::EndDisabled();
@@ -331,26 +343,29 @@ namespace PeepoDrumKit
 
 					if (indexToMoveUp >= 0 || indexToMoveDown >= 0 || indexToRemove >= 0)
 					{
-						auto& inOutCount = SelectedMultiBinding->Value.Count;
-						auto& inOutSlots = SelectedMultiBinding->Value.Slots;
+						auto& inOutCount = selectedMultiBinding->Value.Count;
+						auto& inOutSlots = selectedMultiBinding->Value.Slots;
 
 						if (indexToMoveUp >= 1 && indexToMoveUp <= inOutCount)
 						{
 							std::swap(inOutSlots[indexToMoveUp], inOutSlots[indexToMoveUp - 1]);
-							SelectedMultiBinding->HasValue = true;
-							SelectedMultiBinding->HasValue = (SelectedMultiBinding->Value != SelectedMultiBinding->Default);
+							selectedMultiBinding->HasValue = true;
+							selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+							changesWereMade = true;
 						}
 						else if (indexToMoveDown >= 0 && (indexToMoveDown + 1) < inOutCount)
 						{
 							std::swap(inOutSlots[indexToMoveDown], inOutSlots[indexToMoveDown + 1]);
-							SelectedMultiBinding->HasValue = true;
-							SelectedMultiBinding->HasValue = (SelectedMultiBinding->Value != SelectedMultiBinding->Default);
+							selectedMultiBinding->HasValue = true;
+							selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+							changesWereMade = true;
 						}
 						else if (indexToRemove >= 0)
 						{
-							SelectedMultiBinding->Value.RemoveAt(indexToRemove);
-							SelectedMultiBinding->HasValue = true;
-							SelectedMultiBinding->HasValue = (SelectedMultiBinding->Value != SelectedMultiBinding->Default);
+							selectedMultiBinding->Value.RemoveAt(indexToRemove);
+							selectedMultiBinding->HasValue = true;
+							selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+							changesWereMade = true;
 						}
 					}
 
@@ -361,23 +376,27 @@ namespace PeepoDrumKit
 
 				Gui::PushMultiItemsWidths(2, GuiScale(260.0f));
 				{
-					const bool isSameAsOnOpen =
-						(SelectedMultiBinding->HasValue == SelectedMultiBindingOnOpenCopy.HasValue) &&
-						(SelectedMultiBinding->Value == SelectedMultiBindingOnOpenCopy.Value);
+					const b8 isSameAsOnOpen =
+						(selectedMultiBinding->HasValue == selectedMultiBindingOnOpenCopy.HasValue) &&
+						(selectedMultiBinding->Value == selectedMultiBindingOnOpenCopy.Value);
 
 					Gui::BeginDisabled(isSameAsOnOpen);
 					if (Gui::Button("Revert Changes", { Gui::CalcItemWidth(), 0.0f }))
 					{
-						SelectedMultiBinding->HasValue = SelectedMultiBindingOnOpenCopy.HasValue;
-						SelectedMultiBinding->Value = SelectedMultiBindingOnOpenCopy.Value;
+						selectedMultiBinding->HasValue = selectedMultiBindingOnOpenCopy.HasValue;
+						selectedMultiBinding->Value = selectedMultiBindingOnOpenCopy.Value;
+						changesWereMade = true;
 					}
 					Gui::EndDisabled();
 					Gui::PopItemWidth();
 					Gui::SameLine();
 
-					Gui::BeginDisabled(!SelectedMultiBinding->HasValue);
+					Gui::BeginDisabled(!selectedMultiBinding->HasValue);
 					if (Gui::Button("Reset to Default", { Gui::CalcItemWidth(), 0.0f }))
-						SelectedMultiBinding->ResetToDefault();
+					{
+						selectedMultiBinding->ResetToDefault();
+						changesWereMade = true;
+					}
 					Gui::EndDisabled();
 					Gui::PopItemWidth();
 				}
@@ -387,11 +406,17 @@ namespace PeepoDrumKit
 			Gui::PopStyleColor(1);
 			Gui::PopStyleVar(3);
 		}
+
+		return changesWereMade;
 	}
 
-	void ChartSettingsWindow::DrawTabAudio(ChartContext& context, UserSettingsData::AudioData& settings)
+	b8 ChartSettingsWindow::DrawTabAudio(ChartContext& context, UserSettingsData::AudioData& settings)
 	{
+		b8 changesWereMade = false;
+
 		Gui::AlignTextToFramePadding();
 		Gui::TextDisabled("// TODO: ...");
+
+		return changesWereMade;
 	}
 }

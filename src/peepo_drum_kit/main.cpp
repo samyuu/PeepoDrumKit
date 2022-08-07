@@ -58,7 +58,7 @@ namespace PeepoDrumKit
 		}
 	};
 
-	enum class LoadSettingsResponse { AllGood, ErrorAbort, ErrorRetry, ErrorIgnore };
+	enum class LoadSettingsResponse { FileNotFound, AllGood, ErrorAbort, ErrorRetry, ErrorIgnore };
 
 	template <typename T>
 	static LoadSettingsResponse ReadParseSettingsIniFile(cstr iniFilePath, T& out)
@@ -103,6 +103,7 @@ namespace PeepoDrumKit
 		while (true)
 		{
 			const auto response = ReadParseSettingsIniFile<PersistentAppData>(PersistentAppIniFileName, PersistentApp);
+			if (response == LoadSettingsResponse::FileNotFound) { break; }
 			if (response == LoadSettingsResponse::AllGood) { break; }
 			if (response == LoadSettingsResponse::ErrorAbort) { return -1; }
 			if (response == LoadSettingsResponse::ErrorRetry) { continue; }
@@ -112,7 +113,8 @@ namespace PeepoDrumKit
 
 		while (true)
 		{
-			const auto response = ReadParseSettingsIniFile<UserSettingsData>(SettingsIniFileName, Settings);
+			const auto response = ReadParseSettingsIniFile<UserSettingsData>(SettingsIniFileName, Settings_Mutable);
+			if (response == LoadSettingsResponse::FileNotFound) { Settings_Mutable.IsDirty = true; break; }
 			if (response == LoadSettingsResponse::AllGood) { break; }
 			if (response == LoadSettingsResponse::ErrorAbort) { return -1; }
 			if (response == LoadSettingsResponse::ErrorRetry) { continue; }
@@ -152,11 +154,11 @@ namespace PeepoDrumKit
 			std::string iniFileContent; iniFileContent.reserve(4096);
 			SettingsToIni(PersistentApp, iniFileContent); File::WriteAllBytes(PersistentAppIniFileName, iniFileContent);
 
-			// TODO: Only save if dirty...
-			if (/* ... */ true)
+			if (Settings.IsDirty)
 			{
 				iniFileContent.clear();
 				SettingsToIni(Settings, iniFileContent); File::WriteAllBytes(SettingsIniFileName, iniFileContent);
+				Settings_Mutable.IsDirty = false;
 			}
 
 			app = nullptr;

@@ -63,6 +63,9 @@ namespace PeepoDrumKit
 	{
 		inline void ResetDefault() { *this = UserSettingsData {}; }
 
+		// NOTE: Defer save ini settings file on application exit
+		b8 IsDirty = false;
+
 		struct GeneralData
 		{
 			// TODO: ...
@@ -156,7 +159,9 @@ namespace PeepoDrumKit
 
 	// NOTE: Load on application startup but only saved after making changes
 	constexpr cstr SettingsIniFileName = "settings_user.ini";
-	inline UserSettingsData Settings = {};
+	// NOTE: Separate const global reference to (hopefully) not accidentally forget setting the IsDirty flag after making changes
+	inline UserSettingsData Settings_Mutable = {};
+	inline const UserSettingsData& Settings = Settings_Mutable;
 
 	struct SettingsParseResult { b8 HasError; i32 ErrorLineIndex; std::string ErrorMessage; };
 
