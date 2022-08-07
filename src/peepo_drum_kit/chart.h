@@ -111,9 +111,9 @@ namespace PeepoDrumKit
 		Beat BeatTime;
 		Beat BeatDuration;
 		Time TimeOffset;
-		i16 BalloonPopCount;
 		NoteType Type;
 		b8 IsSelected;
+		i16 BalloonPopCount;
 		f32 ClickAnimationTimeRemaining;
 		f32 ClickAnimationTimeDuration;
 

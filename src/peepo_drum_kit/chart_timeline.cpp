@@ -813,7 +813,7 @@ namespace PeepoDrumKit
 				case GenericList::Notes_Master:
 				{
 					const auto& in = item.Value.POD.Note;
-					bufferLength = sprintf_s(buffer, "Note { %d, %d, %d, %d };\n", (in.BeatTime - baseBeat).Ticks, in.BeatDuration.Ticks, static_cast<i32>(in.Type), in.BalloonPopCount);
+					bufferLength = sprintf_s(buffer, "Note { %d, %d, %d, %d, %g };\n", (in.BeatTime - baseBeat).Ticks, in.BeatDuration.Ticks, static_cast<i32>(in.Type), in.BalloonPopCount, in.TimeOffset.TotalMilliseconds());
 				} break;
 				case GenericList::ScrollChanges:
 				{
@@ -929,6 +929,7 @@ namespace PeepoDrumKit
 						newItemValue.BeatDuration.Ticks = parsedParams[1].I32;
 						newItemValue.Type = static_cast<NoteType>(parsedParams[2].I32);
 						newItemValue.BalloonPopCount = static_cast<i16>(parsedParams[3].I32);
+						newItemValue.TimeOffset = Time::FromMilliseconds(parsedParams[4].F32);
 					}
 					else if (itemType == "ScrollSpeed")
 					{
