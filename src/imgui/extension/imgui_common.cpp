@@ -176,6 +176,202 @@ namespace ImGui
 		return InputTextWithHint(label, hint, str->data(), str->capacity() + 1, flags, InputTextStdStringCallback, &cb_user_data);
 	}
 
+	// NOTE: Basically ImGui::InputScalar() but with some extra parameters and more detailed return values
+	InputScalarWithButtonsResult InputScalar_WithExtraStuff(cstr label, ImGuiDataType data_type, void* p_data, const void* p_step, const void* p_step_fast, cstr format, ImGuiInputTextFlags flags, const InputScalarWithButtonsExData* ex_data)
+	{
+		ImGuiWindow* window = GetCurrentWindow();
+		if (window->SkipItems)
+			return InputScalarWithButtonsResult {};
+
+		ImGuiContext& g = *GImGui;
+		ImGuiStyle& style = g.Style;
+
+		if (format == NULL)
+			format = DataTypeGetInfo(data_type)->PrintFmt;
+
+		char buf[64];
+		DataTypeFormatString(buf, IM_ARRAYSIZE(buf), data_type, p_data, format);
+
+		flags |= ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_NoMarkEdited; // We call MarkItemEdited() ourselves by comparing the actual data rather than the string.
+
+		InputScalarWithButtonsResult result = {};
+		if (p_step != NULL)
+		{
+			const bool spin_buttons = (ex_data != nullptr) ? ex_data->SpinButtons : false;
+			const float frame_height = GetFrameHeight();
+			const float button_size = spin_buttons ? ImFloor(frame_height * 0.5f) : frame_height;
+			const float button_spacing_x = spin_buttons ? 0.0f : style.ItemInnerSpacing.x;
+			const float button_spacing_y = 0.0f;
+
+			const ImVec4 backup_text_color = style.Colors[ImGuiCol_Text];
+			style.Colors[ImGuiCol_Text] = (ex_data != nullptr) ? ColorConvertU32ToFloat4(ex_data->TextColor) : backup_text_color;
+
+			BeginGroup(); // The only purpose of the group here is to allow the caller to query item data e.g. IsItemActive()
+			PushID(label);
+			SetNextItemWidth(ImMax(1.0f, CalcItemWidth() - (spin_buttons ? button_size : (button_size + style.ItemInnerSpacing.x) * 2)));
+			if (InputText("", buf, IM_ARRAYSIZE(buf), flags)) // PushId(label) + "" gives us the expected ID from outside point of view
+				result.ValueChanged = DataTypeApplyFromText(buf, data_type, p_data, format);
+
+			result.IsTextItemActive = IsItemActive();
+			result.TextItemRect[0] = GetItemRect();
+			style.Colors[ImGuiCol_Text] = backup_text_color;
+
+			const ImVec2 backup_frame_padding = style.FramePadding;
+
+			style.FramePadding.x = style.FramePadding.y;
+			ImGuiButtonFlags button_flags = ImGuiButtonFlags_Repeat | ImGuiButtonFlags_DontClosePopups;
+			if (flags & ImGuiInputTextFlags_ReadOnly)
+				BeginDisabled();
+			SameLine(0, button_spacing_x);
+			if (spin_buttons)
+			{
+				BeginGroup();
+				const float backup_font_size = g.DrawListSharedData.FontSize;
+				const float backup_item_spacing_y = g.Style.ItemSpacing.y;
+				g.DrawListSharedData.FontSize = button_size;
+				g.Style.ItemSpacing.y = button_spacing_y;
+				if (ArrowButtonEx("+", ImGuiDir_Up, ImVec2(button_size, button_size), button_flags))
+				{
+					DataTypeApplyOp(data_type, '+', p_data, p_data, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+					result.ValueChanged = true;
+					result.ButtonClicked = true;
+				}
+				if (ArrowButtonEx("-", ImGuiDir_Down, ImVec2(button_size, button_size), button_flags))
+				{
+					DataTypeApplyOp(data_type, '-', p_data, p_data, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+					result.ValueChanged = true;
+					result.ButtonClicked = true;
+				}
+				g.Style.ItemSpacing.y = backup_item_spacing_y;
+				g.DrawListSharedData.FontSize = backup_font_size;
+				EndGroup();
+			}
+			else
+			{
+				if (ButtonEx("-", ImVec2(button_size, button_size), button_flags))
+				{
+					DataTypeApplyOp(data_type, '-', p_data, p_data, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+					result.ValueChanged = true;
+					result.ButtonClicked = true;
+				}
+				SameLine(0, style.ItemInnerSpacing.x);
+				if (ButtonEx("+", ImVec2(button_size, button_size), button_flags))
+				{
+					DataTypeApplyOp(data_type, '+', p_data, p_data, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+					result.ValueChanged = true;
+					result.ButtonClicked = true;
+				}
+			}
+			if (flags & ImGuiInputTextFlags_ReadOnly)
+				EndDisabled();
+
+			const char* label_end = FindRenderedTextEnd(label);
+			if (label != label_end)
+			{
+				SameLine(0, style.ItemInnerSpacing.x);
+				TextEx(label, label_end);
+			}
+			style.FramePadding = backup_frame_padding;
+
+			PopID();
+			EndGroup();
+		}
+		else
+		{
+			const auto backup_text_color = style.Colors[ImGuiCol_Text];
+			style.Colors[ImGuiCol_Text] = (ex_data != nullptr) ? ColorConvertU32ToFloat4(ex_data->TextColor) : backup_text_color;
+
+			if (InputText(label, buf, IM_ARRAYSIZE(buf), flags))
+				result.ValueChanged = DataTypeApplyFromText(buf, data_type, p_data, format);
+			result.IsTextItemActive = IsItemActive();
+			result.TextItemRect[0] = GetItemRect();
+
+			style.Colors[ImGuiCol_Text] = backup_text_color;
+		}
+		if (result.ValueChanged)
+			MarkItemEdited(g.LastItemData.ID);
+
+		return result;
+	}
+
+	InputScalarWithButtonsResult InputScalarN_WithExtraStuff(cstr label, ImGuiDataType data_type, void* p_data, i32 components, const void* p_step, const void* p_step_fast, cstr format, ImGuiInputTextFlags flags, const InputScalarWithButtonsExData* ex_data)
+	{
+		assert(components > 0);
+		if (components == 1)
+			return InputScalar_WithExtraStuff(label, data_type, p_data, p_step, p_step_fast, format, flags, ex_data);
+
+		ImGuiWindow* window = GetCurrentWindow();
+		if (window->SkipItems)
+			return InputScalarWithButtonsResult {};
+
+		// NOTE: Duplicated from imgui_widgets.cpp beacuse it's not exposed publicly
+		static constexpr size_t GDataTypeInfo_Sizes[] = { sizeof(i8), sizeof(u8), sizeof(i16), sizeof(u16), sizeof(i32), sizeof(u32), sizeof(f32), sizeof(i64), sizeof(u64), sizeof(f64) };
+		IM_STATIC_ASSERT(IM_ARRAYSIZE(GDataTypeInfo_Sizes) == ImGuiDataType_COUNT);
+
+		InputScalarWithButtonsResult result = {};
+
+		ImGuiContext& g = *GImGui;
+		BeginGroup();
+		PushID(label);
+		PushMultiItemsWidths(components, CalcItemWidth());
+		size_t type_size = GDataTypeInfo_Sizes[data_type];
+		for (int i = 0; i < components; i++)
+		{
+			PushID(i);
+			if (i > 0)
+				SameLine(0, g.Style.ItemInnerSpacing.x);
+
+			const auto scalarResult = InputScalar_WithExtraStuff("", data_type, p_data, p_step, p_step_fast, format, flags, ex_data);
+			result.ValueChanged |= (static_cast<u32>(scalarResult.ValueChanged) << i);
+			result.ButtonClicked |= (static_cast<u32>(scalarResult.ButtonClicked) << i);
+			result.IsTextItemActive |= (static_cast<u32>(scalarResult.IsTextItemActive) << i);
+			assert(i < ArrayCountI32(result.TextItemRect));
+			result.TextItemRect[i] = scalarResult.TextItemRect[0];
+
+			PopID();
+			PopItemWidth();
+			p_data = (void*)((char*)p_data + type_size);
+		}
+		PopID();
+
+		const char* label_end = FindRenderedTextEnd(label);
+		if (label != label_end)
+		{
+			SameLine(0.0f, g.Style.ItemInnerSpacing.x);
+			TextEx(label, label_end);
+		}
+
+		EndGroup();
+		return result;
+	}
+
+	b8 SpinScalar(cstr label, ImGuiDataType data_type, void* p_data, const void* p_step, const void* p_step_fast, cstr format, ImGuiInputTextFlags flags)
+	{
+		InputScalarWithButtonsExData ex_data {};
+		ex_data.TextColor = GetColorU32(ImGuiCol_Text);
+		ex_data.SpinButtons = true;
+		InputScalarWithButtonsResult result = InputScalar_WithExtraStuff(label, data_type, p_data, p_step, p_step_fast, format, flags, &ex_data);
+		return result.ValueChanged;
+	}
+
+	b8 SpinInt(cstr label, i32* v, i32 step, i32 step_fast, ImGuiInputTextFlags flags)
+	{
+		cstr format = (flags & ImGuiInputTextFlags_CharsHexadecimal) ? "%08X" : "%d";
+		return SpinScalar(label, ImGuiDataType_S32, (void*)v, (void*)(step > 0 ? &step : nullptr), (void*)(step_fast > 0 ? &step_fast : nullptr), format, flags);
+	}
+
+	b8 SpinFloat(cstr label, f32* v, f32 step, f32 step_fast, cstr format, ImGuiInputTextFlags flags)
+	{
+		flags |= ImGuiInputTextFlags_CharsScientific;
+		return SpinScalar(label, ImGuiDataType_Float, (void*)v, (void*)(step > 0.0f ? &step : nullptr), (void*)(step_fast > 0.0f ? &step_fast : nullptr), format, flags);
+	}
+
+	b8 SpinDouble(cstr label, f64* v, f64 step, f64 step_fast, cstr format, ImGuiInputTextFlags flags)
+	{
+		flags |= ImGuiInputTextFlags_CharsScientific;
+		return SpinScalar(label, ImGuiDataType_Double, (void*)v, (void*)(step > 0.0 ? &step : nullptr), (void*)(step_fast > 0.0 ? &step_fast : nullptr), format, flags);
+	}
+
 	PathInputTextWithBrowserButtonResult PathInputTextWithHintAndBrowserDialogButton(cstr label, cstr hint, std::string* str, ImGuiInputTextFlags flags)
 	{
 		PathInputTextWithBrowserButtonResult result {};

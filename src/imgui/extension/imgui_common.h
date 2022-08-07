@@ -64,6 +64,16 @@ namespace ImGui
 	b8 InputTextWithHint(cstr label, cstr hint, std::string* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = nullptr, void* user_data = nullptr);
 	b8 PathInputTextWithHint(cstr label, cstr hint, std::string* str, ImGuiInputTextFlags flags = 0);
 
+	struct InputScalarWithButtonsResult { u32 ValueChanged, ButtonClicked, IsTextItemActive; Rect TextItemRect[4]; };
+	struct InputScalarWithButtonsExData { u32 TextColor; b8 SpinButtons; };
+	InputScalarWithButtonsResult InputScalar_WithExtraStuff(cstr label, ImGuiDataType data_type, void* p_data, const void* p_step = nullptr, const void* p_step_fast = nullptr, cstr format = nullptr, ImGuiInputTextFlags flags = 0, const InputScalarWithButtonsExData* ex_data = nullptr);
+	InputScalarWithButtonsResult InputScalarN_WithExtraStuff(cstr label, ImGuiDataType data_type, void* p_data, i32 components, const void* p_step = nullptr, const void* p_step_fast = nullptr, cstr format = nullptr, ImGuiInputTextFlags flags = 0, const InputScalarWithButtonsExData* ex_data = nullptr);
+
+	b8 SpinScalar(cstr label, ImGuiDataType data_type, void* p_data, const void* p_step, const void* p_step_fast, cstr format, ImGuiInputTextFlags flags);
+	b8 SpinInt(cstr label, i32* v, i32 step = 1, i32 step_fast = 100, ImGuiInputTextFlags flags = 0);
+	b8 SpinFloat(cstr label, f32* v, f32 step = 0.0f, f32 step_fast = 0.0f, cstr format = "%.3f", ImGuiInputTextFlags flags = 0);
+	b8 SpinDouble(cstr label, f64* v, f64 step = 0.0, f64 step_fast = 0.0, cstr format = "%.6f", ImGuiInputTextFlags flags = 0);
+
 	struct PathInputTextWithBrowserButtonResult { b8 InputTextEdited; b8 BrowseButtonClicked; };
 	PathInputTextWithBrowserButtonResult PathInputTextWithHintAndBrowserDialogButton(cstr label, cstr hint, std::string* str, ImGuiInputTextFlags flags = 0);
 
@@ -96,6 +106,27 @@ namespace ImGui
 		}
 
 		return outValueWasChanged;
+	}
+
+	struct MultiWidgetIt { i32 Index; };
+	struct MultiWidgetResult { b8 ValueChanged; i32 ChangedIndex; };
+
+	template <typename Func>
+	inline MultiWidgetResult SameLineMultiWidget(i32 itemCount, Func onWidgetFunc)
+	{
+		i32 changedIndex = -1;
+		ImGui::BeginGroup();
+		ImGui::PushMultiItemsWidths(itemCount, ImGui::CalcItemWidth());
+		for (i32 i = 0; i < itemCount; i++)
+		{
+			if (i > 0)
+				ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+			if (onWidgetFunc(MultiWidgetIt { i }))
+				changedIndex = i;
+			ImGui::PopItemWidth();
+		}
+		ImGui::EndGroup();
+		return MultiWidgetResult { (changedIndex != -1), changedIndex };
 	}
 
 	void DrawStar(ImDrawList* drawList, vec2 center, f32 outerRadius, f32 innerRadius, u32 color, f32 thicknessOrZeroToFill = 1.0f);
