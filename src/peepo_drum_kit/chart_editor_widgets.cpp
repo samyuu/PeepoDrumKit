@@ -40,28 +40,7 @@ static void ConvertToEscapeSequences(const std::string_view in, std::string& out
 
 namespace PeepoDrumKit
 {
-	struct MultiWidgetIt { i32 Index; };
-	struct MultiWidgetResult { b8 ValueChanged; i32 ChangedIndex; };
-
-	template <typename Func>
-	static MultiWidgetResult GuiSameLineMultiWidget(i32 itemCount, Func onWidgetFunc)
-	{
-		i32 changedIndex = -1;
-		Gui::BeginGroup();
-		Gui::PushMultiItemsWidths(itemCount, Gui::CalcItemWidth());
-		for (i32 i = 0; i < itemCount; i++)
-		{
-			if (i > 0)
-				Gui::SameLine(0, Gui::GetStyle().ItemInnerSpacing.x);
-			if (onWidgetFunc(MultiWidgetIt { i }))
-				changedIndex = i;
-			Gui::PopItemWidth();
-		}
-		Gui::EndGroup();
-		return MultiWidgetResult { (changedIndex != -1), changedIndex };
-	}
-
-	static b8 GuiDragFloatLabel(std::string_view label, f32* inOutValue, f32 speed, f32 min, f32 max, cstr format, ImGuiSliderFlags flags)
+	static b8 GuiDragLabelScalar(std::string_view label, ImGuiDataType dataType, void* inOutValue, f32 speed = 1.0f, const void* min = nullptr, const void* max = nullptr, ImGuiSliderFlags flags = ImGuiSliderFlags_None)
 	{
 		b8 valueChanged = false;
 		Gui::BeginGroup();
@@ -71,7 +50,7 @@ namespace PeepoDrumKit
 
 			// TODO: Implement properly without hacky invisible DragFloat (?)
 			Gui::PushStyleColor(ImGuiCol_Text, 0); Gui::PushStyleColor(ImGuiCol_FrameBg, 0); Gui::PushStyleColor(ImGuiCol_FrameBgHovered, 0); Gui::PushStyleColor(ImGuiCol_FrameBgActive, 0);
-			valueChanged = Gui::DragFloat("##InvisibleDragFloat", inOutValue, speed, min, max, format, flags | ImGuiSliderFlags_NoInput);
+			valueChanged = Gui::DragScalar("##DragScalar", dataType, inOutValue, speed, min, max, nullptr, flags | ImGuiSliderFlags_NoInput);
 			Gui::SetDragScalarMouseCursor();
 			Gui::PopStyleColor(4);
 
@@ -85,23 +64,27 @@ namespace PeepoDrumKit
 		return valueChanged;
 	}
 
-	static b8 GuiInputFraction(cstr label, ivec2* inOutValue, std::optional<ivec2> valueRange)
+	static b8 GuiDragLabelFloat(std::string_view label, f32* inOutValue, f32 speed = 1.0f, f32 min = 0.0f, f32 max = 0.0f, ImGuiSliderFlags flags = ImGuiSliderFlags_None)
 	{
-		static constexpr i32 componentCount = 2;
+		return GuiDragLabelScalar(label, ImGuiDataType_Float, inOutValue, speed, &min, &max, flags);
+	}
 
-		constexpr std::string_view divisionText = " / ";
+	static b8 GuiInputFraction(cstr label, ivec2* inOutValue, std::optional<ivec2> valueRange, i32 step = 0, i32 stepFast = 0)
+	{
+		static constexpr i32 components = 2;
+		static constexpr std::string_view divisionText = " / ";
 		const f32 divisionLabelWidth = Gui::CalcTextSize(Gui::StringViewStart(divisionText), Gui::StringViewEnd(divisionText)).x;
-		const f32 perComponentInputFloatWidth = Floor(((Gui::GetContentRegionAvail().x - divisionLabelWidth) / static_cast<f32>(componentCount)));
+		const f32 perComponentInputFloatWidth = Floor(((Gui::GetContentRegionAvail().x - divisionLabelWidth) / static_cast<f32>(components)));
 
 		b8 anyValueChanged = false;
-		for (i32 component = 0; component < componentCount; component++)
+		for (i32 component = 0; component < components; component++)
 		{
 			Gui::PushID(&(*inOutValue)[component]);
 
-			const b8 isLastComponent = ((component + 1) == componentCount);
+			const b8 isLastComponent = ((component + 1) == components);
 			Gui::SetNextItemWidth(isLastComponent ? (Gui::GetContentRegionAvail().x - 1.0f) : perComponentInputFloatWidth);
 
-			if (Gui::InputScalar("##Component", ImGuiDataType_S32, &(*inOutValue)[component], nullptr, nullptr, "%d", ImGuiInputTextFlags_None))
+			if (Gui::SpinInt("##Component", &(*inOutValue)[component], step, stepFast, ImGuiInputTextFlags_None))
 			{
 				if (valueRange.has_value()) (*inOutValue)[component] = Clamp((*inOutValue)[component], valueRange->x, valueRange->y);
 				anyValueChanged = true;
@@ -166,6 +149,151 @@ namespace PeepoDrumKit
 		inOutFitOnScreenLastFrame = starsFitOnScreen;
 		return valueWasChanged;
 	}
+
+	union MultiEditDataUnion
+	{
+		f32 F32; i32 I32; i16 I16;
+		f32 F32_V[4]; i32 I32_V[4]; i16 I16_V[4];
+	};
+	struct MultiEditWidgetResult
+	{
+		u32 HasValueExact;
+		u32 HasValueIncrement;
+		MultiEditDataUnion ValueExact;
+		MultiEditDataUnion ValueIncrement;
+	};
+	struct MultiEditWidgetParam
+	{
+		ImGuiDataType DataType = ImGuiDataType_Float;
+		i32 Components = 1;
+		b8 EnableStepButtons = false;
+		b8 UseSpinButtonsInstead = false;
+		b8 EnableDragLabel = true;
+		b8 EnableClamp = false;
+		u32 HasMixedValues = false;
+		MultiEditDataUnion Value = {};
+		MultiEditDataUnion MixedValuesMin = {};
+		MultiEditDataUnion MixedValuesMax = {};
+		MultiEditDataUnion ValueClampMin = {};
+		MultiEditDataUnion ValueClampMax = {};
+		MultiEditDataUnion ButtonStep = {};
+		MultiEditDataUnion ButtonStepFast = {};
+		f32 DragLabelSpeed = 1.0f;
+		cstr FormatString = nullptr;
+	};
+
+	static MultiEditWidgetResult GuiPropertyMultiSelectionEditWidget(std::string_view label, const MultiEditWidgetParam& in)
+	{
+		MultiEditWidgetResult out = {};
+		Gui::PushID(Gui::StringViewStart(label), Gui::StringViewEnd(label));
+		Gui::Property::Property([&]
+		{
+			if (in.EnableDragLabel)
+			{
+				MultiEditDataUnion v = in.Value;
+				Gui::SetNextItemWidth(-1.0f);
+				if (GuiDragLabelScalar(label, in.DataType, &v, in.DragLabelSpeed, in.EnableClamp ? &in.ValueClampMin : nullptr, in.EnableClamp ? &in.ValueClampMax : nullptr))
+				{
+					for (i32 c = 0; c < in.Components; c++)
+					{
+						out.HasValueIncrement |= (1 << c);
+						switch (in.DataType)
+						{
+						case ImGuiDataType_Float: { out.ValueIncrement.F32_V[c] = (v.F32_V[c] - in.Value.F32_V[c]); } break;
+						case ImGuiDataType_S32: { out.ValueIncrement.I32_V[c] = (v.I32_V[c] - in.Value.I32_V[c]); } break;
+						case ImGuiDataType_S16: { out.ValueIncrement.I16_V[c] = (v.I16_V[c] - in.Value.I16_V[c]); } break;
+						default: assert(false); break;
+						}
+					}
+				}
+			}
+			else
+			{
+				Gui::AlignTextToFramePadding();
+				Gui::TextUnformatted(label);
+			}
+		});
+		Gui::Property::Value([&]()
+		{
+			const auto& style = Gui::GetStyle();
+			cstr formatString = (in.FormatString != nullptr) ? in.FormatString : Gui::DataTypeGetInfo(in.DataType)->PrintFmt;
+
+			b8& textInputActiveLastFrame = *Gui::GetStateStorage()->GetBoolRef(Gui::GetID("TextInputActiveLastFrame"), false);
+			const b8 showMixedValues = (in.HasMixedValues && !textInputActiveLastFrame);
+
+			Gui::SetNextItemWidth(-1.0f);
+			MultiEditDataUnion v = in.Value;
+			Gui::InputScalarWithButtonsExData exData {}; exData.TextColor = Gui::GetColorU32(ImGuiCol_Text, showMixedValues ? 0.0f : 1.0f); exData.SpinButtons = in.UseSpinButtonsInstead;
+			Gui::InputScalarWithButtonsResult result = Gui::InputScalarN_WithExtraStuff("##Input", in.DataType, &v, in.Components, in.EnableStepButtons ? &in.ButtonStep : nullptr, in.EnableStepButtons ? &in.ButtonStepFast : nullptr, formatString, ImGuiInputTextFlags_None, &exData);
+			if (result.ValueChanged)
+			{
+				for (i32 c = 0; c < in.Components; c++)
+				{
+					if (result.ButtonClicked & (1 << c))
+						out.HasValueIncrement |= ((result.ValueChanged & (1 << c)) ? 1 : 0) << c;
+					else
+						out.HasValueExact |= ((result.ValueChanged & (1 << c)) ? 1 : 0) << c;
+
+					if (in.EnableClamp)
+					{
+						switch (in.DataType)
+						{
+						case ImGuiDataType_Float: { v.F32_V[c] = Clamp(v.F32_V[c], in.ValueClampMin.F32_V[c], in.ValueClampMax.F32_V[c]); } break;
+						case ImGuiDataType_S32: { v.I32_V[c] = Clamp(v.I32_V[c], in.ValueClampMin.I32_V[c], in.ValueClampMax.I32_V[c]); } break;
+						case ImGuiDataType_S16: { v.I16_V[c] = Clamp(v.I16_V[c], in.ValueClampMin.I16_V[c], in.ValueClampMax.I16_V[c]); } break;
+						default: assert(false); break;
+						}
+					}
+
+					switch (in.DataType)
+					{
+					case ImGuiDataType_Float: { out.ValueExact.F32_V[c] = v.F32_V[c]; out.ValueIncrement.F32_V[c] = (v.F32_V[c] - in.Value.F32_V[c]); } break;
+					case ImGuiDataType_S32: { out.ValueExact.I32_V[c] = v.I32_V[c]; out.ValueIncrement.I32_V[c] = (v.I32_V[c] - in.Value.I32_V[c]); } break;
+					case ImGuiDataType_S16: { out.ValueExact.I16_V[c] = v.I16_V[c]; out.ValueIncrement.I16_V[c] = (v.I16_V[c] - in.Value.I16_V[c]); } break;
+					default: assert(false); break;
+					}
+				}
+			}
+			textInputActiveLastFrame = result.IsTextItemActive;
+
+			if (showMixedValues)
+			{
+				for (i32 c = 0; c < in.Components; c++)
+				{
+					if (in.HasMixedValues & (1 << c))
+					{
+						char min[64], max[64];
+						switch (in.DataType)
+						{
+						case ImGuiDataType_Float: { sprintf_s(min, formatString, in.MixedValuesMin.F32_V[c]); sprintf_s(max, formatString, in.MixedValuesMax.F32_V[c]); } break;
+						case ImGuiDataType_S32: { sprintf_s(min, formatString, in.MixedValuesMin.I32_V[c]); sprintf_s(max, formatString, in.MixedValuesMax.I32_V[c]); } break;
+						case ImGuiDataType_S16: { sprintf_s(min, formatString, in.MixedValuesMin.I16_V[c]); sprintf_s(max, formatString, in.MixedValuesMax.I16_V[c]); } break;
+						default: assert(false); break;
+						}
+						char multiSelectionPreview[128]; sprintf_s(multiSelectionPreview, "(%s ... %s)", min, max);
+
+						Gui::PushStyleColor(ImGuiCol_Text, Gui::GetColorU32(ImGuiCol_Text, 0.6f));
+						Gui::RenderTextClipped(result.TextItemRect[c].TL + vec2(style.FramePadding.x, 0.0f), result.TextItemRect[c].BR, multiSelectionPreview, nullptr, nullptr, { 0.0f, 0.5f });
+						Gui::PopStyleColor();
+					}
+					else
+					{
+						char preview[64];
+						switch (in.DataType)
+						{
+						case ImGuiDataType_Float: { sprintf_s(preview, formatString, in.MixedValuesMin.F32_V[c]); } break;
+						case ImGuiDataType_S32: { sprintf_s(preview, formatString, in.MixedValuesMin.I32_V[c]); } break;
+						case ImGuiDataType_S16: { sprintf_s(preview, formatString, in.MixedValuesMin.I16_V[c]); } break;
+						default: assert(false); break;
+						}
+						Gui::RenderTextClipped(result.TextItemRect[c].TL + vec2(style.FramePadding.x, 0.0f), result.TextItemRect[c].BR, preview, nullptr, nullptr, { 0.0f, 0.5f });
+					}
+				}
+			}
+		});
+		Gui::PopID();
+		return out;
+	}
 }
 
 namespace PeepoDrumKit
@@ -178,6 +306,14 @@ namespace PeepoDrumKit
 	// TODO: Maybe this should be a user setting (?)
 	static constexpr f32 MinBPM = 30.0f;
 	static constexpr f32 MaxBPM = 960.0f;
+	static constexpr i32 MinTimeSignatureValue = 1;
+	static constexpr i32 MaxTimeSignatureValue = Beat::TicksPerBeat * 4;
+	static constexpr f32 MinScrollSpeed = -100.0f;
+	static constexpr f32 MaxScrollSpeed = +100.0f;
+	static constexpr Time MinNoteTimeOffset = Time::FromMilliseconds(-25.0);
+	static constexpr Time MaxNoteTimeOffset = Time::FromMilliseconds(+25.0);
+	static constexpr i16 MinBalloonCount = 0;
+	static constexpr i16 MaxBalloonCount = 999;
 
 	cstr LoadingTextAnimation::UpdateFrameAndGetText(b8 isLoadingThisFrame, f32 deltaTimeSec)
 	{
@@ -513,6 +649,559 @@ namespace PeepoDrumKit
 		Gui::PopFont();
 	}
 
+	void ChartInspectorWindow::DrawGui(ChartContext& context)
+	{
+		Gui::UpdateSmoothScrollWindow();
+
+		assert(context.ChartSelectedCourse != nullptr);
+		auto& chart = context.Chart;
+		auto& course = *context.ChartSelectedCourse;
+
+		if (Gui::CollapsingHeader("Selected Items", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			defer { SelectedItems.clear(); };
+			BeatSortedForwardIterator<TempoChange> scrollTempoChangeIt {};
+			ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it)
+			{
+				TempChartItem& out = SelectedItems.emplace_back();
+				out.List = it.List;
+				out.Index = it.Index;
+				out.AvailableMembers = GetAvailableMemberFlags(it.List);
+
+				for (GenericMember member = {}; member < GenericMember::Count; IncrementEnum(member))
+				{
+					if (out.AvailableMembers & EnumToFlag(member))
+					{
+						const b8 success = TryGetGeneric(course, it.List, it.Index, member, out.MemberValues[member]);
+						assert(success);
+					}
+				}
+
+				if (it.List == GenericList::ScrollChanges)
+					out.BaseScrollTempo = TempoOrDefault(scrollTempoChangeIt.Next(course.TempoMap.Tempo.Sorted, out.MemberValues.BeatStart()));
+			});
+
+			GenericMemberFlags commonAvailableMemberFlags = SelectedItems.empty() ? GenericMemberFlags_None : GenericMemberFlags_All;
+			GenericList commonListType = SelectedItems.empty() ? GenericList::Count : SelectedItems[0].List;
+			size_t perListSelectionCounts[EnumCount<GenericList>] = {};
+			{
+
+				for (const TempChartItem& item : SelectedItems)
+				{
+					commonAvailableMemberFlags &= item.AvailableMembers;
+					perListSelectionCounts[EnumToIndex(item.List)]++;
+					if (item.List != commonListType)
+						commonListType = GenericList::Count;
+				}
+			}
+
+			GenericMemberFlags commonEqualMemberFlags = commonAvailableMemberFlags;
+			AllGenericMembersUnionArray sharedValues = {};
+			AllGenericMembersUnionArray mixedValuesMin = {};
+			AllGenericMembersUnionArray mixedValuesMax = {};
+			if (!SelectedItems.empty())
+			{
+				for (GenericMember member = {}; member < GenericMember::Count; IncrementEnum(member))
+				{
+					sharedValues[member] = SelectedItems[0].MemberValues[member];
+					mixedValuesMin[member] = sharedValues[member];
+					mixedValuesMax[member] = sharedValues[member];
+				}
+
+				for (const TempChartItem& item : SelectedItems)
+				{
+					for (GenericMember member = {}; member < GenericMember::Count; IncrementEnum(member))
+					{
+						if ((commonAvailableMemberFlags & EnumToFlag(member)) && item.MemberValues[member] != sharedValues[member])
+							commonEqualMemberFlags &= ~EnumToFlag(member);
+
+						const auto& v = item.MemberValues[member];
+						auto& min = mixedValuesMin[member];
+						auto& max = mixedValuesMax[member];
+						switch (member)
+						{
+						case GenericMember::B8_IsSelected: { /* ... */ } break;
+						case GenericMember::B8_BarLineVisible: { /* ... */ } break;
+						case GenericMember::I16_BalloonPopCount: { min.I16 = Min(min.I16, v.I16); max.I16 = Max(max.I16, v.I16); } break;
+						case GenericMember::F32_ScrollSpeed: { min.F32 = Min(min.F32, v.F32); max.F32 = Max(max.F32, v.F32); } break;
+						case GenericMember::Beat_Start: { min.Beat = Min(min.Beat, v.Beat); max.Beat = Max(max.Beat, v.Beat); } break;
+						case GenericMember::Beat_Duration: { min.Beat = Min(min.Beat, v.Beat); max.Beat = Max(max.Beat, v.Beat); } break;
+						case GenericMember::Time_Offset: { min.Time = Min(min.Time, v.Time); max.Time = Max(max.Time, v.Time); } break;
+						case GenericMember::NoteType_V:
+						{
+							min.NoteType = static_cast<NoteType>(Min(EnumToIndex(min.NoteType), EnumToIndex(v.NoteType)));
+							max.NoteType = static_cast<NoteType>(Max(EnumToIndex(max.NoteType), EnumToIndex(v.NoteType)));
+						} break;
+						case GenericMember::Tempo_V: { min.Tempo.BPM = Min(min.Tempo.BPM, v.Tempo.BPM); max.Tempo.BPM = Max(max.Tempo.BPM, v.Tempo.BPM); } break;
+						case GenericMember::TimeSignature_V:
+						{
+							min.TimeSignature.Numerator = Min(min.TimeSignature.Numerator, v.TimeSignature.Numerator);
+							max.TimeSignature.Numerator = Max(max.TimeSignature.Numerator, v.TimeSignature.Numerator);
+							min.TimeSignature.Denominator = Min(min.TimeSignature.Denominator, v.TimeSignature.Denominator);
+							max.TimeSignature.Denominator = Max(max.TimeSignature.Denominator, v.TimeSignature.Denominator);
+						} break;
+						case GenericMember::CStr_Lyric: { /* ... */ } break;
+						default: assert(false); break;
+						}
+					}
+				}
+			}
+
+			if (SelectedItems.empty())
+			{
+				Gui::PushFont(FontLarge_EN);
+				Gui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+				Gui::PushStyleColor(ImGuiCol_Text, Gui::GetColorU32(ImGuiCol_TextDisabled));
+				Gui::PushStyleColor(ImGuiCol_Button, 0x00000000);
+				Gui::Button("( Nothing Selected )", { Gui::GetContentRegionAvail().x, Gui::GetFrameHeight() * 2.0f });
+				Gui::PopStyleColor(2);
+				Gui::PopItemFlag();
+				Gui::PopFont();
+			}
+			else
+			{
+				if (Gui::Property::BeginTable(ImGuiTableFlags_BordersInner))
+				{
+					static constexpr cstr listTypeNames[] = { "Tempos", "Time Signatures", "Notes", "Notes", "Notes", "Scroll Speeds", "Bar Lines", "Go-Go Ranges", "Lyrics", };
+					static_assert(ArrayCount(listTypeNames) == EnumCount<GenericList>);
+
+					Gui::Property::Property([&]
+					{
+						std::string_view selectedListName = (commonListType < GenericList::Count) ? listTypeNames[EnumToIndex(commonListType)] : "Items";
+						if (SelectedItems.size() == 1 && !selectedListName.empty())
+							selectedListName = selectedListName.substr(0, selectedListName.size() - sizeof('s'));
+
+						Gui::AlignTextToFramePadding();
+						Gui::Text("Selected %.*s: %zu", FmtStrViewArgs(selectedListName), SelectedItems.size());
+					});
+					Gui::Property::Value([&]()
+					{
+						// TODO: + Beat_Duration (?)
+						Gui::AlignTextToFramePadding();
+						if (SelectedItems.size() == 1)
+							Gui::TextDisabled("%s",
+								context.BeatToTime(mixedValuesMin.BeatStart()).ToString());
+						else
+							Gui::TextDisabled("(%s ... %s)",
+								context.BeatToTime(mixedValuesMin.BeatStart()).ToString(),
+								context.BeatToTime(mixedValuesMax.BeatStart()).ToString());
+					});
+
+					if (commonListType >= GenericList::Count)
+					{
+						Gui::Property::PropertyTextValueFunc("Refine Selection", [&]
+						{
+							for (GenericList list = {}; list < GenericList::Count; IncrementEnum(list))
+							{
+								if (perListSelectionCounts[EnumToIndex(list)] == 0)
+									continue;
+
+								char buttonName[64];
+								sprintf_s(buttonName, "[ %s ]  x%zu", listTypeNames[EnumToIndex(list)], perListSelectionCounts[EnumToIndex(list)]);
+								if (list == GenericList::Notes_Master) { strcat_s(buttonName, " (Master)"); }
+								if (list == GenericList::Notes_Expert) { strcat_s(buttonName, " (Expert)"); }
+
+								Gui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, { 0.0f, 0.0f });
+								Gui::PushStyleColor(ImGuiCol_Button, Gui::GetColorU32(ImGuiCol_FrameBg));
+								Gui::PushStyleColor(ImGuiCol_ButtonHovered, Gui::GetColorU32(ImGuiCol_FrameBgHovered));
+								Gui::PushStyleColor(ImGuiCol_ButtonActive, Gui::GetColorU32(ImGuiCol_FrameBgActive));
+								if (Gui::Button(buttonName, vec2(-1.0f, 0.0f)))
+								{
+									const GenericMemberUnion unselectedValue = {};
+									for (const auto& selectedItem : SelectedItems)
+									{
+										if (selectedItem.List != list)
+											TrySetGeneric(course, selectedItem.List, selectedItem.Index, GenericMember::B8_IsSelected, unselectedValue);
+									}
+								}
+								Gui::PopStyleColor(3);
+								Gui::PopStyleVar(1);
+							}
+						});
+					}
+
+					GenericMemberFlags outModifiedMembers = GenericMemberFlags_None;
+					for (const GenericMember member : { GenericMember::NoteType_V, GenericMember::I16_BalloonPopCount, GenericMember::Time_Offset,
+						GenericMember::Tempo_V, GenericMember::TimeSignature_V, GenericMember::F32_ScrollSpeed, GenericMember::B8_BarLineVisible })
+					{
+						if (!(commonAvailableMemberFlags & EnumToFlag(member)))
+							continue;
+
+						b8 valueWasChanged = false;
+						switch (member)
+						{
+						case GenericMember::B8_BarLineVisible:
+						{
+							Gui::Property::PropertyTextValueFunc("Bar Line Visible", [&]
+							{
+								enum class VisibilityType { Visible, Hidden, Count }; static constexpr cstr visibilityTypeNames[] = { "Visible", "Hidden", };
+								auto v = !(commonEqualMemberFlags & EnumToFlag(member)) ? VisibilityType::Count : sharedValues.BarLineVisible() ? VisibilityType::Visible : VisibilityType::Hidden;
+
+								Gui::PushItemWidth(-1.0f);
+								if (Gui::ComboEnum("##BarLineVisible", &v, visibilityTypeNames, ImGuiComboFlags_None))
+								{
+									for (auto& selectedItem : SelectedItems)
+									{
+										auto& isVisible = selectedItem.MemberValues.BarLineVisible();
+										isVisible = (v == VisibilityType::Visible) ? true : (v == VisibilityType::Hidden) ? false : isVisible;
+									}
+									valueWasChanged = true;
+								}
+							});
+						} break;
+						case GenericMember::I16_BalloonPopCount:
+						{
+							MultiEditWidgetParam widgetIn = {};
+							widgetIn.DataType = ImGuiDataType_S16;
+							widgetIn.Value.I16 = sharedValues.BalloonPopCount();
+							widgetIn.HasMixedValues = !(commonEqualMemberFlags & EnumToFlag(member));
+							widgetIn.MixedValuesMin.I16 = mixedValuesMin.BalloonPopCount();
+							widgetIn.MixedValuesMax.I16 = mixedValuesMax.BalloonPopCount();
+							widgetIn.EnableStepButtons = true;
+							widgetIn.ButtonStep.I16 = 1;
+							widgetIn.ButtonStepFast.I16 = 4;
+							widgetIn.EnableDragLabel = false;
+							widgetIn.FormatString = "%d";
+							widgetIn.EnableDragLabel = true;
+							widgetIn.DragLabelSpeed = 0.05f;
+							widgetIn.EnableClamp = true;
+							widgetIn.ValueClampMin.I16 = MinBalloonCount;
+							widgetIn.ValueClampMax.I16 = MaxBalloonCount;
+							const MultiEditWidgetResult widgetOut = GuiPropertyMultiSelectionEditWidget("Balloon Pop Count", widgetIn);
+
+							if (widgetOut.HasValueExact)
+							{
+								for (auto& selectedItem : SelectedItems)
+								{
+									if (IsBalloonNote(selectedItem.MemberValues.NoteType()))
+										selectedItem.MemberValues.BalloonPopCount() = widgetOut.ValueExact.I16;
+								}
+								valueWasChanged = true;
+							}
+							else if (widgetOut.HasValueIncrement)
+							{
+								for (auto& selectedItem : SelectedItems)
+								{
+									if (IsBalloonNote(selectedItem.MemberValues.NoteType()))
+										selectedItem.MemberValues.BalloonPopCount() = Clamp(static_cast<i16>(selectedItem.MemberValues.BalloonPopCount() + widgetOut.ValueIncrement.I16), MinBalloonCount, MaxBalloonCount);
+								}
+								valueWasChanged = true;
+							}
+						} break;
+						case GenericMember::F32_ScrollSpeed:
+						{
+							for (size_t i = 0; i < 2; i++)
+							{
+								MultiEditWidgetParam widgetIn = {};
+								widgetIn.EnableStepButtons = true;
+								if (i == 0)
+								{
+									widgetIn.Value.F32 = sharedValues.ScrollSpeed();
+									widgetIn.HasMixedValues = !(commonEqualMemberFlags & EnumToFlag(member));
+									widgetIn.MixedValuesMin.F32 = mixedValuesMin.ScrollSpeed();
+									widgetIn.MixedValuesMax.F32 = mixedValuesMax.ScrollSpeed();
+									widgetIn.ButtonStep.F32 = 0.1f;
+									widgetIn.ButtonStepFast.F32 = 0.5f;
+									widgetIn.DragLabelSpeed = 0.005f;
+									widgetIn.FormatString = "%gx";
+									widgetIn.EnableClamp = true;
+									widgetIn.ValueClampMin.F32 = MinScrollSpeed;
+									widgetIn.ValueClampMax.F32 = MaxScrollSpeed;
+								}
+								else
+								{
+									b8 areAllScrollTemposTheSame = true, isFirstScroll = true;
+									Tempo commonScrollTempo = {}, minScrollTempo {}, maxScrollTempo {};
+									for (const auto& selectedItem : SelectedItems)
+									{
+										if (selectedItem.List != GenericList::ScrollChanges)
+											continue;
+
+										if (const Tempo scrollTempo = Tempo(selectedItem.MemberValues.ScrollSpeed() * selectedItem.BaseScrollTempo.BPM); isFirstScroll)
+										{
+											isFirstScroll = false;
+											commonScrollTempo = minScrollTempo = maxScrollTempo = scrollTempo;
+										}
+										else
+										{
+											minScrollTempo.BPM = Min(minScrollTempo.BPM, scrollTempo.BPM);
+											maxScrollTempo.BPM = Max(maxScrollTempo.BPM, scrollTempo.BPM);
+											areAllScrollTemposTheSame &= ApproxmiatelySame(scrollTempo.BPM, commonScrollTempo.BPM, 0.001f);
+										}
+									}
+									widgetIn.Value.F32 = commonScrollTempo.BPM;
+									widgetIn.HasMixedValues = !areAllScrollTemposTheSame;
+									widgetIn.MixedValuesMin.F32 = minScrollTempo.BPM;
+									widgetIn.MixedValuesMax.F32 = maxScrollTempo.BPM;
+									widgetIn.ButtonStep.F32 = 1.0f;
+									widgetIn.ButtonStepFast.F32 = 10.0f;
+									widgetIn.DragLabelSpeed = 1.0f;
+									widgetIn.FormatString = "%g BPM";
+									widgetIn.EnableClamp = true;
+									widgetIn.ValueClampMin.F32 = MinBPM;
+									widgetIn.ValueClampMax.F32 = MaxBPM;
+								}
+								const MultiEditWidgetResult widgetOut = GuiPropertyMultiSelectionEditWidget((i == 0) ? "Scroll Speed" : "Scroll Speed Tempo", widgetIn);
+								if (widgetOut.HasValueExact)
+								{
+									for (auto& selectedItem : SelectedItems)
+									{
+										if (i == 0)
+											selectedItem.MemberValues.ScrollSpeed() = widgetOut.ValueExact.F32;
+										else
+											selectedItem.MemberValues.ScrollSpeed() = (selectedItem.BaseScrollTempo.BPM == 0.0f) ? 0.0f : (widgetOut.ValueExact.F32 / selectedItem.BaseScrollTempo.BPM);
+									}
+									valueWasChanged = true;
+								}
+								else if (widgetOut.HasValueIncrement)
+								{
+									for (auto& selectedItem : SelectedItems)
+									{
+										if (i == 0)
+										{
+											selectedItem.MemberValues.ScrollSpeed() = Clamp(selectedItem.MemberValues.ScrollSpeed() + widgetOut.ValueIncrement.F32, MinScrollSpeed, MaxScrollSpeed);
+										}
+										else if (selectedItem.BaseScrollTempo.BPM != 0.0f)
+										{
+											const f32 oldScrollTempo = (selectedItem.MemberValues.ScrollSpeed() * selectedItem.BaseScrollTempo.BPM);
+											const f32 newScrollTempo = (oldScrollTempo + widgetOut.ValueIncrement.F32);
+											selectedItem.MemberValues.ScrollSpeed() = Clamp(newScrollTempo, MinBPM, MaxBPM) / selectedItem.BaseScrollTempo.BPM;
+										}
+									}
+									valueWasChanged = true;
+								}
+							}
+
+						} break;
+						case GenericMember::Time_Offset:
+						{
+							MultiEditWidgetParam widgetIn = {};
+							widgetIn.EnableStepButtons = true;
+							widgetIn.Value.F32 = static_cast<f32>(sharedValues.TimeOffset().TotalMilliseconds());
+							widgetIn.HasMixedValues = !(commonEqualMemberFlags & EnumToFlag(member));
+							widgetIn.MixedValuesMin.F32 = static_cast<f32>(mixedValuesMin.TimeOffset().TotalMilliseconds());
+							widgetIn.MixedValuesMax.F32 = static_cast<f32>(mixedValuesMax.TimeOffset().TotalMilliseconds());
+							widgetIn.ButtonStep.F32 = 1.0f;
+							widgetIn.ButtonStepFast.F32 = 5.0f;
+							widgetIn.EnableDragLabel = true;
+							widgetIn.DragLabelSpeed = 1.0f;
+							widgetIn.FormatString = "%g ms";
+							widgetIn.EnableClamp = true;
+							widgetIn.ValueClampMin.F32 = static_cast<f32>(MinNoteTimeOffset.TotalMilliseconds());
+							widgetIn.ValueClampMax.F32 = static_cast<f32>(MaxNoteTimeOffset.TotalMilliseconds());
+							const MultiEditWidgetResult widgetOut = GuiPropertyMultiSelectionEditWidget("Time Offset", widgetIn);
+							if (widgetOut.HasValueExact || widgetOut.HasValueIncrement)
+							{
+								if (widgetOut.HasValueExact)
+								{
+									const Time valueExact = Time::FromMilliseconds(widgetOut.ValueExact.F32);
+									for (auto& selectedItem : SelectedItems)
+										selectedItem.MemberValues.TimeOffset() = valueExact;
+									valueWasChanged = true;
+								}
+								else if (widgetOut.HasValueIncrement)
+								{
+									const Time valueIncrement = Time::FromMilliseconds(widgetOut.ValueIncrement.F32);
+									for (auto& selectedItem : SelectedItems)
+										selectedItem.MemberValues.TimeOffset() = Clamp(selectedItem.MemberValues.TimeOffset() + valueIncrement, MinNoteTimeOffset, MaxNoteTimeOffset);
+									valueWasChanged = true;
+								}
+
+								for (auto& selectedItem : SelectedItems)
+								{
+									if (ApproxmiatelySame(selectedItem.MemberValues.TimeOffset().Seconds, 0.0))
+										selectedItem.MemberValues.TimeOffset() = Time::Zero();
+								}
+							}
+						} break;
+						case GenericMember::NoteType_V:
+						{
+							b8 isAnyRegularNoteSelected = false, isAnyDrumrollNoteSelected = false, isAnyBalloonNoteSelected = false;
+							b8 areAllSelectedNotesSmall = true, areAllSelectedNotesBig = true;
+							b8 perNoteTypeHasAtLeastOneSelected[EnumCount<NoteType>] = {};
+							for (const auto& selectedItem : SelectedItems)
+							{
+								const auto noteType = selectedItem.MemberValues.NoteType();
+								isAnyRegularNoteSelected |= IsRegularNote(noteType);
+								isAnyDrumrollNoteSelected |= IsDrumrollNote(noteType);
+								isAnyBalloonNoteSelected |= IsBalloonNote(noteType);
+								areAllSelectedNotesSmall &= IsSmallNote(noteType);
+								areAllSelectedNotesBig &= IsBigNote(noteType);
+								perNoteTypeHasAtLeastOneSelected[EnumToIndex(noteType)] = true;
+							}
+
+							Gui::Property::PropertyTextValueFunc("Note Type", [&]
+							{
+								static constexpr cstr noteTypeNames[] = { "Don", "DON", "Ka", "KA", "Drumroll", "DRUMROLL", "Balloon", "BALLOON", };
+								static_assert(ArrayCount(noteTypeNames) == EnumCount<NoteType>);
+
+								const b8 isSingleNoteType = (commonEqualMemberFlags & EnumToFlag(member));
+								char previewValue[256] {}; if (!isSingleNoteType) { previewValue[0] = '('; }
+								for (i32 i = 0; i < EnumCountI32<NoteType>; i++) { if (perNoteTypeHasAtLeastOneSelected[i]) { strcat_s(previewValue, noteTypeNames[i]); strcat_s(previewValue, ", "); } }
+								for (i32 i = ArrayCountI32(previewValue) - 1; i >= 0; i--) { if (previewValue[i] == ',') { if (!isSingleNoteType) { previewValue[i++] = ')'; } previewValue[i] = '\0'; break; } }
+
+								Gui::SetNextItemWidth(-1.0f);
+								Gui::PushStyleColor(ImGuiCol_Text, Gui::GetColorU32(ImGuiCol_Text, (commonEqualMemberFlags & EnumToFlag(member)) ? 1.0f : 0.6f));
+								const b8 beginCombo = Gui::BeginCombo("##NoteType", previewValue, ImGuiComboFlags_None);
+								Gui::PopStyleColor();
+								if (beginCombo)
+								{
+									for (NoteType i = {}; i < NoteType::Count; IncrementEnum(i))
+									{
+										const b8 isSelected = perNoteTypeHasAtLeastOneSelected[EnumToIndex(i)];
+
+										b8 isEnabled = false;
+										isEnabled |= IsRegularNote(i) && isAnyRegularNoteSelected;
+										isEnabled |= IsDrumrollNote(i) && isAnyDrumrollNoteSelected;
+										isEnabled |= IsBalloonNote(i) && isAnyBalloonNoteSelected;
+
+										if (Gui::Selectable(noteTypeNames[EnumToIndex(i)], isSelected, !isEnabled ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None))
+										{
+											for (auto& selectedItem : SelectedItems)
+											{
+												// NOTE: Don't allow changing long notes and balloons for now at that would also require updating BeatDuration / BalloonPopCount
+												auto& inOutNoteType = selectedItem.MemberValues.NoteType();
+												if (IsLongNote(i) == IsLongNote(inOutNoteType) && IsBalloonNote(i) == IsBalloonNote(inOutNoteType))
+													inOutNoteType = i;
+											}
+											valueWasChanged = true;
+										}
+
+										if (isSelected)
+											Gui::SetItemDefaultFocus();
+									}
+									Gui::EndCombo();
+								}
+							});
+
+							Gui::Property::PropertyTextValueFunc("Note Type Size", [&]
+							{
+								enum class NoteSizeType { Small, Big, Count }; static constexpr cstr noteSizeTypeNames[] = { "Small", "Big", };
+								auto v = (!areAllSelectedNotesSmall && !areAllSelectedNotesBig) ? NoteSizeType::Count : IsBigNote(sharedValues.NoteType()) ? NoteSizeType::Big : NoteSizeType::Small;
+
+								Gui::PushItemWidth(-1.0f);
+								if (Gui::ComboEnum("##NoteTypeIsBig", &v, noteSizeTypeNames, ImGuiComboFlags_None))
+								{
+									for (auto& selectedItem : SelectedItems)
+									{
+										auto& inOutNoteType = selectedItem.MemberValues.NoteType();
+										inOutNoteType = (v == NoteSizeType::Big) ? ToBigNote(inOutNoteType) : (v == NoteSizeType::Small) ? ToSmallNote(inOutNoteType) : inOutNoteType;
+									}
+									valueWasChanged = true;
+								}
+							});
+						} break;
+						case GenericMember::Tempo_V:
+						{
+							// TODO: X0.5/x2.0 buttons (?)
+							MultiEditWidgetParam widgetIn = {};
+							widgetIn.Value.F32 = sharedValues.Tempo().BPM;
+							widgetIn.HasMixedValues = !(commonEqualMemberFlags & EnumToFlag(member));
+							widgetIn.MixedValuesMin.F32 = mixedValuesMin.Tempo().BPM;
+							widgetIn.MixedValuesMax.F32 = mixedValuesMax.Tempo().BPM;
+							widgetIn.EnableStepButtons = true;
+							widgetIn.ButtonStep.F32 = 1.0f;
+							widgetIn.ButtonStepFast.F32 = 10.0f;
+							widgetIn.DragLabelSpeed = 1.0f;
+							widgetIn.FormatString = "%g BPM";
+							widgetIn.EnableClamp = true;
+							widgetIn.ValueClampMin.F32 = MinBPM;
+							widgetIn.ValueClampMax.F32 = MaxBPM;
+							const MultiEditWidgetResult widgetOut = GuiPropertyMultiSelectionEditWidget("Tempo", widgetIn);
+
+							if (widgetOut.HasValueExact)
+							{
+								for (auto& selectedItem : SelectedItems)
+									selectedItem.MemberValues.Tempo() = Tempo(widgetOut.ValueExact.F32);
+								valueWasChanged = true;
+							}
+							else if (widgetOut.HasValueIncrement)
+							{
+								for (auto& selectedItem : SelectedItems)
+									selectedItem.MemberValues.Tempo().BPM = Clamp(selectedItem.MemberValues.Tempo().BPM + widgetOut.ValueIncrement.F32, MinBPM, MaxBPM);
+								valueWasChanged = true;
+							}
+						} break;
+						case GenericMember::TimeSignature_V:
+						{
+							static constexpr i32 components = 2;
+
+							MultiEditWidgetParam widgetIn = {};
+							widgetIn.DataType = ImGuiDataType_S32;
+							widgetIn.Components = components;
+							widgetIn.EnableClamp = true;
+							widgetIn.EnableStepButtons = true;
+							widgetIn.UseSpinButtonsInstead = true;
+							for (i32 c = 0; c < components; c++)
+							{
+								widgetIn.Value.I32_V[c] = sharedValues.TimeSignature()[c];
+								widgetIn.HasMixedValues |= (static_cast<u32>(mixedValuesMin.TimeSignature()[c] != mixedValuesMax.TimeSignature()[c]) << c);
+								widgetIn.MixedValuesMin.I32_V[c] = mixedValuesMin.TimeSignature()[c];
+								widgetIn.MixedValuesMax.I32_V[c] = mixedValuesMax.TimeSignature()[c];
+								widgetIn.ValueClampMin.I32_V[c] = MinTimeSignatureValue;
+								widgetIn.ValueClampMax.I32_V[c] = MaxTimeSignatureValue;
+								widgetIn.ButtonStep.I32_V[c] = 1;
+								widgetIn.ButtonStepFast.I32_V[c] = 4;
+							}
+							widgetIn.EnableDragLabel = false;
+							widgetIn.FormatString = "%d";
+							const MultiEditWidgetResult widgetOut = GuiPropertyMultiSelectionEditWidget("Time Signature", widgetIn);
+
+							if (widgetOut.HasValueExact || widgetOut.HasValueIncrement)
+							{
+								for (i32 c = 0; c < components; c++)
+								{
+									if (widgetOut.HasValueExact & (1 << c))
+									{
+										for (auto& selectedItem : SelectedItems)
+											selectedItem.MemberValues.TimeSignature()[c] = widgetOut.ValueExact.I32_V[c];
+										valueWasChanged = true;
+									}
+									else if (widgetOut.HasValueIncrement & (1 << c))
+									{
+										for (auto& selectedItem : SelectedItems)
+											selectedItem.MemberValues.TimeSignature()[c] = Clamp(selectedItem.MemberValues.TimeSignature()[c] + widgetOut.ValueIncrement.I32_V[c], MinTimeSignatureValue, MaxTimeSignatureValue);
+										valueWasChanged = true;
+									}
+								}
+							}
+						} break;
+						default: { assert(false); } break;
+						}
+
+						if (valueWasChanged)
+							outModifiedMembers |= EnumToFlag(member);
+					}
+
+					if (outModifiedMembers != GenericMemberFlags_None)
+					{
+						std::vector<Commands::ChangeMultipleGenericProperties::Data> propertiesToChange;
+						propertiesToChange.reserve(SelectedItems.size());
+
+						for (const TempChartItem& selectedItem : SelectedItems)
+						{
+							for (GenericMember member = {}; member < GenericMember::Count; IncrementEnum(member))
+							{
+								if (outModifiedMembers & EnumToFlag(member))
+								{
+									auto& out = propertiesToChange.emplace_back();
+									out.Index = selectedItem.Index;
+									out.List = selectedItem.List;
+									out.Member = member;
+									out.NewValue = selectedItem.MemberValues[member];
+								}
+							}
+						}
+
+						context.Undo.Execute<Commands::ChangeMultipleGenericProperties>(&course, std::move(propertiesToChange));
+					}
+
+					Gui::Property::EndTable();
+				}
+			}
+		}
+	}
+
 	void ChartPropertiesWindow::DrawGui(ChartContext& context, const ChartPropertiesWindowIn& in, ChartPropertiesWindowOut& out)
 	{
 		Gui::UpdateSmoothScrollWindow();
@@ -624,52 +1313,70 @@ namespace PeepoDrumKit
 			if (Gui::Property::BeginTable(ImGuiTableFlags_BordersInner))
 			{
 				enum class TimeSpace : u8 { Chart, Song };
-				static constexpr auto guiDragTimeAndSetCursorTimeButtonWidgets = [](ChartContext& context, const TimelineCamera& camera, cstr label, Time* inOutValue, TimeSpace timeSpace) -> b8
+				static constexpr auto guiPropertyDragTimeAndSetCursorTimeButtonWidgets = [](ChartContext& context, const TimelineCamera& camera, cstr label, Time* inOutValue, TimeSpace timeSpace) -> b8
 				{
+					static_assert(sizeof(Time::Seconds) == sizeof(f64));
 					const Time timeSpaceOffset = (timeSpace == TimeSpace::Song) ? context.Chart.SongOffset : Time::Zero();
-					Gui::PushID(label); const auto result = GuiSameLineMultiWidget(2, [&](const MultiWidgetIt& i)
+					const Time min = timeSpaceOffset, max = Time::FromSeconds(F64Max);
+
+					bool valueChanged = false;
+					Gui::Property::Property([&]
 					{
-						static_assert(sizeof(Time::Seconds) == sizeof(double));
-						const Time min = timeSpaceOffset, max = Time::FromSeconds(F64Max);
-						Time v = (*inOutValue + timeSpaceOffset);
-						if (i.Index == 0 && Gui::DragScalar("##DragTime", ImGuiDataType_Double, &v.Seconds, TimelineDragScalarSpeedAtZoomSec(camera), &min.Seconds, &max.Seconds,
-							(*inOutValue <= Time::Zero()) ? "n/a" : v.ToString().Data, ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_NoInput))
+						Gui::SetNextItemWidth(-1.0f);
+						f32 v = static_cast<f32>((*inOutValue + timeSpaceOffset).Seconds);
+						if (GuiDragLabelFloat(label, &v, TimelineDragScalarSpeedAtZoomSec(camera), static_cast<f32>(min.Seconds), static_cast<f32>(max.Seconds)))
 						{
-							*inOutValue = (v - timeSpaceOffset);
-							return true;
+							*inOutValue = (Time::FromSeconds(v) - timeSpaceOffset);
+							valueChanged = true;
 						}
-						else if (i.Index == 1 && Gui::Button("Set Cursor##CursorTime", { Gui::CalcItemWidth(), 0.0f }))
-						{
-							*inOutValue = ClampBot(context.GetCursorTime() - timeSpaceOffset, Time::Zero());
-							context.Undo.DisallowMergeForLastCommand();
-							return true;
-						}
-						return false;
 					});
-					Gui::PopID(); return result.ValueChanged;
+					Gui::Property::Value([&]
+					{
+						Gui::SetNextItemWidth(-1.0f);
+						Gui::PushID(label);
+						Time v = (*inOutValue + timeSpaceOffset);
+						Gui::SameLineMultiWidget(2, [&](const Gui::MultiWidgetIt& i)
+						{
+							if (i.Index == 0 && Gui::DragScalar("##DragTime", ImGuiDataType_Double, &v.Seconds, TimelineDragScalarSpeedAtZoomSec(camera), &min.Seconds, &max.Seconds,
+								(*inOutValue <= Time::Zero()) ? "n/a" : v.ToString().Data, ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_NoInput))
+							{
+								*inOutValue = (v - timeSpaceOffset);
+								valueChanged = true;
+							}
+							else if (i.Index == 1 && Gui::Button("Set Cursor##CursorTime", { Gui::CalcItemWidth(), 0.0f }))
+							{
+								*inOutValue = ClampBot(context.GetCursorTime() - timeSpaceOffset, Time::Zero());
+								context.Undo.DisallowMergeForLastCommand();
+								valueChanged = true;
+							}
+							return false;
+						});
+						Gui::PopID();
+					});
+					return valueChanged;
 				};
 
-				Gui::Property::PropertyTextValueFunc("Chart Duration", [&]
-				{
-					Gui::SetNextItemWidth(-1.0f);
-					if (Time v = chart.ChartDuration; guiDragTimeAndSetCursorTimeButtonWidgets(context, timeline.Camera, "##ChartDuration", &v, TimeSpace::Chart))
-						context.Undo.Execute<Commands::ChangeChartDuration>(&chart, v);
-				});
-				Gui::Property::PropertyTextValueFunc("Song Demo Start", [&]
-				{
-					Gui::SetNextItemWidth(-1.0f);
-					if (Time v = chart.SongDemoStartTime; guiDragTimeAndSetCursorTimeButtonWidgets(context, timeline.Camera, "##SongDemoStartTime", &v, TimeSpace::Song))
-						context.Undo.Execute<Commands::ChangeSongDemoStartTime>(&chart, v);
-				});
-				Gui::Property::PropertyTextValueFunc("Song Offset", [&]
-				{
-					Gui::SetNextItemWidth(-1.0f);
-					if (f32 v = static_cast<f32>(chart.SongOffset.TotalMilliseconds()); Gui::DragFloat("##ChartSongOffset", &v, TimelineDragScalarSpeedAtZoomMS(timeline.Camera), 0.0f, 0.0f, "%.2f ms", ImGuiSliderFlags_NoRoundToFormat))
-						context.Undo.Execute<Commands::ChangeSongOffset>(&chart, Time::FromMilliseconds(v));
+				if (Time v = chart.ChartDuration; guiPropertyDragTimeAndSetCursorTimeButtonWidgets(context, timeline.Camera, "Chart Duration", &v, TimeSpace::Chart))
+					context.Undo.Execute<Commands::ChangeChartDuration>(&chart, v);
 
-					// TODO: Disable merge if made inactive this frame (?)
-					// if (Gui::IsItemDeactivatedAfterEdit()) {}
+				if (Time v = chart.SongDemoStartTime; guiPropertyDragTimeAndSetCursorTimeButtonWidgets(context, timeline.Camera, "Song Demo Start", &v, TimeSpace::Song))
+					context.Undo.Execute<Commands::ChangeSongDemoStartTime>(&chart, v);
+
+				Gui::Property::Property([&]
+				{
+					Gui::SetNextItemWidth(-1.0f);
+					if (f32 v = static_cast<f32>(chart.SongOffset.TotalMilliseconds()); GuiDragLabelFloat("Song Offset##DragFloatLabel", &v, TimelineDragScalarSpeedAtZoomMS(timeline.Camera)))
+						context.Undo.Execute<Commands::ChangeSongOffset>(&chart, Time::FromMilliseconds(v));
 				});
+				Gui::Property::Value([&]
+				{
+					Gui::SetNextItemWidth(-1.0f);
+					if (f32 v = static_cast<f32>(chart.SongOffset.TotalMilliseconds()); Gui::SpinFloat("##SongOffset", &v, 1.0f, 10.0f, "%.2f ms", ImGuiInputTextFlags_None))
+						context.Undo.Execute<Commands::ChangeSongOffset>(&chart, Time::FromMilliseconds(v));
+				});
+				// TODO: Disable merge if made inactive this frame (?)
+				// if (Gui::IsItemDeactivatedAfterEdit()) {}
+
 				Gui::Property::EndTable();
 			}
 		}
@@ -696,13 +1403,14 @@ namespace PeepoDrumKit
 				Gui::Property::Property([&]
 				{
 					Gui::SetNextItemWidth(-1.0f);
-					if (f32 v = tempoAtCursor.BPM; GuiDragFloatLabel("Tempo##DragFloatLabel", &v, 1.0f, MinBPM, MaxBPM, "%g", ImGuiSliderFlags_AlwaysClamp))
+					if (f32 v = tempoAtCursor.BPM; GuiDragLabelFloat("Tempo##DragFloatLabel", &v, 1.0f, MinBPM, MaxBPM, ImGuiSliderFlags_AlwaysClamp))
 						insertOrUpdateCursorTempoChange(Tempo(v));
 				});
 				Gui::Property::Value([&]
 				{
 					Gui::SetNextItemWidth(-1.0f);
-					if (f32 v = tempoAtCursor.BPM; Gui::InputFloat("##TempoAtCursor", &v, 1.0f, 10.0f, "%g BPM", ImGuiInputTextFlags_None))
+					if (f32 v = tempoAtCursor.BPM;
+						Gui::SpinFloat("##TempoAtCursor", &v, 1.0f, 10.0f, "%g BPM", ImGuiInputTextFlags_None))
 						insertOrUpdateCursorTempoChange(Tempo(Clamp(v, MinBPM, MaxBPM)));
 
 					if (Gui::Button("Remove##TempoAtCursor", vec2(-1.0f, 0.0f)))
@@ -718,7 +1426,7 @@ namespace PeepoDrumKit
 
 					Gui::SetNextItemWidth(-1.0f);
 					if (ivec2 v = { signatureAtCursor.Numerator, signatureAtCursor.Denominator };
-						GuiInputFraction("##SignatureAtCursor", &v, ivec2(1, Beat::TicksPerBeat * 4)))
+						GuiInputFraction("##SignatureAtCursor", &v, ivec2(MinTimeSignatureValue, MaxTimeSignatureValue), 1, 4))
 					{
 						// TODO: Also floor cursor beat to ~~last~~ next whole bar
 						if (signatureChangeAtCursor == nullptr || signatureChangeAtCursor->Beat != cursorBeat)
@@ -733,36 +1441,35 @@ namespace PeepoDrumKit
 							context.Undo.Execute<Commands::RemoveTimeSignatureChange>(&course.TempoMap, cursorBeat);
 					}
 				});
-				Gui::Property::PropertyTextValueFunc("Scroll Speed", [&]
-				{
-					static constexpr f32 minMaxScrollSpeed = 100.0f;
-					const ScrollChange* scrollChangeChangeAtCursor = course.ScrollChanges.TryFindLastAtBeat(cursorBeat);
 
-					std::optional<f32> newScrollSpeed = {};
-					Gui::SetNextItemWidth(-1.0f); GuiSameLineMultiWidget(2, [&](const MultiWidgetIt& i)
+				const ScrollChange* scrollChangeChangeAtCursor = course.ScrollChanges.TryFindLastAtBeat(cursorBeat);
+				std::optional<f32> newScrollSpeedToSet = {};
+
+				Gui::Property::Property([&]
+				{
+					Gui::SetNextItemWidth(-1.0f);
+					if (f32 v = (scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed;
+						GuiDragLabelFloat("Scroll Speed##DragFloatLabel", &v, 0.005f, MinScrollSpeed, MaxScrollSpeed, ImGuiSliderFlags_AlwaysClamp))
+						newScrollSpeedToSet = v;
+				});
+				Gui::Property::Value([&]
+				{
+					Gui::SetNextItemWidth(-1.0f); Gui::SameLineMultiWidget(2, [&](const Gui::MultiWidgetIt& i)
 					{
 						if (i.Index == 0)
 						{
 							if (f32 v = (scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed;
-								Gui::DragFloat("##ScrollSpeedAtCursor", &v, 0.005f, -minMaxScrollSpeed, +minMaxScrollSpeed, "%gx", ImGuiSliderFlags_NoRoundToFormat))
-								newScrollSpeed = v;
+								Gui::SpinFloat("##ScrollSpeedAtCursor", &v, 0.1f, 0.5f, "%gx"))
+								newScrollSpeedToSet = Clamp(v, MinScrollSpeed, MaxScrollSpeed);
 						}
 						else
 						{
 							if (f32 v = tempoAtCursor.BPM * ((scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed);
-								Gui::DragFloat("##ScrollTempoAtCursor", &v, 1.0f, MinBPM, MaxBPM, "%g BPM", ImGuiSliderFlags_NoRoundToFormat))
-								newScrollSpeed = (tempoAtCursor.BPM == 0.0f) ? 0.0f : (v / tempoAtCursor.BPM);
+								Gui::SpinFloat("##ScrollTempoAtCursor", &v, 1.0f, 10.0f, "%g BPM"))
+								newScrollSpeedToSet = (tempoAtCursor.BPM == 0.0f) ? 0.0f : (Clamp(v, MinBPM, MaxBPM) / tempoAtCursor.BPM);
 						}
 						return false;
 					});
-
-					if (newScrollSpeed.has_value())
-					{
-						if (scrollChangeChangeAtCursor == nullptr || scrollChangeChangeAtCursor->BeatTime != cursorBeat)
-							context.Undo.Execute<Commands::AddScrollChange>(&course.ScrollChanges, ScrollChange { cursorBeat, newScrollSpeed.value() });
-						else
-							context.Undo.Execute<Commands::UpdateScrollChange>(&course.ScrollChanges, ScrollChange { cursorBeat, newScrollSpeed.value() });
-					}
 
 					if (Gui::Button("Remove##ScrollSpeedAtCursor", vec2(-1.0f, 0.0f)))
 					{
@@ -770,6 +1477,15 @@ namespace PeepoDrumKit
 							context.Undo.Execute<Commands::RemoveScrollChange>(&course.ScrollChanges, cursorBeat);
 					}
 				});
+
+				if (newScrollSpeedToSet.has_value())
+				{
+					if (scrollChangeChangeAtCursor == nullptr || scrollChangeChangeAtCursor->BeatTime != cursorBeat)
+						context.Undo.Execute<Commands::AddScrollChange>(&course.ScrollChanges, ScrollChange { cursorBeat, newScrollSpeedToSet.value() });
+					else
+						context.Undo.Execute<Commands::UpdateScrollChange>(&course.ScrollChanges, ScrollChange { cursorBeat, newScrollSpeedToSet.value() });
+				}
+
 				Gui::Property::PropertyTextValueFunc("Bar Line Visibility", [&]
 				{
 					const BarLineChange* barLineChangeAtCursor = course.BarLineChanges.TryFindLastAtBeat(cursorBeat);
@@ -777,7 +1493,7 @@ namespace PeepoDrumKit
 					static constexpr auto guiOnOffButton = [](cstr label, cstr onLabel, cstr offLabel, b8* inOutIsOn) -> b8
 					{
 						b8 valueChanged = false;
-						Gui::PushID(label); GuiSameLineMultiWidget(2, [&](const MultiWidgetIt& i)
+						Gui::PushID(label); Gui::SameLineMultiWidget(2, [&](const Gui::MultiWidgetIt& i)
 						{
 							const f32 alphaFactor = ((i.Index == 0) == *inOutIsOn) ? 1.0f : 0.5f;
 							Gui::PushStyleColor(ImGuiCol_Button, Gui::GetColorU32(ImGuiCol_Button, alphaFactor));
@@ -808,7 +1524,7 @@ namespace PeepoDrumKit
 				});
 				Gui::Property::PropertyTextValueFunc("Go-Go Time", [&]
 				{
-					const GoGoRange* gogoRangeAtCursor = course.GoGoRanges.TryFindOverlappingBeat(cursorBeat);
+					const GoGoRange* gogoRangeAtCursor = course.GoGoRanges.TryFindOverlappingBeat(cursorBeat, cursorBeat);
 
 					const b8 hasRangeSelection = (timeline.RangeSelection.IsActive && timeline.RangeSelection.HasEnd);
 					Gui::BeginDisabled(!hasRangeSelection);
@@ -853,7 +1569,7 @@ namespace PeepoDrumKit
 
 		static constexpr auto guiDoubleButton = [](cstr labelA, cstr labelB) -> i32
 		{
-			return GuiSameLineMultiWidget(2, [&](const MultiWidgetIt& i) { return Gui::Button((i.Index == 0) ? labelA : labelB, { Gui::CalcItemWidth(), 0.0f }); }).ChangedIndex;
+			return Gui::SameLineMultiWidget(2, [&](const Gui::MultiWidgetIt& i) { return Gui::Button((i.Index == 0) ? labelA : labelB, { Gui::CalcItemWidth(), 0.0f }); }).ChangedIndex;
 		};
 
 		// TODO: Handle inside the tja format code instead (?)

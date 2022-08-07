@@ -461,6 +461,12 @@ namespace PeepoDrumKit
 			Gui::End();
 		}
 
+		if (Gui::Begin("Chart Inspector", nullptr, ImGuiWindowFlags_None))
+		{
+			chartInspectorWindow.DrawGui(context);
+		}
+		Gui::End();
+
 		if (Gui::Begin("Undo History", nullptr, ImGuiWindowFlags_None))
 		{
 			undoHistoryWindow.DrawGui(context);

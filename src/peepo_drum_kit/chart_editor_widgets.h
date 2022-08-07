@@ -57,6 +57,15 @@ namespace PeepoDrumKit
 		void DrawGui(ChartContext& context);
 	};
 
+	struct ChartInspectorWindow
+	{
+		// NOTE: Temp buffer only valid within the scope of the function
+		struct TempChartItem { GenericList List; size_t Index; GenericMemberFlags AvailableMembers; AllGenericMembersUnionArray MemberValues; Tempo BaseScrollTempo; };
+		std::vector<TempChartItem> SelectedItems;
+
+		void DrawGui(ChartContext& context);
+	};
+
 	struct ChartPropertiesWindowIn { b8 IsSongAsyncLoading; };
 	struct ChartPropertiesWindowOut { b8 BrowseOpenSong; b8 LoadNewSong; std::string NewSongFilePath; };
 	struct ChartPropertiesWindow

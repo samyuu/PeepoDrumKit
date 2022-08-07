@@ -87,6 +87,7 @@ namespace PeepoDrumKit
 		ChartHelpWindow helpWindow = {};
 		ChartUndoHistoryWindow undoHistoryWindow = {};
 		TempoCalculatorWindow tempoCalculatorWindow = {};
+		ChartInspectorWindow chartInspectorWindow = {};
 		ChartPropertiesWindow propertiesWindow = {};
 		ChartTempoWindow tempoWindow = {};
 		ChartLyricsWindow lyricsWindow = {};
