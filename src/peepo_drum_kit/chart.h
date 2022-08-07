@@ -33,6 +33,7 @@ namespace PeepoDrumKit
 	constexpr b8 IsDrumrollNote(NoteType v) { return (v == NoteType::Drumroll) || (v == NoteType::DrumrollBig); }
 	constexpr b8 IsBalloonNote(NoteType v) { return (v == NoteType::Balloon) || (v == NoteType::BalloonSpecial); }
 	constexpr b8 IsLongNote(NoteType v) { return IsDrumrollNote(v) || IsBalloonNote(v); }
+	constexpr b8 IsRegularNote(NoteType v) { return !IsLongNote(v); }
 
 	constexpr NoteType ToSmallNote(NoteType v)
 	{
@@ -322,6 +323,37 @@ namespace PeepoDrumKit
 
 	static_assert(sizeof(GenericMemberUnion) == 8);
 
+	struct AllGenericMembersUnionArray
+	{
+		GenericMemberUnion V[EnumCount<GenericMember>];
+
+		inline GenericMemberUnion& operator[](GenericMember member) { return V[EnumToIndex(member)]; }
+		inline const GenericMemberUnion& operator[](GenericMember member) const { return V[EnumToIndex(member)]; }
+
+		inline auto& IsSelected() { return (*this)[GenericMember::B8_IsSelected].B8; }
+		inline auto& BarLineVisible() { return (*this)[GenericMember::B8_BarLineVisible].B8; }
+		inline auto& BalloonPopCount() { return (*this)[GenericMember::I16_BalloonPopCount].I16; }
+		inline auto& ScrollSpeed() { return (*this)[GenericMember::F32_ScrollSpeed].F32; }
+		inline auto& BeatStart() { return (*this)[GenericMember::Beat_Start].Beat; }
+		inline auto& BeatDuration() { return (*this)[GenericMember::Beat_Duration].Beat; }
+		inline auto& TimeOffset() { return (*this)[GenericMember::Time_Offset].Time; }
+		inline auto& NoteType() { return (*this)[GenericMember::NoteType_V].NoteType; }
+		inline auto& Tempo() { return (*this)[GenericMember::Tempo_V].Tempo; }
+		inline auto& TimeSignature() { return (*this)[GenericMember::TimeSignature_V].TimeSignature; }
+		inline auto& Lyric() { return (*this)[GenericMember::CStr_Lyric].CStr; }
+		inline const auto& IsSelected() const { return (*this)[GenericMember::B8_IsSelected].B8; }
+		inline const auto& BarLineVisible() const { return (*this)[GenericMember::B8_BarLineVisible].B8; }
+		inline const auto& BalloonPopCount() const { return (*this)[GenericMember::I16_BalloonPopCount].I16; }
+		inline const auto& ScrollSpeed() const { return (*this)[GenericMember::F32_ScrollSpeed].F32; }
+		inline const auto& BeatStart() const { return (*this)[GenericMember::Beat_Start].Beat; }
+		inline const auto& BeatDuration() const { return (*this)[GenericMember::Beat_Duration].Beat; }
+		inline const auto& TimeOffset() const { return (*this)[GenericMember::Time_Offset].Time; }
+		inline const auto& NoteType() const { return (*this)[GenericMember::NoteType_V].NoteType; }
+		inline const auto& Tempo() const { return (*this)[GenericMember::Tempo_V].Tempo; }
+		inline const auto& TimeSignature() const { return (*this)[GenericMember::TimeSignature_V].TimeSignature; }
+		inline const auto& Lyric() const { return (*this)[GenericMember::CStr_Lyric].CStr; }
+	};
+
 	struct GenericListStruct
 	{
 		union PODData
@@ -359,6 +391,7 @@ namespace PeepoDrumKit
 	};
 
 	constexpr b8 IsNotesList(GenericList list) { return (list == GenericList::Notes_Normal) || (list == GenericList::Notes_Expert) || (list == GenericList::Notes_Master); }
+	constexpr b8 ListHasDurations(GenericList list) { return IsNotesList(list) || (list == GenericList::GoGoRanges); }
 
 	size_t GetGenericMember_RawByteSize(GenericMember member);
 	size_t GetGenericListCount(const ChartCourse& course, GenericList list);

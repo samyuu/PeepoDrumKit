@@ -52,12 +52,14 @@ namespace PeepoDrumKit
 	inline u32 TimelineItemTextColorWarning = 0xFF4C4CFF;
 
 	inline u32 TimelineGoGoBackgroundColorBorder = 0xFF1E1E1E;
+	inline u32 TimelineGoGoBackgroundColorBorderSelected = 0xFF979797;
 	inline u32 TimelineGoGoBackgroundColorOuter = 0xFF46494D; // 0xFF46494D;
 	inline u32 TimelineGoGoBackgroundColorInner = 0xFF2D2D33; // 0xFF2A2B2D; // 0xFF8C8C99; // 0x2C8C8C99; // 0x448787FF;
 
 	inline u32 TimelineLyricsTextColor = 0xFFDEE5F0; // 0xFFC2D3EB; // 0xFFC9DBE6; // 0xFFF0F0F0;
 	inline u32 TimelineLyricsTextColorShadow = 0xFF131415; // 0xFF222527; // 0xFF000000;
 	inline u32 TimelineLyricsBackgroundColorBorder = 0xFF1E1E1E;
+	inline u32 TimelineLyricsBackgroundColorBorderSelected = 0xFF979797;
 	inline u32 TimelineLyricsBackgroundColorOuter = 0xFF46494D; // 0xFF46494D;
 	inline u32 TimelineLyricsBackgroundColorInner = 0xFF323438; // 0xFF2A2B2D;
 
@@ -81,6 +83,7 @@ namespace PeepoDrumKit
 	inline u32 TimelineSignatureChangeLineColor = 0xDC22BEE2; // 0xAA2AFFB4; // 0xFF00FF00;
 	inline u32 TimelineScrollChangeLineColor = 0xDC6CA71E; // 0xDC548119;
 	inline u32 TimelineBarLineChangeLineColor = 0xDCBE9E2C;
+	inline u32 TimelineSelectedItemLineColor = 0xDCFFFFFF;
 
 	inline u32 TimelineSongDemoStartMarkerColorFill = 0x3B75AD85; // 0x3A63D5AE;
 	inline u32 TimelineSongDemoStartMarkerColorBorder = 0xB375AD85; // 0xC863D5AE;
@@ -195,17 +198,17 @@ namespace PeepoDrumKit
 		}
 	}
 
-	inline void DrawTimelineGoGoTimeBackground(ImDrawList* drawList, vec2 tl, vec2 br, f32 animationScale)
+	inline void DrawTimelineGoGoTimeBackground(ImDrawList* drawList, vec2 tl, vec2 br, f32 animationScale, b8 selected)
 	{
 		const f32 centerX = (br.x + tl.x) * 0.5f;
 		tl.x = Lerp(centerX, tl.x, animationScale);
 		br.x = Lerp(centerX, br.x, animationScale);
-		DrawTimelineRectBaseWithStartEndTriangles(drawList, DrawTimelineRectBaseParam { tl, br, 1.0f, 1.0f, TimelineGoGoBackgroundColorBorder, TimelineGoGoBackgroundColorOuter, TimelineGoGoBackgroundColorInner });
+		DrawTimelineRectBaseWithStartEndTriangles(drawList, DrawTimelineRectBaseParam { tl, br, 1.0f, 1.0f, selected ? TimelineGoGoBackgroundColorBorderSelected : TimelineGoGoBackgroundColorBorder, TimelineGoGoBackgroundColorOuter, TimelineGoGoBackgroundColorInner });
 	}
 
-	inline void DrawTimelineLyricsBackground(ImDrawList* drawList, vec2 tl, vec2 br)
+	inline void DrawTimelineLyricsBackground(ImDrawList* drawList, vec2 tl, vec2 br, b8 selected)
 	{
-		DrawTimelineRectBaseWithStartEndTriangles(drawList, DrawTimelineRectBaseParam { tl, br, 1.0f, 0.0f, TimelineLyricsBackgroundColorBorder, TimelineLyricsBackgroundColorOuter, TimelineLyricsBackgroundColorInner });
+		DrawTimelineRectBaseWithStartEndTriangles(drawList, DrawTimelineRectBaseParam { tl, br, 1.0f, 0.0f, selected ? TimelineLyricsBackgroundColorBorderSelected : TimelineLyricsBackgroundColorBorder, TimelineLyricsBackgroundColorOuter, TimelineLyricsBackgroundColorInner });
 	}
 
 	inline void DrawGamePreviewNote(const GameCamera& camera, ImDrawList* drawList, vec2 refSpaceCenter, NoteType noteType)

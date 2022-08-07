@@ -70,8 +70,13 @@ struct TimeSignature
 	constexpr Beat GetDurationPerBeat() const { return Beat::FromBars(1) / Denominator; }
 	constexpr Beat GetDurationPerBar() const { return GetDurationPerBeat() * GetBeatsPerBar(); }
 
+	constexpr size_t size() const { return 2; }
+	constexpr i32* data() { return &Numerator; }
+	constexpr const i32* data() const { return &Numerator; }
 	constexpr b8 operator==(const TimeSignature& other) const { return (Numerator == other.Numerator) && (Denominator == other.Denominator); }
 	constexpr b8 operator!=(const TimeSignature& other) const { return (Numerator != other.Numerator) || (Denominator != other.Denominator); }
+	constexpr i32 operator[](size_t index) const { return (&Numerator)[index]; }
+	constexpr i32& operator[](size_t index) { return (&Numerator)[index]; }
 };
 
 constexpr b8 IsTimeSignatureSupported(TimeSignature v) { return (v.Numerator > 0 && v.Denominator > 0) && (Beat::FromBars(1).Ticks % v.Denominator) == 0; }
@@ -122,10 +127,9 @@ public:
 	const T* TryFindLastAtBeat(Beat beat) const;
 	const T* TryFindExactAtBeat(Beat beat) const;
 
-	T* TryFindOverlappingBeat(Beat beat);
-	T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd);
-	const T* TryFindOverlappingBeat(Beat beat) const;
-	const T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const;
+	// NOTE: Inclusive check to be used for long notes (which must have spacing after the tail piece) and single point intersection tests (such as with a cursor)
+	T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd, b8 inclusiveBeatCheck = true);
+	const T* TryFindOverlappingBeat(Beat beatStart, Beat beatEnd, b8 inclusiveBeatCheck = true) const;
 
 	void InsertOrUpdate(T valueToInsertOrUpdate);
 	void RemoveAtBeat(Beat beatToFindAndRemove);
@@ -189,7 +193,9 @@ public:
 		for (i32 barIndex = 0; /*barIndex < MAX_BAR_COUNT*/; barIndex++)
 		{
 			const TimeSignatureChange* thisChange = signatureChangeIt.Next(Signature.Sorted, beatIt);
-			const TimeSignature thisSignature = (thisChange == nullptr) ? FallbackTimeSignature : thisChange->Signature;
+			TimeSignature thisSignature = (thisChange == nullptr) ? FallbackTimeSignature : thisChange->Signature;
+			thisSignature.Numerator = ClampBot(thisSignature.Numerator, 1);
+			thisSignature.Denominator = ClampBot(thisSignature.Denominator, 1);
 
 			const i32 beatsPerBar = thisSignature.GetBeatsPerBar();
 			const Beat durationPerBeat = thisSignature.GetDurationPerBeat();
@@ -268,36 +274,39 @@ const T* BeatSortedList<T>::TryFindExactAtBeat(Beat beat) const
 }
 
 template <typename T>
-T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beat)
+T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd, b8 inclusiveBeatCheck)
 {
-	return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindOverlappingBeat(beat));
+	return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindOverlappingBeat(beatStart, beatEnd, inclusiveBeatCheck));
 }
 
 template <typename T>
-T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd)
+const T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd, b8 inclusiveBeatCheck) const
 {
-	return const_cast<T*>(static_cast<const BeatSortedList<T>*>(this)->TryFindOverlappingBeat(beatStart, beatEnd));
-}
+	assert(beatEnd >= beatStart && "Don't accidentally mix up BeatEnd with BeatDuration");
 
-template <typename T>
-const T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beat) const
-{
-	return TryFindOverlappingBeat(beat, beat);
-}
-
-template <typename T>
-const T* BeatSortedList<T>::TryFindOverlappingBeat(Beat beatStart, Beat beatEnd) const
-{
 	// TODO: Optimize using binary search
 	const T* found = nullptr;
-	for (const T& v : Sorted)
+	if (inclusiveBeatCheck)
 	{
-		// NOTE: Only break after a large beat has been found to correctly handle long notes with other notes "inside"
-		//		 (even if they should't be placable in the first place)
-		if (GetBeat(v) <= beatEnd && beatStart <= (GetBeat(v) + GetBeatDuration(v)))
-			found = &v;
-		else if ((GetBeat(v) + GetBeatDuration(v)) > beatEnd)
-			break;
+		for (const T& v : Sorted)
+		{
+			// NOTE: Only break after a large beat has been found to correctly handle long notes with other notes "inside"
+			//		 (even if they should't be placable in the first place)
+			if (GetBeat(v) <= beatEnd && beatStart <= (GetBeat(v) + GetBeatDuration(v)))
+				found = &v;
+			else if ((GetBeat(v) + GetBeatDuration(v)) > beatEnd)
+				break;
+		}
+	}
+	else
+	{
+		for (const T& v : Sorted)
+		{
+			if (GetBeat(v) < beatEnd && beatStart < (GetBeat(v) + GetBeatDuration(v)))
+				found = &v;
+			else if ((GetBeat(v) + GetBeatDuration(v)) > beatEnd)
+				break;
+		}
 	}
 	return found;
 }

@@ -51,12 +51,14 @@ namespace PeepoDrumKit
 				{ "Timeline Item Text (Warning)", &TimelineItemTextColorWarning },
 				NamedColorU32Pointer {},
 				{ "Timeline GoGo Background Border", &TimelineGoGoBackgroundColorBorder },
+				{ "Timeline GoGo Background Border (Selected)", &TimelineGoGoBackgroundColorBorderSelected },
 				{ "Timeline GoGo Background Outer", &TimelineGoGoBackgroundColorOuter },
 				{ "Timeline GoGo Background Inner", &TimelineGoGoBackgroundColorInner },
 				NamedColorU32Pointer {},
 				{ "Timeline Lyrics Text", &TimelineLyricsTextColor },
 				{ "Timeline Lyrics Text (Shadow)", &TimelineLyricsTextColorShadow },
 				{ "Timeline Lyrics Background Border", &TimelineLyricsBackgroundColorBorder },
+				{ "Timeline Lyrics Background Border (Selected)", &TimelineLyricsBackgroundColorBorderSelected },
 				{ "Timeline Lyrics Background Outer", &TimelineLyricsBackgroundColorOuter },
 				{ "Timeline Lyrics Background Inner", &TimelineLyricsBackgroundColorInner },
 				NamedColorU32Pointer {},
@@ -80,6 +82,7 @@ namespace PeepoDrumKit
 				{ "Timeline Signature Change Line", &TimelineSignatureChangeLineColor },
 				{ "Timeline Scroll Change Line", &TimelineScrollChangeLineColor },
 				{ "Timeline Bar Line Change Line", &TimelineBarLineChangeLineColor },
+				{ "Timeline Selected Item Line", &TimelineSelectedItemLineColor },
 				NamedColorU32Pointer {},
 				{ "Timeline Song Demo Start Marker Fill", &TimelineSongDemoStartMarkerColorFill },
 				{ "Timeline Song Demo Start Marker Border", &TimelineSongDemoStartMarkerColorBorder },
@@ -259,7 +262,12 @@ namespace PeepoDrumKit
 		f32 localY = 0.0f;
 		for (TimelineRowType rowType = {}; rowType < TimelineRowType::Count; IncrementEnum(rowType))
 		{
-			const f32 localHeight = GuiScale((rowType >= TimelineRowType::NoteBranches_First && rowType <= TimelineRowType::NoteBranches_Last) ? TimelineRowHeightNotes : TimelineRowHeight);
+			// HACK: Draw the non default branches smaller for now to waste less space (might wanna rethink all of this...)
+			const b8 isNotesRow =
+				(rowType >= TimelineRowType::NoteBranches_First && rowType <= TimelineRowType::NoteBranches_Last) &&
+				(TimelineRowToBranchType(rowType) == BranchType::Normal);
+
+			const f32 localHeight = GuiScale(isNotesRow ? TimelineRowHeightNotes : TimelineRowHeight);
 
 			perRowFunc(ForEachRowData { rowType, localY, localHeight, TimelineRowTypeNames[EnumToIndex(rowType)] });
 			localY += localHeight;
@@ -362,20 +370,32 @@ namespace PeepoDrumKit
 		return (cursorLocalSpaceX >= edgePixelThreshold && cursorLocalSpaceX <= ClampBot(regions.Content.GetWidth() - edgePixelThreshold, edgePixelThreshold));
 	}
 
-	static void SetNotesWaveAnimationTimes(std::vector<Note>& notesToAnimate, i32 direction = +1)
+	static f32 GetNotesWaveAnimationTimeAtIndex(i32 noteIndex, i32 notesCount, i32 direction)
 	{
-		assert(direction != 0);
-		for (i32 i = 0; i < static_cast<i32>(notesToAnimate.size()); i++)
-		{
-			// TODO: Proper "wave" placement animation (also maybe scale by beat instead of index?)
-			const i32 animationIndex = (direction > 0) ? i : (static_cast<i32>(notesToAnimate.size()) - i);
-			const f32 noteCountAnimationFactor = (1.0f / static_cast<i32>(notesToAnimate.size())) * 2.0f;
-			notesToAnimate[i].ClickAnimationTimeRemaining = NoteHitAnimationDuration + (animationIndex * (NoteHitAnimationDuration * /*0.08f **/ noteCountAnimationFactor));
-			notesToAnimate[i].ClickAnimationTimeDuration = notesToAnimate[i].ClickAnimationTimeRemaining;
-		}
+		// TODO: Proper "wave" placement animation (also maybe scale by beat instead of index?)
+		const i32 animationIndex = (direction > 0) ? noteIndex : (notesCount - noteIndex);
+		const f32 noteCountAnimationFactor = (1.0f / notesCount) * 2.0f;
+		return NoteHitAnimationDuration + (animationIndex * (NoteHitAnimationDuration * noteCountAnimationFactor));
 	}
 
-	static f32 GetTimelineNoteScaleFactor(bool isPlayback, Time cursorTime, Beat cursorBeatOnPlaybackStart, const Note& note, Time noteTime)
+	static void SetNotesWaveAnimationTimes(std::vector<Note>& notesToAnimate, i32 direction = +1)
+	{
+		const i32 notesCount = static_cast<i32>(notesToAnimate.size());
+		for (i32 noteIndex = 0; noteIndex < notesCount; noteIndex++)
+			notesToAnimate[noteIndex].ClickAnimationTimeDuration = notesToAnimate[noteIndex].ClickAnimationTimeRemaining = GetNotesWaveAnimationTimeAtIndex(noteIndex, notesCount, direction);
+	}
+
+	static void SetNotesWaveAnimationTimes(std::vector<GenericListStructWithType>& noteItemsToAnimate, i32 direction = +1)
+	{
+		i32 notesCount = 0, noteIndex = 0;
+		for (auto& item : noteItemsToAnimate) { if (IsNotesList(item.List)) notesCount++; }
+
+		for (auto& item : noteItemsToAnimate)
+			if (IsNotesList(item.List))
+				item.Value.POD.Note.ClickAnimationTimeDuration = item.Value.POD.Note.ClickAnimationTimeRemaining = GetNotesWaveAnimationTimeAtIndex(noteIndex++, notesCount, direction);
+	}
+
+	static f32 GetTimelineNoteScaleFactor(b8 isPlayback, Time cursorTime, Beat cursorBeatOnPlaybackStart, const Note& note, Time noteTime)
 	{
 		// TODO: Handle AnimationTime > AnimationDuration differently so that range selected multi note placement can have a nice "wave propagation" effect
 		if (note.ClickAnimationTimeRemaining > 0.0f)
@@ -787,118 +807,284 @@ namespace PeepoDrumKit
 
 	void ChartTimeline::ExecuteClipboardAction(ChartContext& context, ClipboardAction action)
 	{
-		static constexpr const char* clipboardTextHeader = "// PeepoDrumKit Clipboard";
-		static constexpr auto notesToClipboardText = [](const std::vector<Note>& notes, Beat baseBeat) -> std::string
+		static constexpr cstr clipboardTextHeader = "// PeepoDrumKit Clipboard";
+		static constexpr auto itemsToClipboardText = [](const std::vector<GenericListStructWithType>& inItems, Beat baseBeat) -> std::string
 		{
 			std::string out; out.reserve(512); out += clipboardTextHeader; out += '\n';
-			for (const Note& note : notes)
+			for (const auto& item : inItems)
 			{
-				char buffer[256];
-				out += std::string_view(buffer, sprintf_s(buffer,
-					"Note { %d, %d, %d, %d };%c",
-					(note.BeatTime - baseBeat).Ticks,
-					note.BeatDuration.Ticks,
-					static_cast<i32>(note.Type),
-					note.BalloonPopCount,
-					(&note != &notes.back()) ? '\n' : '\0'));
+				char buffer[256]; i32 bufferLength = 0;
+				switch (item.List)
+				{
+				case GenericList::TempoChanges:
+				{
+					const auto& in = item.Value.POD.Tempo;
+					bufferLength = sprintf_s(buffer, "Tempo { %d, %g };\n", (in.Beat - baseBeat).Ticks, in.Tempo.BPM);
+				} break;
+				case GenericList::SignatureChanges:
+				{
+					const auto& in = item.Value.POD.Signature;
+					bufferLength = sprintf_s(buffer, "TimeSignature { %d, %d, %d };\n", (in.Beat - baseBeat).Ticks, in.Signature.Numerator, in.Signature.Denominator);
+				} break;
+				case GenericList::Notes_Normal:
+				case GenericList::Notes_Expert:
+				case GenericList::Notes_Master:
+				{
+					const auto& in = item.Value.POD.Note;
+					bufferLength = sprintf_s(buffer, "Note { %d, %d, %d, %d };\n", (in.BeatTime - baseBeat).Ticks, in.BeatDuration.Ticks, static_cast<i32>(in.Type), in.BalloonPopCount);
+				} break;
+				case GenericList::ScrollChanges:
+				{
+					const auto& in = item.Value.POD.Scroll;
+					bufferLength = sprintf_s(buffer, "ScrollSpeed { %d, %g };\n", (in.BeatTime - baseBeat).Ticks, in.ScrollSpeed);
+				} break;
+				case GenericList::BarLineChanges:
+				{
+					const auto& in = item.Value.POD.BarLine;
+					bufferLength = sprintf_s(buffer, "BarLine { %d, %d };\n", (in.BeatTime - baseBeat).Ticks, in.IsVisible ? 1 : 0);
+				} break;
+				case GenericList::GoGoRanges:
+				{
+					const auto& in = item.Value.POD.GoGo;
+					bufferLength = sprintf_s(buffer, "GoGo { %d, %d };\n", (in.BeatTime - baseBeat).Ticks, in.BeatDuration.Ticks);
+				} break;
+				case GenericList::Lyrics:
+				{
+					// TODO: Properly handle escape characters (?)
+					const auto& in = item.Value.NonTrivial.Lyric;
+					out += "Lyric { ";
+					out += std::string_view(buffer, sprintf_s(buffer, "%d, ", (in.BeatTime - baseBeat).Ticks));
+					out += in.Lyric;
+					out += " };\n";
+				} break;
+				default: { assert(false); } break;
+				}
+
+				if (bufferLength > 0)
+					out += std::string_view(buffer, bufferLength);
 			}
+
+			if (!out.empty() && out.back() == '\n')
+				out.erase(out.end() - 1);
+
 			return out;
 		};
-		static constexpr auto notesFromClipboatdText = [](std::string_view clipboardText) -> std::vector<Note>
+		static constexpr auto itemsFromClipboatdText = [](std::string_view clipboardText) -> std::vector<GenericListStructWithType>
 		{
-			std::vector<Note> out;
-			if (ASCII::StartsWith(clipboardText, clipboardTextHeader))
+			std::vector<GenericListStructWithType> out;
+			if (!ASCII::StartsWith(clipboardText, clipboardTextHeader))
+				return out;
+
+			// TODO: Split and parse by ';' instead of '\n' (?)
+			ASCII::ForEachLineInMultiLineString(clipboardText, false, [&](std::string_view line)
 			{
-				// TODO: Split and parse by ';' instead of '\n' (?)
-				ASCII::ForEachLineInMultiLineString(clipboardText, false, [&](std::string_view line)
+				if (line.empty() || ASCII::StartsWith(line, "//"))
+					return;
+
+				line = ASCII::TrimSuffix(ASCII::TrimSuffix(line, "\r"), "\n");
+				const size_t openIndex = line.find_first_of('{');
+				const size_t closeIndex = line.find_last_of('}');
+				if (openIndex == std::string_view::npos || closeIndex == std::string_view::npos || closeIndex <= openIndex)
+					return;
+
+				const std::string_view itemType = ASCII::Trim(line.substr(0, openIndex));
+				const std::string_view itemParam = ASCII::Trim(line.substr(openIndex + sizeof('{'), (closeIndex - openIndex) - sizeof('}')));
+
+				if (itemType == "Lyric")
 				{
-					if (line.empty() || ASCII::StartsWith(line, "//"))
-						return;
+					auto& newItem = out.emplace_back(); newItem.List = GenericList::Lyrics;
+					auto& newItemValue = newItem.Value.NonTrivial.Lyric;
 
-					line = ASCII::TrimSuffix(ASCII::TrimSuffix(line, "\r"), "\n");
-					if (ASCII::StartsWith(line, "Note {") && ASCII::EndsWith(line, "};"))
+					const size_t commaIndex = itemParam.find_first_of(',');
+					if (commaIndex != std::string_view::npos)
 					{
-						Note& newNote = out.emplace_back();
+						const std::string_view beatSubStr = ASCII::Trim(itemParam.substr(0, commaIndex));
+						const std::string_view lyricSubStr = ASCII::Trim(itemParam.substr(commaIndex + sizeof(',')));
 
-						line = ASCII::Trim(line.substr(ArrayCount("Note {") - 1, line.size() - ArrayCount("Note {}")));
-						ASCII::ForEachInCommaSeparatedList(line, [&, commaIndex = 0](std::string_view commaSeparated) mutable
-						{
-							if (commaSeparated = ASCII::Trim(commaSeparated); !commaSeparated.empty())
-							{
-								switch (commaIndex)
-								{
-								case 0: { if (i32 v {}; ASCII::TryParseI32(commaSeparated, v)) { newNote.BeatTime.Ticks = v; } } break;
-								case 1: { if (i32 v {}; ASCII::TryParseI32(commaSeparated, v)) { newNote.BeatDuration.Ticks = v; } } break;
-								case 2: { if (i32 v {}; ASCII::TryParseI32(commaSeparated, v)) { newNote.Type = static_cast<NoteType>(Clamp(v, 0, EnumCountI32<NoteType>-1)); } } break;
-								case 3: { if (i32 v {}; ASCII::TryParseI32(commaSeparated, v)) { newNote.BalloonPopCount = v; } } break;
-								}
-							}
-							commaIndex++;
-						});
+						ASCII::TryParseI32(beatSubStr, newItemValue.BeatTime.Ticks);
+						newItemValue.Lyric = lyricSubStr;
 					}
+				}
+				else
+				{
+					struct { i32 I32; f32 F32; b8 IsValidI32, IsValidF32; } parsedParams[6] = {};
+					ASCII::ForEachInCommaSeparatedList(itemParam, [&, paramIndex = 0](std::string_view v) mutable
+					{
+						if (paramIndex < ArrayCount(parsedParams))
+						{
+							if (v = ASCII::Trim(v); !v.empty())
+							{
+								parsedParams[paramIndex].IsValidI32 = ASCII::TryParseI32(v, parsedParams[paramIndex].I32);
+								parsedParams[paramIndex].IsValidF32 = ASCII::TryParseF32(v, parsedParams[paramIndex].F32);
+							}
+						}
+						paramIndex++;
+					});
+
+					if (itemType == "Tempo")
+					{
+						auto& newItem = out.emplace_back(); newItem.List = GenericList::TempoChanges;
+						auto& newItemValue = newItem.Value.POD.Tempo;
+						newItemValue = TempoChange {};
+						newItemValue.Beat.Ticks = parsedParams[0].I32;
+						newItemValue.Tempo.BPM = parsedParams[1].F32;
+					}
+					else if (itemType == "TimeSignature")
+					{
+						auto& newItem = out.emplace_back(); newItem.List = GenericList::SignatureChanges;
+						auto& newItemValue = newItem.Value.POD.Signature;
+						newItemValue = TimeSignatureChange {};
+						newItemValue.Beat.Ticks = parsedParams[0].I32;
+						newItemValue.Signature.Numerator = parsedParams[1].I32;
+						newItemValue.Signature.Denominator = parsedParams[2].I32;
+					}
+					else if (itemType == "Note")
+					{
+						auto& newItem = out.emplace_back(); newItem.List = GenericList::Notes_Normal;
+						auto& newItemValue = newItem.Value.POD.Note;
+						newItemValue = Note {};
+						newItemValue.BeatTime.Ticks = parsedParams[0].I32;
+						newItemValue.BeatDuration.Ticks = parsedParams[1].I32;
+						newItemValue.Type = static_cast<NoteType>(parsedParams[2].I32);
+						newItemValue.BalloonPopCount = static_cast<i16>(parsedParams[3].I32);
+					}
+					else if (itemType == "ScrollSpeed")
+					{
+						auto& newItem = out.emplace_back(); newItem.List = GenericList::ScrollChanges;
+						auto& newItemValue = newItem.Value.POD.Scroll;
+						newItemValue = ScrollChange {};
+						newItemValue.BeatTime.Ticks = parsedParams[0].I32;
+						newItemValue.ScrollSpeed = parsedParams[1].F32;
+					}
+					else if (itemType == "BarLine")
+					{
+						auto& newItem = out.emplace_back(); newItem.List = GenericList::BarLineChanges;
+						auto& newItemValue = newItem.Value.POD.BarLine;
+						newItemValue = BarLineChange {};
+						newItemValue.BeatTime.Ticks = parsedParams[0].I32;
+						newItemValue.IsVisible = (parsedParams[1].I32 != 0);
+					}
+					else if (itemType == "GoGo")
+					{
+						auto& newItem = out.emplace_back(); newItem.List = GenericList::GoGoRanges;
+						auto& newItemValue = newItem.Value.POD.GoGo;
+						newItemValue = GoGoRange {};
+						newItemValue.BeatTime.Ticks = parsedParams[0].I32;
+						newItemValue.BeatDuration.Ticks = parsedParams[1].I32;
+					}
+#if PEEPO_DEBUG
+					else { assert(false); }
+#endif
+				}
+			});
+			return out;
+		};
+		static constexpr auto copyAllSelectedItems = [](const ChartCourse& course) -> std::vector<GenericListStructWithType>
+		{
+			std::vector<GenericListStructWithType> out;
+			size_t selectionCount = 0; ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { selectionCount++; });
+			if (selectionCount > 0)
+			{
+				out.reserve(selectionCount);
+				ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it)
+				{
+					auto& itemValue = out.emplace_back();
+					itemValue.List = it.List;
+					TryGetGenericStruct(course, it.List, it.Index, itemValue.Value);
 				});
 			}
 			return out;
 		};
-		static constexpr auto copyAllSelectedNotes = [](const SortedNotesList& selectedBranchNotes) -> std::vector<Note>
+		static constexpr auto findBaseBeat = [](const std::vector<GenericListStructWithType>& items)
 		{
-			i32 selectionCount = 0; for (const Note& note : selectedBranchNotes) { if (note.IsSelected) selectionCount++; }
-			std::vector<Note> out;
-			if (selectionCount > 0)
-			{
-				out.reserve(selectionCount);
-				for (const Note& note : selectedBranchNotes) { if (note.IsSelected) out.push_back(note); }
-			}
-			return out;
+			Beat minBase = Beat::FromTicks(I32Max);
+			for (const auto& item : items)
+				minBase = Min(item.GetBeat(), minBase);
+			return (minBase.Ticks != I32Max) ? minBase : Beat::Zero();
 		};
 
-		auto& selectedBranchNotes = context.ChartSelectedCourse->GetNotes(context.ChartSelectedBranch);
+		ChartCourse& selectedCourse = *context.ChartSelectedCourse;
+
 		switch (action)
 		{
 		case ClipboardAction::Cut:
 		{
-			if (auto selectedNotes = copyAllSelectedNotes(selectedBranchNotes); !selectedNotes.empty())
+			if (auto selectedItems = copyAllSelectedItems(selectedCourse); !selectedItems.empty())
 			{
-				for (const Note& note : selectedNotes) TempDeletedNoteAnimationsBuffer.push_back(
-					DeletedNoteAnimation { note, context.ChartSelectedBranch, ConvertRange(0.0f, static_cast<f32>(selectedNotes.size()), 0.0f, -0.08f, static_cast<f32>(ArrayItToIndexI32(&note, &selectedNotes[0]))) });
+				size_t selectedNoteIndex = 0;
+				for (const auto& item : selectedItems)
+				{
+					if (IsNotesList(item.List))
+					{
+						TempDeletedNoteAnimationsBuffer.push_back(
+							DeletedNoteAnimation { item.Value.POD.Note, context.ChartSelectedBranch, ConvertRange(0.0f, static_cast<f32>(selectedItems.size()), 0.0f, -0.08f, static_cast<f32>(selectedNoteIndex)) });
+						selectedNoteIndex++;
+					}
+				}
 
-				Gui::SetClipboardText(notesToClipboardText(selectedNotes, selectedNotes[0].BeatTime).c_str());
-				context.Undo.Execute<Commands::RemoveMultipleNotes_Cut>(&selectedBranchNotes, std::move(selectedNotes));
+				Gui::SetClipboardText(itemsToClipboardText(selectedItems, findBaseBeat(selectedItems)).c_str());
+				context.Undo.Execute<Commands::RemoveMultipleGenericItems_Cut>(&selectedCourse, std::move(selectedItems));
 			}
 		} break;
 		case ClipboardAction::Copy:
 		{
-			if (auto selectedNotes = copyAllSelectedNotes(selectedBranchNotes); !selectedNotes.empty())
+			if (auto selectedItems = copyAllSelectedItems(selectedCourse); !selectedItems.empty())
 			{
 				// TODO: Maybe also animate original notes being copied (?)
-				Gui::SetClipboardText(notesToClipboardText(selectedNotes, selectedNotes[0].BeatTime).c_str());
+				Gui::SetClipboardText(itemsToClipboardText(selectedItems, findBaseBeat(selectedItems)).c_str());
 			}
 		} break;
 		case ClipboardAction::Paste:
 		{
-			std::vector<Note> clipboardNotes = notesFromClipboatdText(Gui::GetClipboardTextView());
-			if (!clipboardNotes.empty())
+			std::vector<GenericListStructWithType> clipboardItems = itemsFromClipboatdText(Gui::GetClipboardTextView());
+			if (!clipboardItems.empty())
 			{
-				const Beat baseBeat = FloorBeatToCurrentGrid(context.GetCursorBeat()) - clipboardNotes[0].BeatTime;
-				for (Note& note : clipboardNotes) { note.BeatTime += baseBeat; }
+				const Beat baseBeat = FloorBeatToCurrentGrid(context.GetCursorBeat()) - findBaseBeat(clipboardItems);
+				for (auto& item : clipboardItems) { item.SetBeat(item.GetBeat() + baseBeat); }
 
-				auto noteAlreadyExistsOrBad = [&](const Note& t) { return selectedBranchNotes.TryFindOverlappingBeat(t.GetStart(), t.GetEnd()) != nullptr || (t.BeatTime < Beat::Zero()); };
-				erase_remove_if(clipboardNotes, noteAlreadyExistsOrBad);
-
-				if (!clipboardNotes.empty())
+				auto itemAlreadyExistsOrIsBad = [&](const GenericListStructWithType& item)
 				{
-					SetNotesWaveAnimationTimes(clipboardNotes, +1);
-					context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(clipboardNotes[0].Type));
-					context.Undo.Execute<Commands::AddMultipleNotes_Paste>(&selectedBranchNotes, std::move(clipboardNotes));
+					const b8 inclusiveBeatCheck = IsNotesList(item.List) || !ListHasDurations(item.List);
+					auto check = [&](auto& list, auto& i) { return (GetBeat(i) < Beat::Zero()) || (list.TryFindOverlappingBeat(GetBeat(i), GetBeat(i) + GetBeatDuration(i), inclusiveBeatCheck) != nullptr); };
+					switch (item.List)
+					{
+					case GenericList::TempoChanges: return check(selectedCourse.TempoMap.Tempo, item.Value.POD.Tempo);
+					case GenericList::SignatureChanges: return check(selectedCourse.TempoMap.Signature, item.Value.POD.Signature);
+					case GenericList::Notes_Normal: return check(selectedCourse.Notes_Normal, item.Value.POD.Note);
+					case GenericList::Notes_Expert: return check(selectedCourse.Notes_Expert, item.Value.POD.Note);
+					case GenericList::Notes_Master: return check(selectedCourse.Notes_Master, item.Value.POD.Note);
+					case GenericList::ScrollChanges: return check(selectedCourse.ScrollChanges, item.Value.POD.Scroll);
+					case GenericList::BarLineChanges: return check(selectedCourse.BarLineChanges, item.Value.POD.BarLine);
+					case GenericList::GoGoRanges: return check(selectedCourse.GoGoRanges, item.Value.POD.GoGo);
+					case GenericList::Lyrics: return check(selectedCourse.Lyrics, item.Value.NonTrivial.Lyric);
+					default: assert(false); return false;
+					}
+				};
+				erase_remove_if(clipboardItems, itemAlreadyExistsOrIsBad);
+
+				if (!clipboardItems.empty())
+				{
+					SetNotesWaveAnimationTimes(clipboardItems, +1);
+
+					b8 isFirstNote = true;
+					for (const auto& item : clipboardItems)
+						if (isFirstNote && IsNotesList(item.List)) { context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(item.Value.POD.Note.Type)); isFirstNote = false; }
+
+					context.Undo.Execute<Commands::AddMultipleGenericItems_Paste>(&selectedCourse, std::move(clipboardItems));
 				}
 			}
 		} break;
 		case ClipboardAction::Delete:
 		{
-			if (auto selectedNotes = copyAllSelectedNotes(selectedBranchNotes); !selectedNotes.empty())
+			if (auto selectedItems = copyAllSelectedItems(selectedCourse); !selectedItems.empty())
 			{
-				for (const Note& note : selectedNotes) { TempDeletedNoteAnimationsBuffer.push_back(DeletedNoteAnimation { note, context.ChartSelectedBranch, 0.0f }); }
-				context.Undo.Execute<Commands::RemoveMultipleNotes>(&selectedBranchNotes, std::move(selectedNotes));
+				for (const auto& item : selectedItems)
+				{
+					if (IsNotesList(item.List))
+						TempDeletedNoteAnimationsBuffer.push_back(DeletedNoteAnimation { item.Value.POD.Note, context.ChartSelectedBranch, 0.0f });
+				}
+
+				context.Undo.Execute<Commands::RemoveMultipleGenericItems>(&selectedCourse, std::move(selectedItems));
 			}
 		} break;
 		default: { assert(false); } break;
@@ -971,10 +1157,17 @@ namespace PeepoDrumKit
 
 		// NOTE: Cursor controls
 		{
-			// NOTE: Selected notes mouse drag
+			// NOTE: Selected items mouse drag
 			{
-				auto& notes = context.ChartSelectedCourse->GetNotes(context.ChartSelectedBranch);
-				size_t selectedNoteCount = 0; for (const Note& note : notes) { if (note.IsSelected) selectedNoteCount++; }
+				ChartCourse& selectedCourse = *context.ChartSelectedCourse;
+
+				size_t selectedItemCount = 0; b8 allSelectedItemsAreNotes = true; b8 atLeastOneSelectedItemIsTempoChange = false;
+				ForEachSelectedChartItem(selectedCourse, [&](const ForEachChartItemData& it)
+				{
+					selectedItemCount++;
+					allSelectedItemsAreNotes &= IsNotesList(it.List);
+					atLeastOneSelectedItemIsTempoChange |= (it.List == GenericList::TempoChanges);
+				});
 
 				if (SelectedItemDrag.IsActive && !Gui::IsMouseDown(ImGuiMouseButton_Left))
 					SelectedItemDrag = {};
@@ -983,39 +1176,53 @@ namespace PeepoDrumKit
 				SelectedItemDrag.MouseBeatLastFrame = SelectedItemDrag.MouseBeatThisFrame;
 				SelectedItemDrag.MouseBeatThisFrame = FloorBeatToCurrentGrid(context.TimeToBeat(Camera.LocalSpaceXToTime(ScreenToLocalSpace(MousePosThisFrame).x)));
 
-				if (selectedNoteCount > 0 && IsContentWindowHovered && !SelectedItemDrag.IsActive)
+				if (selectedItemCount > 0 && IsContentWindowHovered && !SelectedItemDrag.IsActive)
 				{
-					Rect localNotesRowRect = {};
 					ForEachTimelineRow(*this, [&](const ForEachRowData& rowIt)
 					{
-						const BranchType branchForThisRow =
-							(rowIt.RowType == TimelineRowType::Notes_Normal) ? BranchType::Normal :
-							(rowIt.RowType == TimelineRowType::Notes_Expert) ? BranchType::Expert :
-							(rowIt.RowType == TimelineRowType::Notes_Master) ? BranchType::Master : BranchType::Count;
+						const GenericList list = TimelineRowToGenericList(rowIt.RowType);
+						const b8 isNotesRow = IsNotesList(list);
 
-						if (branchForThisRow == context.ChartSelectedBranch)
-							localNotesRowRect = Rect(vec2(0.0f, rowIt.LocalY), vec2(Regions.Content.GetWidth(), rowIt.LocalY + rowIt.LocalHeight));
-					});
+						const Rect screenRowRect = Rect(LocalToScreenSpace(vec2(0.0f, rowIt.LocalY)), LocalToScreenSpace(vec2(Regions.Content.GetWidth(), rowIt.LocalY + rowIt.LocalHeight)));
+						const vec2 screenRectCenter = screenRowRect.GetCenter();
 
-					for (const Note& note : notes)
-					{
-						if (note.IsSelected)
+						for (size_t i = 0; i < GetGenericListCount(selectedCourse, list); i++)
 						{
-							const vec2 center = LocalToScreenSpace(vec2(Camera.TimeToLocalSpaceX(context.BeatToTime(note.BeatTime)), localNotesRowRect.GetCenter().y));
-							const Rect hitbox = Rect::FromCenterSize(center, vec2(GuiScale(IsBigNote(note.Type) ? TimelineSelectedNoteHitBoxSizeBig : TimelineSelectedNoteHitBoxSizeSmall)));
-							if (hitbox.Contains(MousePosThisFrame))
+							GenericMemberUnion beatStart, beatDuration, isSelected, noteType;
+							if (TryGetGeneric(selectedCourse, list, i, GenericMember::B8_IsSelected, isSelected) && isSelected.B8)
 							{
-								SelectedItemDrag.IsHovering = true;
-								if (Gui::IsMouseClicked(ImGuiMouseButton_Left))
+								const b8 hasBeatStart = TryGetGeneric(selectedCourse, list, i, GenericMember::Beat_Start, beatStart);
+								const b8 hasBeatDuration = TryGetGeneric(selectedCourse, list, i, GenericMember::Beat_Duration, beatDuration);
+
+								Rect screenHitbox = {};
+								if (isNotesRow)
 								{
-									SelectedItemDrag.IsActive = true;
-									SelectedItemDrag.BeatOnMouseDown = SelectedItemDrag.MouseBeatThisFrame;
-									SelectedItemDrag.BeatDistanceMovedSoFar = Beat::Zero();
-									context.Undo.DisallowMergeForLastCommand();
+									TryGetGeneric(selectedCourse, list, i, GenericMember::NoteType_V, noteType);
+
+									const vec2 center = vec2(LocalToScreenSpace(vec2(Camera.TimeToLocalSpaceX(context.BeatToTime(beatStart.Beat)), 0.0f)).x, screenRectCenter.y);
+									screenHitbox = Rect::FromCenterSize(center, vec2(GuiScale(IsBigNote(noteType.NoteType) ? TimelineSelectedNoteHitBoxSizeBig : TimelineSelectedNoteHitBoxSizeSmall)));
+								}
+								else
+								{
+									// TODO: Proper hitboxses (at least for gogo range and lyrics?)
+									const vec2 center = vec2(LocalToScreenSpace(vec2(Camera.TimeToLocalSpaceX(context.BeatToTime(beatStart.Beat)), 0.0f)).x, screenRectCenter.y);
+									screenHitbox = Rect::FromCenterSize(center, vec2(GuiScale(TimelineSelectedNoteHitBoxSizeSmall)));
+								}
+
+								if (screenHitbox.Contains(MousePosThisFrame))
+								{
+									SelectedItemDrag.IsHovering = true;
+									if (Gui::IsMouseClicked(ImGuiMouseButton_Left))
+									{
+										SelectedItemDrag.IsActive = true;
+										SelectedItemDrag.BeatOnMouseDown = SelectedItemDrag.MouseBeatThisFrame;
+										SelectedItemDrag.BeatDistanceMovedSoFar = Beat::Zero();
+										context.Undo.DisallowMergeForLastCommand();
+									}
 								}
 							}
 						}
-					}
+					});
 				}
 
 				if (SelectedItemDrag.IsActive || SelectedItemDrag.IsHovering)
@@ -1031,36 +1238,64 @@ namespace PeepoDrumKit
 
 				if (SelectedItemDrag.IsActive)
 				{
-					static constexpr auto checkCanSelectedNotesBeMoved = [](const SortedNotesList& notes, Beat beatIncrement) -> bool
+					auto itemSelected = [&](GenericList list, size_t i) { GenericMemberUnion out; TryGetGeneric(selectedCourse, list, i, GenericMember::B8_IsSelected, out); return out.B8; };
+					auto itemStart = [&](GenericList list, size_t i) { GenericMemberUnion out; TryGetGeneric(selectedCourse, list, i, GenericMember::Beat_Start, out); return out.Beat; };
+					auto itemDuration = [&](GenericList list, size_t i) { GenericMemberUnion out; TryGetGeneric(selectedCourse, list, i, GenericMember::Beat_Duration, out); return out.Beat; };
+					auto checkCanSelectedItemsBeMoved = [&](GenericList list, Beat beatIncrement) -> b8
 					{
+						const i32 listCount = static_cast<i32>(GetGenericListCount(selectedCourse, list));
+						if (listCount <= 0)
+							return true;
+
+						const b8 inclusiveBeatCheck = IsNotesList(list) || !ListHasDurations(list);
 						if (beatIncrement > Beat::Zero())
 						{
-							for (i32 i = 0; i < static_cast<i32>(notes.size()); i++)
+							for (i32 thisIndex = 0; thisIndex < listCount; thisIndex++)
 							{
-								const Note& thisNote = notes[i];
-								const Note* nextNote = IndexOrNull(i + 1, notes);
-								if (thisNote.IsSelected && nextNote != nullptr && !nextNote->IsSelected)
+								const i32 nextIndex = thisIndex + 1;
+								const b8 hasNext = (nextIndex < listCount);
+								if (itemSelected(list, thisIndex) && hasNext && !itemSelected(list, nextIndex))
 								{
-									if (thisNote.GetEnd() + beatIncrement >= nextNote->GetStart())
-										return false;
+									const Beat thisEnd = itemStart(list, thisIndex) + itemDuration(list, thisIndex);
+									const Beat nextStart = itemStart(list, nextIndex);
+									if (inclusiveBeatCheck)
+									{
+										if (thisEnd + beatIncrement >= nextStart)
+											return false;
+									}
+									else
+									{
+										if (thisEnd + beatIncrement > nextStart)
+											return false;
+									}
 								}
 							}
 						}
 						else
 						{
-							for (i32 i = static_cast<i32>(notes.size()) - 1; i >= 0; i--)
+							for (i32 thisIndex = (listCount - 1); thisIndex >= 0; thisIndex--)
 							{
-								const Note& thisNote = notes[i];
-								const Note* prevNote = IndexOrNull(i - 1, notes);
-								if (thisNote.IsSelected)
+								const i32 prevIndex = thisIndex - 1;
+								const b8 hasPrev = (prevIndex >= 0);
+								if (itemSelected(list, thisIndex))
 								{
-									if (thisNote.GetStart() + beatIncrement < Beat::Zero())
+									const Beat thisStart = itemStart(list, thisIndex);
+									if (thisStart + beatIncrement < Beat::Zero())
 										return false;
 
-									if (prevNote != nullptr && !prevNote->IsSelected)
+									if (hasPrev && !itemSelected(list, prevIndex))
 									{
-										if (thisNote.GetStart() + beatIncrement <= prevNote->GetEnd())
-											return false;
+										const Beat prevEnd = itemStart(list, prevIndex) + itemDuration(list, prevIndex);
+										if (inclusiveBeatCheck)
+										{
+											if (thisStart + beatIncrement <= prevEnd)
+												return false;
+										}
+										else
+										{
+											if (thisStart + beatIncrement < prevEnd)
+												return false;
+										}
 									}
 								}
 							}
@@ -1070,19 +1305,55 @@ namespace PeepoDrumKit
 
 					const Beat cursorBeat = context.GetCursorBeat();
 					const Beat dragBeatIncrement = FloorBeatToCurrentGrid(SelectedItemDrag.BeatDistanceMovedSoFar);
-					if (dragBeatIncrement != Beat::Zero() && checkCanSelectedNotesBeMoved(notes, dragBeatIncrement))
+
+					// BUG: Doesn't account for smooth scroll delay and playback auto scrolling
+					const b8 wasMouseMovedOrScrolled = (!ApproxmiatelySame(Gui::GetIO().MouseDelta.x, 0.0f) || !ApproxmiatelySame(Gui::GetIO().MouseWheel, 0.0f));
+
+					if (dragBeatIncrement != Beat::Zero() && wasMouseMovedOrScrolled)
 					{
-						SelectedItemDrag.BeatDistanceMovedSoFar -= dragBeatIncrement;
+						b8 allItemsCanBeMoved = true;
+						for (GenericList list = {}; list < GenericList::Count; IncrementEnum(list))
+							allItemsCanBeMoved &= checkCanSelectedItemsBeMoved(list, dragBeatIncrement);
 
-						std::vector<Commands::ChangeMultipleNoteBeats::Data> noteBeatsToChange;
-						noteBeatsToChange.reserve(selectedNoteCount);
-						for (const Note& note : notes)
-							if (note.IsSelected) { auto& data = noteBeatsToChange.emplace_back(); data.StableID = note.StableID; data.NewBeat = (note.BeatTime + dragBeatIncrement); }
+						if (allItemsCanBeMoved)
+						{
+							SelectedItemDrag.BeatDistanceMovedSoFar -= dragBeatIncrement;
 
-						context.Undo.Execute<Commands::ChangeMultipleNoteBeats_MoveNotes>(&notes, std::move(noteBeatsToChange));
+							auto& notes = selectedCourse.GetNotes(context.ChartSelectedBranch);
+							if (allSelectedItemsAreNotes)
+							{
+								std::vector<Commands::ChangeMultipleNoteBeats::Data> noteBeatsToChange;
+								noteBeatsToChange.reserve(selectedItemCount);
+								for (const Note& note : notes)
+									if (note.IsSelected) { auto& data = noteBeatsToChange.emplace_back(); data.Index = ArrayItToIndex(&note, &notes[0]); data.NewBeat = (note.BeatTime + dragBeatIncrement); }
 
-						for (const Note& note : notes)
-							if (note.IsSelected) { if (note.BeatTime == cursorBeat) PlayNoteSoundAndHitAnimationsAtBeat(context, note.BeatTime); }
+								context.Undo.Execute<Commands::ChangeMultipleNoteBeats_MoveNotes>(&notes, std::move(noteBeatsToChange));
+							}
+							else
+							{
+								std::vector<Commands::ChangeMultipleGenericProperties::Data> itemsToChange;
+								itemsToChange.reserve(selectedItemCount);
+
+								ForEachSelectedChartItem(selectedCourse, [&](const ForEachChartItemData& it)
+								{
+									auto& data = itemsToChange.emplace_back();
+									data.Index = it.Index;
+									data.List = it.List;
+									data.Member = GenericMember::Beat_Start;
+									TryGetGeneric(selectedCourse, it.List, it.Index, GenericMember::Beat_Start, data.NewValue);
+									data.NewValue.Beat += dragBeatIncrement;
+								});
+
+								context.Undo.Execute<Commands::ChangeMultipleGenericProperties_MoveItems>(&selectedCourse, std::move(itemsToChange));
+							}
+
+							for (const Note& note : notes)
+								if (note.IsSelected) { if (note.BeatTime == cursorBeat) PlayNoteSoundAndHitAnimationsAtBeat(context, note.BeatTime); }
+
+							// NOTE: Set again to account for a changes in cursor time
+							if (atLeastOneSelectedItemIsTempoChange)
+								context.SetCursorBeat(cursorBeat);
+						}
 					}
 				}
 			}
@@ -1286,7 +1557,7 @@ namespace PeepoDrumKit
 						for (i32 i = 0; i < maxExpectedNoteCountToAdd; i++)
 						{
 							const Beat beatForThisNote = Beat(Min(startTick, endTick).Ticks + (i * beatPerNote.Ticks));
-							if (notes.TryFindOverlappingBeat(beatForThisNote) == nullptr)
+							if (notes.TryFindOverlappingBeat(beatForThisNote, beatForThisNote) == nullptr)
 							{
 								Note& newNote = newNotesToAdd.emplace_back();
 								newNote.BeatTime = beatForThisNote;
@@ -1306,7 +1577,7 @@ namespace PeepoDrumKit
 						const b8 isPlayback = context.GetIsPlayback();
 						const Beat cursorBeat = isPlayback ? RoundBeatToCurrentGrid(context.GetCursorBeat()) : FloorBeatToCurrentGrid(context.GetCursorBeat());
 
-						Note* existingNoteAtCursor = notes.TryFindOverlappingBeat(cursorBeat);
+						Note* existingNoteAtCursor = notes.TryFindOverlappingBeat(cursorBeat, cursorBeat);
 						if (existingNoteAtCursor != nullptr)
 						{
 							if (existingNoteAtCursor->BeatTime == cursorBeat)
@@ -1435,35 +1706,45 @@ namespace PeepoDrumKit
 					const Rect screenSpaceRect = Rect(Camera.WorldToLocalSpace(BoxSelection.WorldSpaceRect.TL), Camera.WorldToLocalSpace(BoxSelection.WorldSpaceRect.BR));
 					if (Absolute(screenSpaceRect.GetWidth()) >= minBoxSizeThreshold && Absolute(screenSpaceRect.GetHeight()) >= minBoxSizeThreshold)
 					{
-						Rect screenNotesRowRect = {};
-						ForEachTimelineRow(*this, [&](const ForEachRowData& rowIt)
-						{
-							const BranchType branchForThisRow =
-								(rowIt.RowType == TimelineRowType::Notes_Normal) ? BranchType::Normal :
-								(rowIt.RowType == TimelineRowType::Notes_Expert) ? BranchType::Expert :
-								(rowIt.RowType == TimelineRowType::Notes_Master) ? BranchType::Master : BranchType::Count;
-
-							if (branchForThisRow == context.ChartSelectedBranch)
-								screenNotesRowRect = Rect(LocalToScreenSpace(vec2(0.0f, rowIt.LocalY)), LocalToScreenSpace(vec2(Regions.Content.GetWidth(), rowIt.LocalY + rowIt.LocalHeight)));
-						});
-
-						const vec2 screenNotesRowCenter = screenNotesRowRect.GetCenter();
 						const vec2 screenSelectionMin = LocalToScreenSpace(Camera.WorldToLocalSpace(BoxSelection.WorldSpaceRect.GetMin()));
 						const vec2 screenSelectionMax = LocalToScreenSpace(Camera.WorldToLocalSpace(BoxSelection.WorldSpaceRect.GetMax()));
 						const Beat selectionBeatMin = context.TimeToBeat(Camera.WorldSpaceXToTime(BoxSelection.WorldSpaceRect.GetMin().x));
 						const Beat selectionBeatMax = context.TimeToBeat(Camera.WorldSpaceXToTime(BoxSelection.WorldSpaceRect.GetMax().x));
-						auto isNoteInsideSelectionBox = [&](const Note& note)
-						{
-							return (note.BeatTime >= selectionBeatMin && note.BeatTime <= selectionBeatMax) && (screenNotesRowCenter.y >= screenSelectionMin.y && screenNotesRowCenter.y <= screenSelectionMax.y);
-						};
 
-						auto& notes = context.ChartSelectedCourse->GetNotes(context.ChartSelectedBranch);
-						switch (BoxSelection.Action)
+						ForEachTimelineRow(*this, [&](const ForEachRowData& rowIt)
 						{
-						case BoxSelectionAction::Clear: { for (Note& n : notes) n.IsSelected = isNoteInsideSelectionBox(n); } break;
-						case BoxSelectionAction::Add: { for (Note& n : notes) if (isNoteInsideSelectionBox(n)) n.IsSelected = true; } break;
-						case BoxSelectionAction::Remove: { for (Note& n : notes) if (isNoteInsideSelectionBox(n)) n.IsSelected = false; } break;
-						}
+							const GenericList list = TimelineRowToGenericList(rowIt.RowType);
+							const b8 isNotesRow = IsNotesList(list);
+
+							enum class IntersectionTest : u8 { Center, FullRow };
+							const IntersectionTest intersectionTest = (list == GenericList::GoGoRanges || list == GenericList::Lyrics) ? IntersectionTest::FullRow : IntersectionTest::Center;
+
+							const Rect screenRowRect = Rect(LocalToScreenSpace(vec2(0.0f, rowIt.LocalY)), LocalToScreenSpace(vec2(Regions.Content.GetWidth(), rowIt.LocalY + rowIt.LocalHeight)));
+							const f32 screenMinY = (intersectionTest == IntersectionTest::Center) ? screenRowRect.GetCenter().y : screenRowRect.TL.y;
+							const f32 screenMaxY = (intersectionTest == IntersectionTest::Center) ? screenRowRect.GetCenter().y : screenRowRect.BR.y;
+
+							for (size_t i = 0; i < GetGenericListCount(*context.ChartSelectedCourse, list); i++)
+							{
+								GenericMemberUnion beatStart, beatDuration, isSelected;
+								const b8 hasBeatStart = TryGetGeneric(*context.ChartSelectedCourse, list, i, GenericMember::Beat_Start, beatStart);
+								const b8 hasBeatDuration = TryGetGeneric(*context.ChartSelectedCourse, list, i, GenericMember::Beat_Duration, beatDuration);
+								const b8 hasIsSelected = TryGetGeneric(*context.ChartSelectedCourse, list, i, GenericMember::B8_IsSelected, isSelected);
+								assert(hasBeatStart && hasIsSelected);
+
+								const Beat beatMin = beatStart.Beat;
+								const Beat beatMax = (hasBeatDuration && !isNotesRow) ? (beatStart.Beat + beatDuration.Beat) : beatStart.Beat;
+								const b8 isInsideSelectionBox = (beatMin <= selectionBeatMax) && (beatMax >= selectionBeatMin) && (screenMinY <= screenSelectionMax.y) && (screenMaxY >= screenSelectionMin.y);
+
+								switch (BoxSelection.Action)
+								{
+								case BoxSelectionAction::Clear: { isSelected.B8 = isInsideSelectionBox; } break;
+								case BoxSelectionAction::Add: { if (isInsideSelectionBox) isSelected.B8 = true; } break;
+								case BoxSelectionAction::Remove: { if (isInsideSelectionBox) isSelected.B8 = false; } break;
+								}
+
+								TrySetGeneric(*context.ChartSelectedCourse, list, i, GenericMember::B8_IsSelected, isSelected);
+							}
+						});
 					}
 				}
 
@@ -1738,7 +2019,7 @@ namespace PeepoDrumKit
 							const vec2 textSize = Gui::CalcTextSize(text);
 							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
 
-							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), TimelineTempoChangeLineColor);
+							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), tempoChange.IsSelected ? TimelineSelectedItemLineColor : TimelineTempoChangeLineColor);
 							Gui::AddTextWithDropShadow(DrawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
 							Gui::DisableFontPixelSnap(false);
 						}
@@ -1764,7 +2045,7 @@ namespace PeepoDrumKit
 							const vec2 textSize = Gui::CalcTextSize(text);
 							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
 
-							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), TimelineSignatureChangeLineColor);
+							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), signatureChange.IsSelected ? TimelineSelectedItemLineColor : TimelineSignatureChangeLineColor);
 							Gui::AddTextWithDropShadow(DrawListContent, textPosition, IsTimeSignatureSupported(signatureChange.Signature) ? TimelineItemTextColor : TimelineItemTextColorWarning, text, TimelineItemTextColorShadow);
 							Gui::DisableFontPixelSnap(false);
 						}
@@ -1778,10 +2059,7 @@ namespace PeepoDrumKit
 
 						// TODO: It looks like there'll also have to be one scroll speed lane per branch type
 						//		 which means the scroll speed change line should probably extend all to the way down to its corresponding note lane (?)
-						const BranchType branchForThisRow =
-							(rowIt.RowType == TimelineRowType::Notes_Normal) ? BranchType::Normal :
-							(rowIt.RowType == TimelineRowType::Notes_Expert) ? BranchType::Expert : BranchType::Master;
-
+						const BranchType branchForThisRow = TimelineRowToBranchType(rowIt.RowType);
 						for (const Note& note : context.ChartSelectedCourse->GetNotes(branchForThisRow))
 						{
 							const Time startTime = context.BeatToTime(note.GetStart()) + note.TimeOffset;
@@ -1807,8 +2085,11 @@ namespace PeepoDrumKit
 
 							if (note.IsSelected)
 							{
+								// NOTE: Draw the note itself with the time offset applied but draw the hitbox at the original beat center
+								const f32 localSpaceTimeOffsetX = Camera.WorldToLocalSpaceScale(vec2(Camera.TimeToWorldSpaceX(note.TimeOffset), 0.0f)).x;
+
 								const vec2 hitBoxSize = vec2(GuiScale((IsBigNote(note.Type) ? TimelineSelectedNoteHitBoxSizeBig : TimelineSelectedNoteHitBoxSizeSmall)));
-								TempSelectionBoxesDrawBuffer.push_back(TempDrawSelectionBox { Rect::FromCenterSize(LocalToScreenSpace(localCenter), hitBoxSize), TimelineSelectedNoteBoxBackgroundColor, TimelineSelectedNoteBoxBorderColor });
+								TempSelectionBoxesDrawBuffer.push_back(TempDrawSelectionBox { Rect::FromCenterSize(LocalToScreenSpace(localCenter - vec2(localSpaceTimeOffsetX, 0.0f)), hitBoxSize), TimelineSelectedNoteBoxBackgroundColor, TimelineSelectedNoteBoxBorderColor });
 							}
 						}
 
@@ -1878,7 +2159,7 @@ namespace PeepoDrumKit
 							char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, "%gx", scroll.ScrollSpeed));
 							const vec2 textSize = Gui::CalcTextSize(text);
 							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
-							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), TimelineScrollChangeLineColor);
+							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), scroll.IsSelected ? TimelineSelectedItemLineColor : TimelineScrollChangeLineColor);
 							Gui::AddTextWithDropShadow(DrawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
 							Gui::DisableFontPixelSnap(false);
 						}
@@ -1903,7 +2184,7 @@ namespace PeepoDrumKit
 							const std::string_view text = barLine.IsVisible ? "On" : "Off";
 							const vec2 textSize = Gui::CalcTextSize(text);
 							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
-							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), TimelineBarLineChangeLineColor);
+							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), barLine.IsSelected ? TimelineSelectedItemLineColor : TimelineBarLineChangeLineColor);
 							Gui::AddTextWithDropShadow(DrawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
 							Gui::DisableFontPixelSnap(false);
 						}
@@ -1921,7 +2202,7 @@ namespace PeepoDrumKit
 							static constexpr f32 margin = 1.0f;
 							const vec2 localTL = vec2(Camera.TimeToLocalSpaceX(startTime), 0.0f) + vec2(0.0f, rowIt.LocalY + margin);
 							const vec2 localBR = vec2(Camera.TimeToLocalSpaceX(endTime), 0.0f) + vec2(0.0f, rowIt.LocalY + rowIt.LocalHeight - (margin * 2.0f));
-							DrawTimelineGoGoTimeBackground(DrawListContent, LocalToScreenSpace(localTL) + vec2(0.0f, 2.0f), LocalToScreenSpace(localBR), gogo.ExpansionAnimationCurrent);
+							DrawTimelineGoGoTimeBackground(DrawListContent, LocalToScreenSpace(localTL) + vec2(0.0f, 2.0f), LocalToScreenSpace(localBR), gogo.ExpansionAnimationCurrent, gogo.IsSelected);
 						}
 					} break;
 
@@ -1956,7 +2237,15 @@ namespace PeepoDrumKit
 								Gui::DisableFontPixelSnap(true);
 								{
 									const Rect lyricsBarRect = Rect(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBR));
-									DrawTimelineLyricsBackground(DrawListContent, lyricsBarRect.TL, lyricsBarRect.BR);
+
+									DrawTimelineLyricsBackground(DrawListContent, lyricsBarRect.TL, lyricsBarRect.BR, thisLyric.IsSelected);
+
+									// HACK: Try to at least somewhat visalize the tail being selected, for now
+									if (thisLyric.IsSelected || (nextLyric != nullptr && nextLyric->IsSelected))
+									{
+										const vec2 width = vec2(GuiScale(1.0f), 0.0f);
+										DrawListContent->AddRectFilled(lyricsBarRect.GetTR() - width, lyricsBarRect.GetBR() + width, (nextLyric != nullptr && nextLyric->IsSelected) ? TimelineLyricsBackgroundColorBorderSelected : TimelineLyricsBackgroundColorBorder);
+									}
 
 									static constexpr f32 borderLeft = 2.0f, borderRight = 5.0f;
 									const ImVec4 clipRect = { lyricsBarRect.TL.x + borderLeft, lyricsBarRect.TL.y, lyricsBarRect.BR.x - borderRight, lyricsBarRect.BR.y };
