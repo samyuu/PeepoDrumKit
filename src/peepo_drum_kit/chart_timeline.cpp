@@ -1649,6 +1649,64 @@ namespace PeepoDrumKit
 			const b8 activeFocusedAndHasLength = HasKeyboardFocus() && LongNotePlacement.IsActive && (LongNotePlacement.CursorBeatHead != LongNotePlacement.CursorBeatTail);
 			if (PlaceBalloonBindingDownLastFrame && !PlaceBalloonBindingDownThisFrame) { if (activeFocusedAndHasLength) placeLongNoteOnBindingRelease(LongNotePlacement.NoteType); LongNotePlacement = {}; }
 			if (PlaceDrumrollBindingDownLastFrame && !PlaceDrumrollBindingDownThisFrame) { if (activeFocusedAndHasLength) placeLongNoteOnBindingRelease(LongNotePlacement.NoteType); LongNotePlacement = {}; }
+
+			if (HasKeyboardFocus())
+			{
+				SortedNotesList& notes = context.ChartSelectedCourse->GetNotes(context.ChartSelectedBranch);
+
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_FlipNoteType, false))
+				{
+					size_t selectedNoteCount = 0;
+					for (const Note& note : notes) { if (note.IsSelected && IsNoteFlippable(note.Type)) selectedNoteCount++; }
+
+					if (selectedNoteCount > 0)
+					{
+						std::vector<Commands::ChangeMultipleNoteTypes::Data> noteTypesToChange;
+						noteTypesToChange.reserve(selectedNoteCount);
+
+						for (Note& note : notes)
+						{
+							if (note.IsSelected && IsNoteFlippable(note.Type))
+							{
+								auto& data = noteTypesToChange.emplace_back();
+								data.Index = ArrayItToIndex(&note, &notes[0]);
+								data.NewType = FlipNote(note.Type);
+								note.ClickAnimationTimeRemaining = note.ClickAnimationTimeDuration = NoteHitAnimationDuration;
+							}
+						}
+
+						context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(noteTypesToChange[0].NewType));
+						context.Undo.Execute<Commands::ChangeMultipleNoteTypes_FlipTypes>(&notes, std::move(noteTypesToChange));
+						context.Undo.DisallowMergeForLastCommand();
+					}
+				}
+				else if (Gui::IsAnyPressed(*Settings.Input.Timeline_ToggleNoteSize, false))
+				{
+					size_t selectedNoteCount = 0;
+					for (const Note& note : notes) { if (note.IsSelected) selectedNoteCount++; }
+
+					if (selectedNoteCount > 0)
+					{
+						std::vector<Commands::ChangeMultipleNoteTypes::Data> noteTypesToChange;
+						noteTypesToChange.reserve(selectedNoteCount);
+
+						for (Note& note : notes)
+						{
+							if (note.IsSelected)
+							{
+								auto& data = noteTypesToChange.emplace_back();
+								data.Index = ArrayItToIndex(&note, &notes[0]);
+								data.NewType = ToggleNoteSize(note.Type);
+								note.ClickAnimationTimeRemaining = note.ClickAnimationTimeDuration = NoteHitAnimationDuration;
+							}
+						}
+
+						context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(noteTypesToChange[0].NewType));
+						context.Undo.Execute<Commands::ChangeMultipleNoteTypes_ToggleSizes>(&notes, std::move(noteTypesToChange));
+						context.Undo.DisallowMergeForLastCommand();
+					}
+				}
+			}
 		}
 
 		if (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_ToggleMetronome))

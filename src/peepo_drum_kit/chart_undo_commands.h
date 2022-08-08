@@ -539,6 +539,18 @@ namespace PeepoDrumKit
 			std::vector<Data> NewData;
 		};
 
+		struct ChangeMultipleNoteTypes_FlipTypes : ChangeMultipleNoteTypes
+		{
+			using ChangeMultipleNoteTypes::ChangeMultipleNoteTypes;
+			Undo::CommandInfo GetInfo() const override { return { "Flip Notes" }; }
+		};
+
+		struct ChangeMultipleNoteTypes_ToggleSizes : ChangeMultipleNoteTypes
+		{
+			using ChangeMultipleNoteTypes::ChangeMultipleNoteTypes;
+			Undo::CommandInfo GetInfo() const override { return { "Toggle Note Sizes" }; }
+		};
+
 		struct ChangeMultipleNoteBeats : Undo::Command
 		{
 			struct Data { size_t Index; Beat NewBeat, OldBeat; };

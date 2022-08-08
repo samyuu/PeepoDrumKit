@@ -120,9 +120,12 @@ namespace PeepoDrumKit
 		return changesWereMade;
 	}
 
+	constexpr size_t SizeOfUserSettingsInputData = sizeof(UserSettingsData::InputData);
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 10452, "TODO: Add missing table entries for newly added UserSettingsData::InputData bindings");
+
 	b8 ChartSettingsWindow::DrawTabInput(ChartContext& context, UserSettingsData::InputData& settings)
 	{
-		struct InputBindingDesc { WithDefault<MultiInputBinding>* Binding; cstr Name; };
+		struct InputBindingDesc { WithDefault<MultiInputBinding>* Binding; std::string_view Name; };
 		const InputBindingDesc bindingsTable[] =
 		{
 			{ &settings.Editor_ToggleFullscreen, "Editor: Toggle Fullscreen", },
@@ -138,10 +141,13 @@ namespace PeepoDrumKit
 			{ &settings.Editor_ChartOpenDirectory, "Editor: Chart Open Directory", },
 			{ &settings.Editor_ChartSave, "Editor: Chart Save", },
 			{ &settings.Editor_ChartSaveAs, "Editor: Chart Save As", },
+			{},
 			{ &settings.Timeline_PlaceNoteDon, "Timeline: Place Note Don", },
 			{ &settings.Timeline_PlaceNoteKa, "Timeline: Place Note Ka", },
 			{ &settings.Timeline_PlaceNoteBalloon, "Timeline: Place Note Balloon", },
 			{ &settings.Timeline_PlaceNoteDrumroll, "Timeline: Place Note Drumroll", },
+			{ &settings.Timeline_FlipNoteType, "Timeline: Flip Note Type", },
+			{ &settings.Timeline_ToggleNoteSize, "Timeline: Toggle Note Size", },
 			{ &settings.Timeline_Cut, "Timeline: Cut", },
 			{ &settings.Timeline_Copy, "Timeline: Copy", },
 			{ &settings.Timeline_Paste, "Timeline: Paste", },
@@ -155,8 +161,10 @@ namespace PeepoDrumKit
 			{ &settings.Timeline_DecreasePlaybackSpeed, "Timeline: Decrease PlaybackSpeed", },
 			{ &settings.Timeline_TogglePlayback, "Timeline: Toggle Playback", },
 			{ &settings.Timeline_ToggleMetronome, "Timeline: Toggle Metronome", },
+			{},
 			{ &settings.TempoCalculator_Tap, "Tempo Calculator: Tap", },
 			{ &settings.TempoCalculator_Reset, "Tempo Calculator: Reset", },
+			{},
 			{ &settings.Dialog_YesOrOk, "Dialog: Yes/Ok", },
 			{ &settings.Dialog_No, "Dialog: No", },
 			{ &settings.Dialog_Cancel, "Dialog: Cancel", },
@@ -199,8 +207,14 @@ namespace PeepoDrumKit
 
 			for (const auto& it : bindingsTable)
 			{
-				if (!bindingsFilter.PassFilter(it.Name))
+				if (!bindingsFilter.PassFilter(Gui::StringViewStart(it.Name), Gui::StringViewEnd(it.Name)))
 					continue;
+
+				if (it.Binding == nullptr)
+				{
+					if (!bindingsFilter.IsActive()) { Gui::TableNextRow(); Gui::TableSetColumnIndex(0); Gui::Selectable(" ##", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled); }
+					continue;
+				}
 
 				Gui::PushID(it.Binding);
 				Gui::TableNextRow();
@@ -210,7 +224,7 @@ namespace PeepoDrumKit
 
 				Gui::TableSetColumnIndex(1);
 
-				const b8 clicked = Gui::Selectable(it.Name, false, ImGuiSelectableFlags_SpanAllColumns);
+				const b8 clicked = Gui::Selectable(it.Name.data(), false, ImGuiSelectableFlags_SpanAllColumns);
 				if (clicked) { selectedMultiBinding = it.Binding; memcpy(&selectedMultiBindingOnOpenCopy, it.Binding, sizeof(selectedMultiBindingOnOpenCopy)); openMultiBindingPopupAtEndOfFrame = true; }
 
 				if (Gui::BeginPopupContextItem("MultiBindingContextMenu"))
@@ -260,7 +274,7 @@ namespace PeepoDrumKit
 			cstr selectedBindingName = "Unnamed";
 			for (const auto& it : bindingsTable)
 				if (it.Binding == selectedMultiBinding)
-					selectedBindingName = it.Name;
+					selectedBindingName = it.Name.data();
 			assert(selectedMultiBinding != nullptr);
 
 			char popupTitleBuffer[128];

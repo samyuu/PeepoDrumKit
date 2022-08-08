@@ -34,7 +34,6 @@ namespace PeepoDrumKit
 	constexpr b8 IsBalloonNote(NoteType v) { return (v == NoteType::Balloon) || (v == NoteType::BalloonSpecial); }
 	constexpr b8 IsLongNote(NoteType v) { return IsDrumrollNote(v) || IsBalloonNote(v); }
 	constexpr b8 IsRegularNote(NoteType v) { return !IsLongNote(v); }
-
 	constexpr NoteType ToSmallNote(NoteType v)
 	{
 		switch (v)
@@ -50,7 +49,6 @@ namespace PeepoDrumKit
 		default: return v;
 		}
 	}
-
 	constexpr NoteType ToBigNote(NoteType v)
 	{
 		switch (v)
@@ -66,9 +64,21 @@ namespace PeepoDrumKit
 		default: return v;
 		}
 	}
-
+	constexpr NoteType ToggleNoteSize(NoteType v) { return IsSmallNote(v) ? ToBigNote(v) : ToSmallNote(v); }
 	constexpr NoteType ToSmallNoteIf(NoteType v, b8 condition) { return condition ? ToSmallNote(v) : v; }
 	constexpr NoteType ToBigNoteIf(NoteType v, b8 condition) { return condition ? ToBigNote(v) : v; }
+	constexpr NoteType FlipNote(NoteType v)
+	{
+		switch (v)
+		{
+		case NoteType::Don: return NoteType::Ka;
+		case NoteType::DonBig: return NoteType::KaBig;
+		case NoteType::Ka: return NoteType::Don;
+		case NoteType::KaBig: return NoteType::DonBig;
+		default: return v;
+		}
+	}
+	constexpr bool IsNoteFlippable(NoteType v) { return FlipNote(v) != v; }
 
 	constexpr i32 DefaultBalloonPopCount(Beat beatDuration, i32 gridBarDivision) { return (beatDuration.Ticks / GetGridBeatSnap(gridBarDivision).Ticks); }
 

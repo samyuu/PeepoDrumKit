@@ -277,6 +277,9 @@ namespace PeepoDrumKit
 		};
 	}
 
+	constexpr size_t SizeOfPersistentAppData = sizeof(PersistentAppData);
+	static_assert(PEEPO_RELEASE || SizeOfPersistentAppData == 88, "TODO: Add missing ini file handling for newly added PersistentAppData fields");
+
 	SettingsParseResult ParseSettingsIni(std::string_view fileContent, PersistentAppData& out)
 	{
 		Ini::IniParser parser = {};
@@ -418,11 +421,14 @@ namespace PeepoDrumKit
 			{
 				member.ToStringFunc({ const_cast<u8*>(reinterpret_cast<const u8*>(&in)) + member.ByteOffsetValue, member.ByteSizeValue }, strBuffer);
 			}
-			
+
 			writer.LineKeyValue_Str(member.SerializedName, strBuffer);
 			strBuffer.clear();
 		}
 	}
+
+	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 10680, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -488,6 +494,8 @@ namespace PeepoDrumKit
 			X(Input.Timeline_PlaceNoteKa, "timeline_place_note_ka");
 			X(Input.Timeline_PlaceNoteBalloon, "timeline_place_note_balloon");
 			X(Input.Timeline_PlaceNoteDrumroll, "timeline_place_note_drumroll");
+			X(Input.Timeline_FlipNoteType, "timeline_flip_note_type");
+			X(Input.Timeline_ToggleNoteSize, "timeline_toggle_note_size");
 			X(Input.Timeline_Cut, "timeline_cut");
 			X(Input.Timeline_Copy, "timeline_copy");
 			X(Input.Timeline_Paste, "timeline_paste");
