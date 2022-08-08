@@ -863,9 +863,6 @@ namespace PeepoDrumKit
 							widgetIn.FormatString = "%d";
 							widgetIn.EnableDragLabel = true;
 							widgetIn.DragLabelSpeed = 0.05f;
-							widgetIn.EnableClamp = true;
-							widgetIn.ValueClampMin.I16 = MinBalloonCount;
-							widgetIn.ValueClampMax.I16 = MaxBalloonCount;
 							const MultiEditWidgetResult widgetOut = GuiPropertyMultiSelectionEditWidget("Balloon Pop Count", widgetIn);
 
 							if (widgetOut.HasValueExact)
@@ -873,7 +870,7 @@ namespace PeepoDrumKit
 								for (auto& selectedItem : SelectedItems)
 								{
 									if (IsBalloonNote(selectedItem.MemberValues.NoteType()))
-										selectedItem.MemberValues.BalloonPopCount() = widgetOut.ValueExact.I16;
+										selectedItem.MemberValues.BalloonPopCount() = Clamp(widgetOut.ValueExact.I16, MinBalloonCount, MaxBalloonCount);
 								}
 								valueWasChanged = true;
 							}
@@ -970,7 +967,6 @@ namespace PeepoDrumKit
 									valueWasChanged = true;
 								}
 							}
-
 						} break;
 						case GenericMember::Time_Offset:
 						{
@@ -985,15 +981,12 @@ namespace PeepoDrumKit
 							widgetIn.EnableDragLabel = true;
 							widgetIn.DragLabelSpeed = 1.0f;
 							widgetIn.FormatString = "%g ms";
-							widgetIn.EnableClamp = true;
-							widgetIn.ValueClampMin.F32 = static_cast<f32>(MinNoteTimeOffset.TotalMilliseconds());
-							widgetIn.ValueClampMax.F32 = static_cast<f32>(MaxNoteTimeOffset.TotalMilliseconds());
 							const MultiEditWidgetResult widgetOut = GuiPropertyMultiSelectionEditWidget("Time Offset", widgetIn);
 							if (widgetOut.HasValueExact || widgetOut.HasValueIncrement)
 							{
 								if (widgetOut.HasValueExact)
 								{
-									const Time valueExact = Time::FromMilliseconds(widgetOut.ValueExact.F32);
+									const Time valueExact = Clamp(Time::FromMilliseconds(widgetOut.ValueExact.F32), MinNoteTimeOffset, MaxNoteTimeOffset);
 									for (auto& selectedItem : SelectedItems)
 										selectedItem.MemberValues.TimeOffset() = valueExact;
 									valueWasChanged = true;
