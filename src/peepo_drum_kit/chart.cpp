@@ -321,9 +321,9 @@ namespace PeepoDrumKit
 		}
 	}
 
-	Beat GenericListStruct::GetBeat(GenericList list) const 
-	{ 
-		return *GetGenericListStructRawBeatPtr(*const_cast<GenericListStruct*>(this), list).Start; 
+	Beat GenericListStruct::GetBeat(GenericList list) const
+	{
+		return *GetGenericListStructRawBeatPtr(*const_cast<GenericListStruct*>(this), list).Start;
 	}
 
 	Beat GenericListStruct::GetBeatDuration(GenericList list) const
@@ -332,9 +332,9 @@ namespace PeepoDrumKit
 		return (ptrs.Duration != nullptr) ? *ptrs.Duration : Beat::Zero();
 	}
 
-	void GenericListStruct::SetBeat(GenericList list, Beat newValue) 
-	{ 
-		*GetGenericListStructRawBeatPtr(*this, list).Start = newValue; 
+	void GenericListStruct::SetBeat(GenericList list, Beat newValue)
+	{
+		*GetGenericListStructRawBeatPtr(*this, list).Start = newValue;
 	}
 
 	size_t GetGenericMember_RawByteSize(GenericMember member)

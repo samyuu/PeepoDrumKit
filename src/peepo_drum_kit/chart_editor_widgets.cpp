@@ -83,7 +83,6 @@ namespace PeepoDrumKit
 
 			const b8 isLastComponent = ((component + 1) == components);
 			Gui::SetNextItemWidth(isLastComponent ? (Gui::GetContentRegionAvail().x - 1.0f) : perComponentInputFloatWidth);
-
 			if (Gui::SpinInt("##Component", &(*inOutValue)[component], step, stepFast, ImGuiInputTextFlags_None))
 			{
 				if (valueRange.has_value()) (*inOutValue)[component] = Clamp((*inOutValue)[component], valueRange->x, valueRange->y);
@@ -917,7 +916,7 @@ namespace PeepoDrumKit
 										if (selectedItem.List != GenericList::ScrollChanges)
 											continue;
 
-										if (const Tempo scrollTempo = Tempo(selectedItem.MemberValues.ScrollSpeed() * selectedItem.BaseScrollTempo.BPM); isFirstScroll)
+										if (const Tempo scrollTempo = ScrollSpeedToTempo(selectedItem.MemberValues.ScrollSpeed(), selectedItem.BaseScrollTempo); isFirstScroll)
 										{
 											isFirstScroll = false;
 											commonScrollTempo = minScrollTempo = maxScrollTempo = scrollTempo;
@@ -949,7 +948,7 @@ namespace PeepoDrumKit
 										if (i == 0)
 											selectedItem.MemberValues.ScrollSpeed() = widgetOut.ValueExact.F32;
 										else
-											selectedItem.MemberValues.ScrollSpeed() = (selectedItem.BaseScrollTempo.BPM == 0.0f) ? 0.0f : (widgetOut.ValueExact.F32 / selectedItem.BaseScrollTempo.BPM);
+											selectedItem.MemberValues.ScrollSpeed() = ScrollTempoToSpeed(Tempo(widgetOut.ValueExact.F32), selectedItem.BaseScrollTempo);
 									}
 									valueWasChanged = true;
 								}
@@ -963,9 +962,9 @@ namespace PeepoDrumKit
 										}
 										else if (selectedItem.BaseScrollTempo.BPM != 0.0f)
 										{
-											const f32 oldScrollTempo = (selectedItem.MemberValues.ScrollSpeed() * selectedItem.BaseScrollTempo.BPM);
-											const f32 newScrollTempo = (oldScrollTempo + widgetOut.ValueIncrement.F32);
-											selectedItem.MemberValues.ScrollSpeed() = Clamp(newScrollTempo, MinBPM, MaxBPM) / selectedItem.BaseScrollTempo.BPM;
+											const Tempo oldScrollTempo = ScrollSpeedToTempo(selectedItem.MemberValues.ScrollSpeed(), selectedItem.BaseScrollTempo);
+											const Tempo newScrollTempo = Tempo(oldScrollTempo.BPM + widgetOut.ValueIncrement.F32);
+											selectedItem.MemberValues.ScrollSpeed() = ScrollTempoToSpeed(Tempo(Clamp(newScrollTempo.BPM, MinBPM, MaxBPM)), selectedItem.BaseScrollTempo);
 										}
 									}
 									valueWasChanged = true;
@@ -1464,9 +1463,9 @@ namespace PeepoDrumKit
 						}
 						else
 						{
-							if (f32 v = tempoAtCursor.BPM * ((scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed);
+							if (f32 v = ScrollSpeedToTempo((scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed, tempoAtCursor).BPM;
 								Gui::SpinFloat("##ScrollTempoAtCursor", &v, 1.0f, 10.0f, "%g BPM"))
-								newScrollSpeedToSet = (tempoAtCursor.BPM == 0.0f) ? 0.0f : (Clamp(v, MinBPM, MaxBPM) / tempoAtCursor.BPM);
+								newScrollSpeedToSet = ScrollTempoToSpeed(Tempo(Clamp(v, MinBPM, MaxBPM)), tempoAtCursor);
 						}
 						return false;
 					});
