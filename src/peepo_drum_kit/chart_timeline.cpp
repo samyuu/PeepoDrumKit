@@ -352,6 +352,15 @@ namespace PeepoDrumKit
 		return (cursorLocalSpaceX >= edgePixelThreshold && cursorLocalSpaceX <= ClampBot(regions.Content.GetWidth() - edgePixelThreshold, edgePixelThreshold));
 	}
 
+	static void ScrollToTimelinePosition(TimelineCamera& camera, const TimelineRegions& regions, const ChartProject& chart, f32 normalizedTargetPosition)
+	{
+		const f32 visibleWidth = regions.Content.GetWidth();
+		const f32 totalTimelineWidth = camera.WorldToLocalSpaceScale(vec2(camera.TimeToWorldSpaceX(chart.GetDurationOrDefault()), 0.0f)).x + 2.0f;
+
+		const f32 cameraTargetPosition = TimelineCameraBaseScrollX + (totalTimelineWidth - visibleWidth - TimelineCameraBaseScrollX) * normalizedTargetPosition;
+		camera.PositionTarget.x = ClampBot(cameraTargetPosition, TimelineCameraBaseScrollX);
+	}
+
 	static f32 GetNotesWaveAnimationTimeAtIndex(i32 noteIndex, i32 notesCount, i32 direction)
 	{
 		// TODO: Proper "wave" placement animation (also maybe scale by beat instead of index?)
@@ -1459,6 +1468,9 @@ namespace PeepoDrumKit
 					}
 				}
 
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_JumpToTimelineStart, false)) ScrollToTimelinePosition(Camera, Regions, context.Chart, 0.0f);
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_JumpToTimelineEnd, false)) ScrollToTimelinePosition(Camera, Regions, context.Chart, 1.0f);
+
 				if (Gui::IsAnyPressed(*Settings.Input.Timeline_StartEndRangeSelection, false))
 				{
 					if (!RangeSelection.IsActive || RangeSelection.HasEnd)
@@ -1475,7 +1487,6 @@ namespace PeepoDrumKit
 						RangeSelectionExpansionAnimationTarget = 1.0f;
 						if (RangeSelection.End == RangeSelection.Start)
 							RangeSelection = {};
-
 					}
 				}
 			}
@@ -1490,6 +1501,28 @@ namespace PeepoDrumKit
 				const b8 decreaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X1, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_DecreaseGridDivision, true, InputModifierBehavior::Relaxed));
 				if (increaseGrid) CurrentGridBarDivision = AllowedGridBarDivisions[Clamp(currentGridDivisionIndex + 1, 0, ArrayCountI32(AllowedGridBarDivisions) - 1)];
 				if (decreaseGrid) CurrentGridBarDivision = AllowedGridBarDivisions[Clamp(currentGridDivisionIndex - 1, 0, ArrayCountI32(AllowedGridBarDivisions) - 1)];
+			}
+			if (HasKeyboardFocus())
+			{
+				const struct { const WithDefault<MultiInputBinding>& V; i32 BarDivision; } allBindings[] =
+				{
+					{ Settings.Input.Timeline_SetGridDivision_1_4, 4 },
+					{ Settings.Input.Timeline_SetGridDivision_1_8, 8 },
+					{ Settings.Input.Timeline_SetGridDivision_1_12, 12 },
+					{ Settings.Input.Timeline_SetGridDivision_1_16, 16 },
+					{ Settings.Input.Timeline_SetGridDivision_1_24, 24 },
+					{ Settings.Input.Timeline_SetGridDivision_1_32, 32 },
+					{ Settings.Input.Timeline_SetGridDivision_1_48, 48 },
+					{ Settings.Input.Timeline_SetGridDivision_1_64, 64 },
+					{ Settings.Input.Timeline_SetGridDivision_1_96, 96 },
+					{ Settings.Input.Timeline_SetGridDivision_1_192, 192 },
+				};
+
+				for (const auto& binding : allBindings)
+				{
+					if (Gui::IsAnyPressed(*binding.V, false))
+						CurrentGridBarDivision = binding.BarDivision;
+				}
 			}
 
 			// NOTE: Playback speed controls

@@ -428,7 +428,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 10680, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 13896, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -503,8 +503,20 @@ namespace PeepoDrumKit
 			X(Input.Timeline_StartEndRangeSelection, "timeline_start_end_range_selection");
 			X(Input.Timeline_StepCursorLeft, "timeline_step_cursor_left");
 			X(Input.Timeline_StepCursorRight, "timeline_step_cursor_right");
+			X(Input.Timeline_JumpToTimelineStart, "timeline_jump_to_timeline_start");
+			X(Input.Timeline_JumpToTimelineEnd, "timeline_jump_to_timeline_end");
 			X(Input.Timeline_IncreaseGridDivision, "timeline_increase_grid_division");
 			X(Input.Timeline_DecreaseGridDivision, "timeline_decrease_grid_division");
+			X(Input.Timeline_SetGridDivision_1_4, "timeline_set_grid_division_1_4");
+			X(Input.Timeline_SetGridDivision_1_8, "timeline_set_grid_division_1_8");
+			X(Input.Timeline_SetGridDivision_1_12, "timeline_set_grid_division_1_12");
+			X(Input.Timeline_SetGridDivision_1_16, "timeline_set_grid_division_1_16");
+			X(Input.Timeline_SetGridDivision_1_24, "timeline_set_grid_division_1_24");
+			X(Input.Timeline_SetGridDivision_1_32, "timeline_set_grid_division_1_32");
+			X(Input.Timeline_SetGridDivision_1_48, "timeline_set_grid_division_1_48");
+			X(Input.Timeline_SetGridDivision_1_64, "timeline_set_grid_division_1_64");
+			X(Input.Timeline_SetGridDivision_1_96, "timeline_set_grid_division_1_96");
+			X(Input.Timeline_SetGridDivision_1_192, "timeline_set_grid_division_1_192");
 			X(Input.Timeline_IncreasePlaybackSpeed, "timeline_increase_playback Speed");
 			X(Input.Timeline_DecreasePlaybackSpeed, "timeline_decrease_playback Speed");
 			X(Input.Timeline_TogglePlayback, "timeline_toggle_playback");

@@ -131,8 +131,20 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Timeline_StartEndRangeSelection = { KeyBinding(ImGuiKey_Tab) };
 			WithDefault<MultiInputBinding> Timeline_StepCursorLeft = { KeyBinding(ImGuiKey_LeftArrow) };
 			WithDefault<MultiInputBinding> Timeline_StepCursorRight = { KeyBinding(ImGuiKey_RightArrow) };
+			WithDefault<MultiInputBinding> Timeline_JumpToTimelineStart = { KeyBinding(ImGuiKey_PageUp) };
+			WithDefault<MultiInputBinding> Timeline_JumpToTimelineEnd = { KeyBinding(ImGuiKey_PageDown) };
 			WithDefault<MultiInputBinding> Timeline_IncreaseGridDivision = { KeyBinding(ImGuiKey_UpArrow) };
 			WithDefault<MultiInputBinding> Timeline_DecreaseGridDivision = { KeyBinding(ImGuiKey_DownArrow) };
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_4 = {};
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_8 = {};
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_12 = {};
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_16 = {};
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_24 = {};
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_32 = {};
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_48 = {};
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_64 = {};
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_96 = {};
+			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_192 = {};
 			WithDefault<MultiInputBinding> Timeline_IncreasePlaybackSpeed = { KeyBinding(ImGuiKey_C) };
 			WithDefault<MultiInputBinding> Timeline_DecreasePlaybackSpeed = { KeyBinding(ImGuiKey_Z) };
 			WithDefault<MultiInputBinding> Timeline_TogglePlayback = { KeyBinding(ImGuiKey_Space) };
@@ -190,7 +202,7 @@ namespace PeepoDrumKit
 		IniVoidPtrTypeFromStringFunc FromStringFunc;
 		IniVoidPtrTypeToStringFunc ToStringFunc;
 	};
-	struct SettingsReflectionMap { SettingsReflectionMember MemberSlots[64]; size_t MemberCount; };
+	struct SettingsReflectionMap { SettingsReflectionMember MemberSlots[72]; size_t MemberCount; };
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap();
 	inline const SettingsReflectionMap AppSettingsReflectionMap = StaticallyInitializeAppSettingsReflectionMap();

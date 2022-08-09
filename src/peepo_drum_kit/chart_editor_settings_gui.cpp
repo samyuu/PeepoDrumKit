@@ -121,7 +121,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsInputData = sizeof(UserSettingsData::InputData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 10452, "TODO: Add missing table entries for newly added UserSettingsData::InputData bindings");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 13668, "TODO: Add missing table entries for newly added UserSettingsData::InputData bindings");
 
 	b8 ChartSettingsWindow::DrawTabInput(ChartContext& context, UserSettingsData::InputData& settings)
 	{
@@ -155,8 +155,20 @@ namespace PeepoDrumKit
 			{ &settings.Timeline_StartEndRangeSelection, "Timeline: Start/End Range Selection", },
 			{ &settings.Timeline_StepCursorLeft, "Timeline: Step Cursor Left", },
 			{ &settings.Timeline_StepCursorRight, "Timeline: Step Cursor Right", },
+			{ &settings.Timeline_JumpToTimelineStart, "Timeline: Jump to Timeline Start", },
+			{ &settings.Timeline_JumpToTimelineEnd, "Timeline: Jump to Timeline End", },
 			{ &settings.Timeline_IncreaseGridDivision, "Timeline: Increase Grid Division", },
 			{ &settings.Timeline_DecreaseGridDivision, "Timeline: Decrease Grid Division", },
+			{ &settings.Timeline_SetGridDivision_1_4, "Timeline: Set Grid Division 1 / 4", },
+			{ &settings.Timeline_SetGridDivision_1_8, "Timeline: Set Grid Division 1 / 8", },
+			{ &settings.Timeline_SetGridDivision_1_12, "Timeline: Set Grid Division 1 / 12", },
+			{ &settings.Timeline_SetGridDivision_1_16, "Timeline: Set Grid Division 1 / 16", },
+			{ &settings.Timeline_SetGridDivision_1_24, "Timeline: Set Grid Division 1 / 24", },
+			{ &settings.Timeline_SetGridDivision_1_32, "Timeline: Set Grid Division 1 / 32", },
+			{ &settings.Timeline_SetGridDivision_1_48, "Timeline: Set Grid Division 1 / 48", },
+			{ &settings.Timeline_SetGridDivision_1_64, "Timeline: Set Grid Division 1 / 64", },
+			{ &settings.Timeline_SetGridDivision_1_96, "Timeline: Set Grid Division 1 / 96", },
+			{ &settings.Timeline_SetGridDivision_1_192, "Timeline: Set Grid Division 1 / 192", },
 			{ &settings.Timeline_IncreasePlaybackSpeed, "Timeline: Increase PlaybackSpeed", },
 			{ &settings.Timeline_DecreasePlaybackSpeed, "Timeline: Decrease PlaybackSpeed", },
 			{ &settings.Timeline_TogglePlayback, "Timeline: Toggle Playback", },
@@ -317,6 +329,7 @@ namespace PeepoDrumKit
 							{
 								selectedMultiBinding->HasValue = true;
 								selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+								changesWereMade = true;
 							}
 						}
 						Gui::PushStyleColor(ImGuiCol_Button, Gui::GetStyleColorVec4(ImGuiCol_Header));
