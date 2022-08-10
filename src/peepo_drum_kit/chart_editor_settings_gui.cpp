@@ -110,12 +110,276 @@ namespace PeepoDrumKit
 		return changesWereMade;
 	}
 
+	namespace SettingsGui
+	{
+		enum class DataType : u32
+		{
+			Invalid,
+			I32,
+			F32,
+			StdString,
+		};
+
+		enum class WidgetType : u32
+		{
+			Default,
+			I32_BarDivisionComboBox,
+			F32_ExponentialSpeed,
+		};
+
+		template <typename T> constexpr DataType TemplateToDataType() = delete;
+		template <> constexpr DataType TemplateToDataType<i32>() { return DataType::I32; }
+		template <> constexpr DataType TemplateToDataType<f32>() { return DataType::F32; }
+		template <> constexpr DataType TemplateToDataType<std::string>() { return DataType::StdString; }
+
+		struct Entry
+		{
+			DataType DataType;
+			WidgetType Widget;
+			void* ValuePtr;
+			b8* HasValuePtr;
+			std::string_view Header;
+			std::string_view Description;
+			void(*ResetToDefaultFunc)(void* valuePtr);
+			void(*SetHasValueIfNotDefaultFunc)(void* valuePtr);
+
+			inline void ResetToDefault() { ResetToDefaultFunc(ValuePtr); }
+			inline void SetHasValueIfNotDefault() { SetHasValueIfNotDefaultFunc(ValuePtr); }
+
+			template <typename T>
+			inline WithDefault<T>* ValueAs() { return (DataType == TemplateToDataType<T>()) ? static_cast<WithDefault<T>*>(ValuePtr) : nullptr; }
+		};
+
+		template <typename T>
+		static Entry MakeEntry(WithDefault<T>& v, std::string_view header, std::string_view description, WidgetType widgetType = WidgetType::Default)
+		{
+			return Entry
+			{
+				TemplateToDataType<T>(), widgetType, &v, &v.HasValue, header, description,
+				[](void* valuePtr) { static_cast<WithDefault<T>*>(valuePtr)->ResetToDefault(); },
+				[](void* valuePtr) { static_cast<WithDefault<T>*>(valuePtr)->SetHasValueIfNotDefault(); },
+			};
+		}
+
+		static void GuiRightAlignedTextDisabled(std::string_view text)
+		{
+			Gui::SetCursorScreenPos(vec2(Gui::GetCursorScreenPos()) + vec2(Gui::GetContentRegionAvail().x - Gui::CalcTextSize(text).x, 0.0f));
+			Gui::PushStyleColor(ImGuiCol_Text, Gui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+			Gui::TextUnformatted(text.data());
+			Gui::PopStyleColor();
+		};
+
+		static b8 DrawGui(Entry& in)
+		{
+			auto addGroupPadding = [](f32 padding) { Gui::InvisibleButton("", vec2(1.0f, 1.0f + padding)); };
+			const auto& style = Gui::GetStyle();
+
+			assert(in.DataType != DataType::Invalid && !in.Header.empty() && in.ValuePtr != nullptr);
+			b8 changesWereMade = false;
+
+			Gui::BeginGroup();
+			addGroupPadding(GuiScale(2.0f));
+			{
+				Gui::AlignTextToFramePadding();
+				Gui::PushFont(FontMedium_EN);
+				Gui::TextUnformatted(in.Header);
+				Gui::PopFont();
+
+				if (!in.Description.empty())
+				{
+					assert(in.Description.back() == '.');
+					Gui::PushStyleColor(ImGuiCol_Text, Gui::GetColorU32(ImGuiCol_Text, 0.8f));
+					Gui::TextWrapped(in.Description.data());
+					Gui::PopStyleColor();
+				}
+
+				auto* inOutI32 = in.ValueAs<i32>();
+				auto* inOutF32 = in.ValueAs<f32>();
+				auto* inOutStr = in.ValueAs<std::string>();
+
+				if (inOutI32 != nullptr)
+				{
+					if (in.Widget == WidgetType::I32_BarDivisionComboBox)
+					{
+						char buffer[64]; sprintf_s(buffer, "Bar Division 1/%d", inOutI32->Value);
+						if (Gui::BeginCombo("##", buffer, ImGuiComboFlags_None))
+						{
+							static constexpr i32 barDivisions[] = { 4, 8, 12, 16, 24, 32, 48, 64 };
+							for (const i32 it : barDivisions)
+							{
+								sprintf_s(buffer, "Bar Division 1/%d", it);
+								const b8 isSelected = (it == inOutI32->Value);
+								if (Gui::Selectable(buffer, isSelected)) { inOutI32->Value = it; changesWereMade = true; }
+								if (isSelected) { Gui::SetItemDefaultFocus(); }
+								if (it == inOutI32->Default) { Gui::SameLine(); GuiRightAlignedTextDisabled("(Default)"); }
+							}
+							Gui::EndCombo();
+						}
+					}
+					else
+					{
+						changesWereMade |= Gui::InputInt("##", &inOutI32->Value, 1, 10);
+					}
+				}
+				else if (inOutF32 != nullptr)
+				{
+					if (in.Widget == WidgetType::F32_ExponentialSpeed)
+					{
+						const b8 isDisabled = (inOutF32->Value <= 0.0f);
+						Gui::PushStyleColor(ImGuiCol_Text, Gui::GetStyleColorVec4(isDisabled ? ImGuiCol_TextDisabled : ImGuiCol_Text));
+						Gui::SetNextItemWidth(Max(1.0f, Gui::CalcItemWidth() - ((Gui::GetFrameHeight() + style.ItemInnerSpacing.x) * 3)));
+						changesWereMade |= Gui::SliderFloat("##", &inOutF32->Value, 0.0f, 50.0f, isDisabled ? "(Disabled)" : "%.0f", ImGuiSliderFlags_None);
+						Gui::PopStyleColor();
+						Gui::SameLine(0, style.ItemInnerSpacing.x);
+						changesWereMade |= Gui::ButtonPlusMinusFloat('-', &inOutF32->Value, 1.0f, 10.0f);
+						Gui::SameLine(0, style.ItemInnerSpacing.x);
+						changesWereMade |= Gui::ButtonPlusMinusFloat('+', &inOutF32->Value, 1.0f, 10.0f);
+						Gui::SameLine(0.0f, style.ItemInnerSpacing.x);
+						if (Gui::BeginCombo("##Combo", "", ImGuiComboFlags_NoPreview | ImGuiComboFlags_PopupAlignLeft))
+						{
+							if (Gui::Selectable("Reset to Default", false, !inOutF32->HasValue ? ImGuiSelectableFlags_Disabled : 0)) { in.ResetToDefault(); changesWereMade = true; }
+							if (Gui::Selectable("Disable Animation", false, (inOutF32->Value == 0.0f) ? ImGuiSelectableFlags_Disabled : 0)) { inOutF32->Value = 0.0f; changesWereMade = true; }
+							Gui::EndCombo();
+						}
+						if (changesWereMade) { inOutF32->Value = ClampBot(inOutF32->Value, 0.0f); }
+					}
+					else
+					{
+						changesWereMade |= Gui::InputFloat("##", &inOutF32->Value, 1.0f, 10.0f);
+					}
+				}
+				else if (inOutStr != nullptr)
+				{
+					changesWereMade |= Gui::InputTextWithHint("##", "n/a", &inOutStr->Value);
+				}
+
+				if (changesWereMade)
+					in.SetHasValueIfNotDefault();
+			}
+			addGroupPadding(GuiScale(2.0f));
+			Gui::EndGroup();
+
+			return changesWereMade;
+		}
+	}
+
+	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 13896, "TODO: Add missing settings entries for newly added UserSettingsData fields");
+
 	b8 ChartSettingsWindow::DrawTabMain(ChartContext& context, UserSettingsData& settings)
 	{
-		b8 changesWereMade = false;
+		SettingsGui::Entry settingsEntries[] =
+		{
+			SettingsGui::MakeEntry(settings.General.DefaultCreatorName, "Default Creator Name", "The name that is automatically filled in when creating a new chart."),
 
-		Gui::AlignTextToFramePadding();
-		Gui::TextDisabled("// TODO: ...");
+			SettingsGui::MakeEntry(
+				settings.General.DrumrollAutoHitBarDivision,
+				"Drumroll Preview Interval",
+				"The interval at which drumrolls have their hit sounds previewed at.",
+				SettingsGui::WidgetType::I32_BarDivisionComboBox),
+
+			// TODO: Remove..?
+			//SettingsGui::MakeEntry(settings.General.TimelineScrubAutoScrollPixelThreshold, "Timeline Scrub Auto Scroll Pixel Threshold", ""),
+			//SettingsGui::MakeEntry(settings.General.TimelineScrubAutoScrollSpeedMin, "Timeline Scrub Auto Scroll Speed Min", ""),
+			//SettingsGui::MakeEntry(settings.General.TimelineScrubAutoScrollSpeedMax, "Timeline Scrub Auto Scroll Speed Max", ""),
+
+			SettingsGui::MakeEntry(settings.Animation.TimelineSmoothScrollSpeed,
+				"Timeline Smooth Scroll Animation Speed",
+				"The animation speed when scrolling the timeline.",
+				SettingsGui::WidgetType::F32_ExponentialSpeed),
+
+			SettingsGui::MakeEntry(settings.Animation.TimelineWorldSpaceCursorXSpeed,
+				"Timeline Cursor Animation Speed",
+				"The animation speed for the timeline cursor when left clicking on a new position.",
+				SettingsGui::WidgetType::F32_ExponentialSpeed),
+
+			SettingsGui::MakeEntry(settings.Animation.TimelineRangeSelectionExpansionSpeed,
+				"Timeline Range Selection Animation Speed",
+				"The expansion animation speed for the timeline range selection region.",
+				SettingsGui::WidgetType::F32_ExponentialSpeed),
+		};
+
+		b8 changesWereMade = false;
+		const auto& style = Gui::GetStyle();
+
+		Gui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { style.ItemSpacing.x, GuiScale(8.0f) });
+		Gui::SetNextItemWidth(-1.0f);
+		if (Gui::InputTextWithHint("##MainFilter", "Type to search...", mainSettingsFilter.InputBuf, ArrayCount(mainSettingsFilter.InputBuf)))
+			mainSettingsFilter.Build();
+
+		Gui::PushStyleVar(ImGuiStyleVar_CellPadding, GuiScale(vec2(8.0f, 4.0f)));
+		const bool beginTable = Gui::BeginTable("InnerTable", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail());
+		Gui::PopStyleVar(2);
+		if (beginTable)
+		{
+			Gui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, Gui::CalcTextSize("(Default)").x + Gui::GetFrameHeight());
+
+			Gui::UpdateSmoothScrollWindow();
+			Gui::PushStyleVar(ImGuiStyleVar_ItemSpacing, GuiScale(vec2(8.0f, 8.0f)));
+
+			b8 isAnyItemGroupHoveredOrActive = false;
+			for (auto& entry : settingsEntries)
+			{
+				if (!mainSettingsFilter.PassFilter(Gui::StringViewStart(entry.Header), Gui::StringViewEnd(entry.Header)) &&
+					!mainSettingsFilter.PassFilter(Gui::StringViewStart(entry.Description), Gui::StringViewEnd(entry.Description)))
+					continue;
+
+				Gui::TableNextRow();
+				Gui::PushID(entry.ValuePtr);
+
+				Gui::TableSetColumnIndex(0);
+				Gui::AlignTextToFramePadding();
+				(*entry.HasValuePtr) ? Gui::TextUnformatted("(User)") : Gui::TextDisabled("(Default)");
+
+				Gui::TableSetColumnIndex(1);
+
+				if (lastActiveGroup.ValuePtr == entry.ValuePtr)
+				{
+					const vec2 padding = { GuiScale(12.0f), 0.0f };
+					Gui::GetWindowDrawList()->AddRectFilled(
+						lastActiveGroup.GroupRect.TL + vec2(-padding.x, 0.0f),
+						lastActiveGroup.GroupRect.BR + vec2(+padding.x, +padding.y),
+						Gui::GetColorU32(ImGuiCol_ButtonHovered, 0.15f));
+				}
+
+				if (SettingsGui::DrawGui(entry))
+					changesWereMade = true;
+
+				const Rect itemGroupRect = Gui::GetItemRect();
+				const b8 isItemGroupHovered = Gui::IsItemHovered();
+				b8 isPopupOpen = false;
+
+				if (isPopupOpen = Gui::BeginPopupContextItem("SettingsEntryContextMenu"))
+				{
+					Gui::TextUnformatted(entry.Header);
+					Gui::Separator();
+					if (Gui::MenuItem("Reset to Default", "", nullptr))
+					{
+						entry.ResetToDefault();
+						changesWereMade = true;
+					}
+
+					Gui::EndPopup();
+				}
+
+				if (isItemGroupHovered || isPopupOpen)
+				{
+					isAnyItemGroupHoveredOrActive = true;
+					lastActiveGroup = { entry.ValuePtr, itemGroupRect };
+				}
+
+				Gui::PopID();
+
+				if (ArrayItToIndex(&entry, &settingsEntries[0]) + 1 < ArrayCount(settingsEntries))
+					Gui::Separator();
+			}
+
+			if (!isAnyItemGroupHoveredOrActive)
+				lastActiveGroup = {};
+
+			Gui::PopStyleVar(1);
+			Gui::EndTable();
+		}
 
 		return changesWereMade;
 	}
@@ -197,8 +461,8 @@ namespace PeepoDrumKit
 		// TODO: CTRL+F keybinding for all search fields
 		// TODO: Also match shortcut strings themselves (and maybe draw in different color on match?)
 		Gui::SetNextItemWidth(-1.0f);
-		if (Gui::InputTextWithHint("##BindingsFilter", "Type to search...", bindingsFilter.InputBuf, ArrayCount(bindingsFilter.InputBuf)))
-			bindingsFilter.Build();
+		if (Gui::InputTextWithHint("##BindingsFilter", "Type to search...", inputSettingsFilter.InputBuf, ArrayCount(inputSettingsFilter.InputBuf)))
+			inputSettingsFilter.Build();
 
 		// TODO: Allow sorting table (?)
 		b8 openMultiBindingPopupAtEndOfFrame = false;
@@ -219,12 +483,12 @@ namespace PeepoDrumKit
 
 			for (const auto& it : bindingsTable)
 			{
-				if (!bindingsFilter.PassFilter(Gui::StringViewStart(it.Name), Gui::StringViewEnd(it.Name)))
+				if (!inputSettingsFilter.PassFilter(Gui::StringViewStart(it.Name), Gui::StringViewEnd(it.Name)))
 					continue;
 
 				if (it.Binding == nullptr)
 				{
-					if (!bindingsFilter.IsActive()) { Gui::TableNextRow(); Gui::TableSetColumnIndex(0); Gui::Selectable(" ##", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled); }
+					if (!inputSettingsFilter.IsActive()) { Gui::TableNextRow(); Gui::TableSetColumnIndex(0); Gui::Selectable(" ##", false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_Disabled); }
 					continue;
 				}
 
@@ -327,8 +591,7 @@ namespace PeepoDrumKit
 							Gui::TableSetColumnIndex(0);
 							if (GuiAssignableInputBindingButton(it, { Gui::GetContentRegionAvail().x, 0.0f }, ImGuiButtonFlags_None, tempAssignedBinding, assignedBindingStopwatch))
 							{
-								selectedMultiBinding->HasValue = true;
-								selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+								selectedMultiBinding->SetHasValueIfNotDefault();
 								changesWereMade = true;
 							}
 						}
@@ -360,8 +623,7 @@ namespace PeepoDrumKit
 						if (InputBinding newBinding {}; GuiAssignableInputBindingButton(newBinding, { Gui::GetContentRegionAvail().x, 0.0f }, ImGuiButtonFlags_None, tempAssignedBinding, assignedBindingStopwatch))
 						{
 							selectedMultiBinding->Value.Slots[selectedMultiBinding->Value.Count++] = newBinding;
-							selectedMultiBinding->HasValue = true;
-							selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+							selectedMultiBinding->SetHasValueIfNotDefault();
 							changesWereMade = true;
 						}
 						Gui::PopStyleColor(3);
@@ -376,22 +638,19 @@ namespace PeepoDrumKit
 						if (indexToMoveUp >= 1 && indexToMoveUp <= inOutCount)
 						{
 							std::swap(inOutSlots[indexToMoveUp], inOutSlots[indexToMoveUp - 1]);
-							selectedMultiBinding->HasValue = true;
-							selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+							selectedMultiBinding->SetHasValueIfNotDefault();
 							changesWereMade = true;
 						}
 						else if (indexToMoveDown >= 0 && (indexToMoveDown + 1) < inOutCount)
 						{
 							std::swap(inOutSlots[indexToMoveDown], inOutSlots[indexToMoveDown + 1]);
-							selectedMultiBinding->HasValue = true;
-							selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+							selectedMultiBinding->SetHasValueIfNotDefault();
 							changesWereMade = true;
 						}
 						else if (indexToRemove >= 0)
 						{
 							selectedMultiBinding->Value.RemoveAt(indexToRemove);
-							selectedMultiBinding->HasValue = true;
-							selectedMultiBinding->HasValue = (selectedMultiBinding->Value != selectedMultiBinding->Default);
+							selectedMultiBinding->SetHasValueIfNotDefault();
 							changesWereMade = true;
 						}
 					}

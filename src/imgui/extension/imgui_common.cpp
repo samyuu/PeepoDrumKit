@@ -176,6 +176,31 @@ namespace ImGui
 		return InputTextWithHint(label, hint, str->data(), str->capacity() + 1, flags, InputTextStdStringCallback, &cb_user_data);
 	}
 
+	b8 ButtonPlusMinusScalar(char plusOrMinus, ImGuiDataType dataType, void* inOutValue, void* step, void* stepFast, vec2 buttonSize)
+	{
+		assert(plusOrMinus == '+' || plusOrMinus == '-' && step != nullptr);
+		char label[2] = { plusOrMinus, '\0' };
+		const f32 frameHeight = GetFrameHeight();
+
+		PushID(inOutValue);
+		const b8 buttonClicked = ButtonEx(label, vec2((buttonSize.x <= 0.0f) ? frameHeight : buttonSize.x, (buttonSize.y <= 0.0f) ? frameHeight : buttonSize.y), ImGuiButtonFlags_Repeat | ImGuiButtonFlags_DontClosePopups);
+		PopID();
+
+		if (buttonClicked)
+			DataTypeApplyOp(dataType, plusOrMinus, inOutValue, inOutValue, (GetIO().KeyCtrl && stepFast != nullptr) ? stepFast : step);
+		return buttonClicked;
+	}
+
+	b8 ButtonPlusMinusFloat(char plusOrMinus, f32* inOutValue, f32 step, f32 stepFast, vec2 buttonSize)
+	{
+		return ButtonPlusMinusScalar(plusOrMinus, ImGuiDataType_Float, inOutValue, &step, &stepFast, buttonSize);
+	}
+
+	b8 ButtonPlusMinusInt(char plusOrMinus, i32* inOutValue, i32 step, i32 stepFast, vec2 buttonSize)
+	{
+		return ButtonPlusMinusScalar(plusOrMinus, ImGuiDataType_S32, inOutValue, &step, &stepFast, buttonSize);
+	}
+
 	// NOTE: Basically ImGui::InputScalar() but with some extra parameters and more detailed return values
 	InputScalarWithButtonsResult InputScalar_WithExtraStuff(cstr label, ImGuiDataType data_type, void* p_data, const void* p_step, const void* p_step_fast, cstr format, ImGuiInputTextFlags flags, const InputScalarWithButtonsExData* ex_data)
 	{

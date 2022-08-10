@@ -16,7 +16,10 @@ namespace PeepoDrumKit
 		b8 DrawTabInput(ChartContext& context, UserSettingsData::InputData& settings);
 		b8 DrawTabAudio(ChartContext& context, UserSettingsData::AudioData& settings);
 
-		ImGuiTextFilter bindingsFilter = {};
+		ImGuiTextFilter mainSettingsFilter = {};
+		struct LastActiveGroup { void* ValuePtr; Rect GroupRect; } lastActiveGroup = {};
+
+		ImGuiTextFilter inputSettingsFilter = {};
 		WithDefault<MultiInputBinding>* selectedMultiBinding = nullptr;
 		WithDefault<MultiInputBinding> selectedMultiBindingOnOpenCopy = {};
 		f32 multiBindingPopupFadeCurrent = 0.0f;

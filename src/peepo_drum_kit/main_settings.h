@@ -35,6 +35,7 @@ namespace PeepoDrumKit
 		template<typename... Args>
 		constexpr WithDefault(Args&&... args) : Default(std::forward<Args>(args)...), Value(Default), HasValue(false) {}
 		inline void ResetToDefault() { Value = Default; HasValue = false; }
+		inline void SetHasValueIfNotDefault() { HasValue = (Value != Default); }
 
 		constexpr T& operator*() { return Value; }
 		constexpr T* operator->() { return &Value; }
