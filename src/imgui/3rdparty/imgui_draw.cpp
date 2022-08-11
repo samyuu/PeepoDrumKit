@@ -2299,7 +2299,13 @@ void    ImFontAtlasBuildMultiplyCalcLookupTable(unsigned char out_table[256], fl
 {
     for (unsigned int i = 0; i < 256; i++)
     {
+#if IMGUI_HACKS_DELINEARIZE_FONTS
+		// This converts each pixel from an alpha coverage percentage to a brightness level
+		// (the former is linear while the latter is non-linear). Without this, fonts will render incorrectly.
+		unsigned int value = (unsigned int)(ImPow(i / 255.0f, 1.0f / IMGUI_HACKS_DELINEARIZE_FONTS_GAMMA) * 255.0f * in_brighten_factor);
+#else
         unsigned int value = (unsigned int)(i * in_brighten_factor);
+#endif
         out_table[i] = value > 255 ? 255 : (value & 0xFF);
     }
 }
@@ -2544,6 +2550,16 @@ static bool ImFontAtlasBuildWithStbTruetype(ImFontAtlas* atlas)
         stbtt_PackFontRangesRenderIntoRects(&spc, &src_tmp.FontInfo, &src_tmp.PackRange, 1, src_tmp.Rects);
 
         // Apply multiply operator
+#if IMGUI_HACKS_DELINEARIZE_FONTS
+		unsigned char multiply_table[256];
+		ImFontAtlasBuildMultiplyCalcLookupTable(multiply_table, cfg.RasterizerMultiply);
+		stbrp_rect* r = &src_tmp.Rects[0];
+		for (int glyph_i = 0; glyph_i < src_tmp.GlyphsCount; glyph_i++, r++)
+		{
+			if (r->was_packed)
+				ImFontAtlasBuildMultiplyRectAlpha8(multiply_table, atlas->TexPixelsAlpha8, r->x, r->y, r->w, r->h, atlas->TexWidth * 1);
+		}
+#else
         if (cfg.RasterizerMultiply != 1.0f)
         {
             unsigned char multiply_table[256];
@@ -2553,6 +2569,7 @@ static bool ImFontAtlasBuildWithStbTruetype(ImFontAtlas* atlas)
                 if (r->was_packed)
                     ImFontAtlasBuildMultiplyRectAlpha8(multiply_table, atlas->TexPixelsAlpha8, r->x, r->y, r->w, r->h, atlas->TexWidth * 1);
         }
+#endif
         src_tmp.Rects = NULL;
     }
 

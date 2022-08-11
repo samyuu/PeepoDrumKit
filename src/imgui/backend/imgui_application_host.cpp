@@ -61,6 +61,9 @@ namespace ApplicationHost
 	static struct { const ImWchar *JP, *EN; } GlobalGlyphRanges = {};
 	static ImGuiStyle				GlobalOriginalScaleStyle = {};
 	static b8						GlobalIsFirstFrameAfterFontRebuild = true;
+#if IMGUI_HACKS_DELINEARIZE_FONTS
+	static f32						GlobalLastUsedDelinearizedFontGamma = IMGUI_HACKS_DELINEARIZE_FONTS_GAMMA;
+#endif
 
 	static b8 CreateGlobalD3D11(const StartupParam& startupParam, HWND hWnd);
 	static void CleanupGlobalD3D11();
@@ -132,6 +135,9 @@ namespace ApplicationHost
 		if (rebuild)
 			ImGui_ImplDX11_RecreateFontTexture();
 
+#if IMGUI_HACKS_DELINEARIZE_FONTS
+		GlobalLastUsedDelinearizedFontGamma = IMGUI_HACKS_DELINEARIZE_FONTS_GAMMA;
+#endif
 		GlobalIsFirstFrameAfterFontRebuild = true;
 	}
 
@@ -150,6 +156,12 @@ namespace ApplicationHost
 			if (!ApproxmiatelySame(GuiScaleFactor, 1.0f))
 				ImGui::GetStyle().ScaleAllSizes(GuiScaleFactor);
 		}
+#if IMGUI_HACKS_DELINEARIZE_FONTS
+		else if (!ApproxmiatelySame(GlobalLastUsedDelinearizedFontGamma, IMGUI_HACKS_DELINEARIZE_FONTS_GAMMA))
+		{
+			ImGuiUpdateBuildFonts();
+		}
+#endif
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
