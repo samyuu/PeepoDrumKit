@@ -12,6 +12,36 @@
 #include <d3d11.h>
 #include <dxgi1_3.h>
 
+#define HAS_EMBEDDED_ICONS 1
+#define REGENERATE_EMBEDDED_ICONS_SOURCE_CODE 0
+
+#if HAS_EMBEDDED_ICONS || REGENERATE_EMBEDDED_ICONS_SOURCE_CODE
+#define STBI_WINDOWS_UTF8
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <stb/stb_image_resize.h>
+#endif
+
+#if REGENERATE_EMBEDDED_ICONS_SOURCE_CODE 
+#include "../src_res_icons/x_generate_icon_src_code.cpp"
+#define ON_STARTUP_CODEGEN() CodeGen::WriteSourceCodeToFile(CodeGen::GenerateIconSourceCode(u8"../../../src_res_icons"), u8"../../../src_res_icons/x_embedded_icons_include.h");
+#define STBI_ONLY_PNG
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#endif /* REGENERATE_EMBEDDED_ICONS_SOURCE_CODE */
+
+#if HAS_EMBEDDED_ICONS
+#include "../src_res_icons/x_embedded_icons_include.h"
+EmbeddedIconsList GetEmbeddedIconsList()
+{
+	static EmbeddedIconsList::Data out[ArrayCount(EmbeddedIcons)] = {};
+	if (out[0].Name == nullptr)
+		for (size_t i = 0; i < ArrayCount(out); i++) { out[i] = { EmbeddedIcons[i].Name }; ImTextCharToUtf8(out[i].UTF8, EmbeddedIcons[i].Codepoint); }
+	return EmbeddedIconsList { out, ArrayCount(out) };
+}
+#else
+EmbeddedIconsList GetEmbeddedIconsList() { return {}; }
+#endif
+
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -43,6 +73,7 @@ namespace ApplicationHost
 	static constexpr u32 Win32WindowBackgroundColor = 0x001F1F1F;
 	static constexpr f32 D3D11SwapChainClearColor[4] = { 0.12f, 0.12f, 0.12f, 1.0f };
 	static constexpr cstr FontFilePath = "assets/NotoSansCJKjp-Regular.otf";
+	static constexpr i32 FontBaseSizes[EnumCount<BuiltInFont>] = { 16, 18, 22 };
 
 	static LRESULT WINAPI MainWindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -69,6 +100,63 @@ namespace ApplicationHost
 	static void CleanupGlobalD3D11();
 	static void CreateGlobalD3D11SwapchainRenderTarget();
 	static void CleanupGlobalD3D11SwapchainRenderTarget();
+
+#if HAS_EMBEDDED_ICONS
+	static void ImGuiAddEmeddedIconsToFontAtlas()
+	{
+		static constexpr i32 iconBorder = 2;
+		struct BitmapIcon { const EmbeddedIcon* Icon; i32 RectIDs[EnumCount<BuiltInFont>]; ivec2 RectSizes[EnumCount<BuiltInFont>]; };
+		BitmapIcon icons[ArrayCount(EmbeddedIcons)];
+		for (size_t i = 0; i < ArrayCount(EmbeddedIcons); i++)
+			icons[i] = { &EmbeddedIcons[i] };
+
+		ImGuiIO& io = ImGui::GetIO();
+		for (BitmapIcon& it : icons)
+		{
+			for (i32 f = 0; f < EnumCountI32<BuiltInFont>; f++)
+			{
+				it.RectSizes[f] = ivec2(GuiScaleI32(FontBaseSizes[f] + 2) + (iconBorder * 2));
+				it.RectIDs[f] = io.Fonts->AddCustomRectFontGlyph(GetBuiltInFont(static_cast<BuiltInFont>(f)), it.Icon->Codepoint, it.RectSizes[f].x, it.RectSizes[f].y, GuiScale(FontBaseSizes[f] + 3.0f), vec2(2 - iconBorder, -iconBorder));
+			}
+		}
+
+		io.Fonts->TexPixelsUseColors = true;
+		io.Fonts->Build();
+		unsigned char* fontPixels = nullptr; int fontWidth, fontHeight;
+		io.Fonts->GetTexDataAsRGBA32(&fontPixels, &fontWidth, &fontHeight);
+		u32* fontRGBA = reinterpret_cast<u32*>(fontPixels);
+
+		for (const BitmapIcon& it : icons)
+		{
+			for (ImFont* font : io.Fonts->Fonts)
+			{
+				// HACK: Don't want to tint bitmap RGB icons and it doesn't look like the CustomRect API exposes this in any other way (?)
+				if (ImFontGlyph* glyph = const_cast<ImFontGlyph*>(font->FindGlyphNoFallback(it.Icon->Codepoint)); glyph != nullptr)
+					glyph->Colored = true;
+			}
+
+			for (i32 f = 0; f < EnumCountI32<BuiltInFont>; f++)
+			{
+				if (const ImFontAtlasCustomRect* customRect = io.Fonts->GetCustomRectByIndex(it.RectIDs[f]); customRect != nullptr)
+				{
+					const i32 newWidth = it.RectSizes[f].x - (iconBorder * 2);
+					const i32 newHeight = it.RectSizes[f].y - (iconBorder * 2);
+					u32 newPixels[160 * 160];
+
+					// NOTE: No icon should ever be larger than this, fonts that big wouldn't really make much sense
+					if ((newWidth * newHeight) >= ArrayCount(newPixels)) { assert(false); continue; }
+
+					const int resizeResult = ::stbir_resize_uint8(
+						reinterpret_cast<const unsigned char*>(&EmbeddedIconsPixelData[it.Icon->OffsetIntoPixelData]), it.Icon->Size.x, it.Icon->Size.y, (it.Icon->Size.x * sizeof(u32)),
+						reinterpret_cast<unsigned char*>(newPixels), newWidth, newHeight, (newWidth * sizeof(u32)), 4);
+
+					for (i32 y = 0; y < newHeight; y++)
+						memcpy(&fontRGBA[(customRect->Y + y + iconBorder) * fontWidth + (customRect->X + iconBorder)], &newPixels[y * newWidth], newWidth * sizeof(u32));
+				}
+			}
+		}
+	}
+#endif
 
 	static void ImGuiUpdateBuildFonts()
 	{
@@ -128,9 +216,13 @@ namespace ApplicationHost
 			io.Fonts->Clear();
 
 		// NOTE: Unfortunately Dear ImGui does not allow avoiding these copies at the moment as far as I can tell (except for maybe some super hacky "inject nullptrs before shutdown")
-		FontMain_JP = addFont(GuiScaleI32(16), GlobalGlyphRanges.JP, Ownership::Copy);
-		FontMedium_EN = addFont(GuiScaleI32(18), GlobalGlyphRanges.EN, Ownership::Copy);
-		FontLarge_EN = addFont(GuiScaleI32(22), GlobalGlyphRanges.EN, Ownership::Copy);
+		FontMain_JP = addFont(GuiScaleI32(FontBaseSizes[0]), GlobalGlyphRanges.JP, Ownership::Copy);
+		FontMedium_EN = addFont(GuiScaleI32(FontBaseSizes[1]), GlobalGlyphRanges.EN, Ownership::Copy);
+		FontLarge_EN = addFont(GuiScaleI32(FontBaseSizes[2]), GlobalGlyphRanges.EN, Ownership::Copy);
+
+#if HAS_EMBEDDED_ICONS
+		ImGuiAddEmeddedIconsToFontAtlas();
+#endif
 
 		if (rebuild)
 			ImGui_ImplDX11_RecreateFontTexture();
@@ -205,6 +297,10 @@ namespace ApplicationHost
 
 	i32 EnterProgramLoop(const StartupParam& startupParam, UserCallbacks userCallbacks)
 	{
+#if REGENERATE_EMBEDDED_ICONS_SOURCE_CODE 
+		ON_STARTUP_CODEGEN();
+#endif
+
 		ImGui_ImplWin32_EnableDpiAwareness();
 		const HICON windowIcon = ::LoadIconW(::GetModuleHandleW(nullptr), MAKEINTRESOURCEW(PEEPO_DRUM_KIT_ICON));
 

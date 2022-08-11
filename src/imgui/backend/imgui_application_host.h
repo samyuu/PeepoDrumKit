@@ -4,11 +4,17 @@
 #include <vector>
 #include <optional>
 
+// NOTE: Get a list of all included icons, primarily for debugging purposes
+struct EmbeddedIconsList { struct Data { cstr Name; char UTF8[5]; }; Data* V; size_t Count; };
+EmbeddedIconsList GetEmbeddedIconsList();
+
 // NOTE: Exposed here specifically to be used with PushFont() / PopFont()
 struct ImFont;
 inline ImFont* FontMain_JP = nullptr;
 inline ImFont* FontMedium_EN = nullptr;
 inline ImFont* FontLarge_EN = nullptr;
+enum class BuiltInFont : u8 { FontMain_JP, FontMedium_EN, FontLarge_EN, Count };
+inline ImFont* GetBuiltInFont(BuiltInFont font) { return (font == BuiltInFont::FontMain_JP) ? FontMain_JP : (font == BuiltInFont::FontMedium_EN) ? FontMedium_EN : FontLarge_EN; }
 
 inline f32 GuiScaleFactor = 1.0f;
 inline f32 GuiScaleFactorToSetNextFrame = GuiScaleFactor;
