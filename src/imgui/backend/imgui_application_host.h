@@ -4,6 +4,11 @@
 #include <vector>
 #include <optional>
 
+#define UTF8_DankHug "\xEE\x80\x80"
+#define UTF8_FeelsOkayMan "\xEE\x80\x81"
+#define UTF8_PeepoCoffeeBlonket "\xEE\x80\x82"
+#define UTF8_PeepoHappy "\xEE\x80\x83"
+
 // NOTE: Get a list of all included icons, primarily for debugging purposes
 struct EmbeddedIconsList { struct Data { cstr Name; char UTF8[5]; }; Data* V; size_t Count; };
 EmbeddedIconsList GetEmbeddedIconsList();

@@ -342,7 +342,7 @@ namespace PeepoDrumKit
 		{
 			u32 GreenDark = 0xFFACF7DC; // 0xFF60BE9C;
 			u32 GreenBright = 0xFF95CCB8; // 0xFF60BE9C;
-			u32 RedDark = 0xFF72A0ED; // 0xFF71A4FA; // 0xFF7474EF; // 0xFF6363DE;
+			u32 RedDark = 0xFF9BBAEF; // 0xFF72A0ED; // 0xFF71A4FA; // 0xFF7474EF; // 0xFF6363DE;
 			u32 RedBright = 0xFF93B2E7; // 0xFFBAC2E4; // 0xFF6363DE;
 			u32 WhiteDark = 0xFF95DCDC; // 0xFFEAEAEA;
 			u32 WhiteBright = 0xFFBBD3D3; // 0xFFEAEAEA;
@@ -375,13 +375,13 @@ namespace PeepoDrumKit
 			{
 				Gui::PushStyleColor(ImGuiCol_Text, colors.GreenDark);
 				Gui::PushFont(FontLarge_EN);
-				Gui::TextUnformatted("Welcome to Peepo Drum Kit (Alpha)");
+				Gui::TextUnformatted("Welcome to Peepo Drum Kit (Beta)");
 				Gui::PopFont();
 				Gui::PopStyleColor();
 
 				Gui::PushStyleColor(ImGuiCol_Text, colors.GreenBright);
 				Gui::PushFont(FontMedium_EN);
-				Gui::TextWrapped("Things are still very much WIP and subject to change with many features still missing :FeelsOkayMan:");
+				Gui::TextWrapped("Things are still very much WIP and subject to change with many features still missing " UTF8_FeelsOkayMan);
 				Gui::Separator();
 				Gui::TextUnformatted("");
 				Gui::PopFont();
@@ -402,8 +402,8 @@ namespace PeepoDrumKit
 					static constexpr auto row = [&](auto funcLeft, auto funcRight)
 					{
 						Gui::TableNextRow();
-						Gui::TableSetColumnIndex(0); /*Gui::AlignTextToFramePadding();*/ funcLeft();
-						Gui::TableSetColumnIndex(1); /*Gui::AlignTextToFramePadding();*/ funcRight();
+						Gui::TableSetColumnIndex(0); funcLeft();
+						Gui::TableSetColumnIndex(1); funcRight();
 					};
 					static constexpr auto rowSeparator = []() { row([] { Gui::Text(""); }, [] {}); };
 
@@ -418,14 +418,12 @@ namespace PeepoDrumKit
 					row([] { Gui::Text("Play / pause"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_TogglePlayback).Data); });
 					row([] { Gui::Text("Add / remove note"); }, []
 					{
-						assert(Settings.Input.Timeline_PlaceNoteKa->Count == 2 && Settings.Input.Timeline_PlaceNoteDon->Count == 2);
 						Gui::Text("%s / %s / %s / %s",
 							ToShortcutString(Settings.Input.Timeline_PlaceNoteKa->Slots[0]).Data, ToShortcutString(Settings.Input.Timeline_PlaceNoteDon->Slots[0]).Data,
 							ToShortcutString(Settings.Input.Timeline_PlaceNoteDon->Slots[1]).Data, ToShortcutString(Settings.Input.Timeline_PlaceNoteKa->Slots[1]).Data);
 					});
 					row([] { Gui::Text("Add long note"); }, []
 					{
-						assert(Settings.Input.Timeline_PlaceNoteBalloon->Count == 2 && Settings.Input.Timeline_PlaceNoteDrumroll->Count == 2);
 						Gui::Text("%s / %s / %s / %s",
 							ToShortcutString(Settings.Input.Timeline_PlaceNoteBalloon->Slots[0]).Data, ToShortcutString(Settings.Input.Timeline_PlaceNoteDrumroll->Slots[0]).Data,
 							ToShortcutString(Settings.Input.Timeline_PlaceNoteDrumroll->Slots[1]).Data, ToShortcutString(Settings.Input.Timeline_PlaceNoteBalloon->Slots[1]).Data);
@@ -474,7 +472,7 @@ namespace PeepoDrumKit
 					"(... for now at least)\n"
 					"\n"
 					"With that said, none of this should be a problem when creating new charts from inside the program itself\n"
-					"as the goal is for the user to not have to interact with the \".tja\" in text form *at all* :FeelsOkayMan:"
+					"as the goal is for the user to not have to interact with the \".tja\" in text form *at all* " UTF8_FeelsOkayMan
 					, FmtStrViewArgs(DEBUG_EXPORTED_PEEPODRUMKIT_FILE_SUFFIX));
 				Gui::PopStyleColor();
 				Gui::PopFont();
