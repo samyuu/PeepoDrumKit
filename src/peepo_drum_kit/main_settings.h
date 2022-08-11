@@ -148,6 +148,10 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_192 = {};
 			WithDefault<MultiInputBinding> Timeline_IncreasePlaybackSpeed = { KeyBinding(ImGuiKey_C) };
 			WithDefault<MultiInputBinding> Timeline_DecreasePlaybackSpeed = { KeyBinding(ImGuiKey_Z) };
+			WithDefault<MultiInputBinding> Timeline_SetPlaybackSpeed_100 = {};
+			WithDefault<MultiInputBinding> Timeline_SetPlaybackSpeed_75 = {};
+			WithDefault<MultiInputBinding> Timeline_SetPlaybackSpeed_50 = {};
+			WithDefault<MultiInputBinding> Timeline_SetPlaybackSpeed_25 = {};
 			WithDefault<MultiInputBinding> Timeline_TogglePlayback = { KeyBinding(ImGuiKey_Space) };
 			WithDefault<MultiInputBinding> Timeline_ToggleMetronome = { KeyBinding(ImGuiKey_F1) };
 

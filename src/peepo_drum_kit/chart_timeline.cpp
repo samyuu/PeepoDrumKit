@@ -1526,16 +1526,24 @@ namespace PeepoDrumKit
 			}
 
 			// NOTE: Playback speed controls
-			if (const auto& io = Gui::GetIO(); HasKeyboardFocus() && !io.KeyCtrl)
+			if (HasKeyboardFocus())
 			{
-				const auto speeds = io.KeyAlt ? PresetPlaybackSpeedsFine_View : io.KeyShift ? PresetPlaybackSpeedsRough_View : PresetPlaybackSpeeds_View;
+				if (const auto& io = Gui::GetIO(); !io.KeyCtrl)
+				{
+					const auto speeds = io.KeyAlt ? PresetPlaybackSpeedsFine_View : io.KeyShift ? PresetPlaybackSpeedsRough_View : PresetPlaybackSpeeds_View;
 
-				i32 closetPlaybackSpeedIndex = 0;
-				const f32 currentPlaybackSpeed = context.GetPlaybackSpeed();
-				for (const f32& it : speeds) if (it >= currentPlaybackSpeed) closetPlaybackSpeedIndex = ArrayItToIndexI32(&it, &speeds.V[0]);
+					i32 closetPlaybackSpeedIndex = 0;
+					const f32 currentPlaybackSpeed = context.GetPlaybackSpeed();
+					for (const f32& it : speeds) if (it >= currentPlaybackSpeed) closetPlaybackSpeedIndex = ArrayItToIndexI32(&it, &speeds.V[0]);
 
-				if (Gui::IsAnyPressed(*Settings.Input.Timeline_IncreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex - 1, 0, speeds.Count - 1)]);
-				if (Gui::IsAnyPressed(*Settings.Input.Timeline_DecreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex + 1, 0, speeds.Count - 1)]);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_IncreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex - 1, 0, speeds.Count - 1)]);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_DecreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex + 1, 0, speeds.Count - 1)]);
+				}
+
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_SetPlaybackSpeed_100, false)) context.SetPlaybackSpeed(FromPercent(100.0f));
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_SetPlaybackSpeed_75, false)) context.SetPlaybackSpeed(FromPercent(75.0f));
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_SetPlaybackSpeed_50, false)) context.SetPlaybackSpeed(FromPercent(50.0f));
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_SetPlaybackSpeed_25, false)) context.SetPlaybackSpeed(FromPercent(25.0f));
 			}
 
 			if (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_TogglePlayback, false, InputModifierBehavior::Relaxed))

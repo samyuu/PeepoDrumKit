@@ -264,7 +264,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 13896, "TODO: Add missing settings entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 14968, "TODO: Add missing settings entries for newly added UserSettingsData fields");
 
 	b8 ChartSettingsWindow::DrawTabMain(ChartContext& context, UserSettingsData& settings)
 	{
@@ -385,7 +385,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsInputData = sizeof(UserSettingsData::InputData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 13668, "TODO: Add missing table entries for newly added UserSettingsData::InputData bindings");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 14740, "TODO: Add missing table entries for newly added UserSettingsData::InputData bindings");
 
 	b8 ChartSettingsWindow::DrawTabInput(ChartContext& context, UserSettingsData::InputData& settings)
 	{
@@ -433,8 +433,12 @@ namespace PeepoDrumKit
 			{ &settings.Timeline_SetGridDivision_1_64, "Timeline: Set Grid Division 1 / 64", },
 			{ &settings.Timeline_SetGridDivision_1_96, "Timeline: Set Grid Division 1 / 96", },
 			{ &settings.Timeline_SetGridDivision_1_192, "Timeline: Set Grid Division 1 / 192", },
-			{ &settings.Timeline_IncreasePlaybackSpeed, "Timeline: Increase PlaybackSpeed", },
-			{ &settings.Timeline_DecreasePlaybackSpeed, "Timeline: Decrease PlaybackSpeed", },
+			{ &settings.Timeline_IncreasePlaybackSpeed, "Timeline: Increase Playback Speed", },
+			{ &settings.Timeline_DecreasePlaybackSpeed, "Timeline: Decrease Playback Speed", },
+			{ &settings.Timeline_SetPlaybackSpeed_100, "Timeline: Set Playback Speed 100%", },
+			{ &settings.Timeline_SetPlaybackSpeed_75, "Timeline: Set Playback Speed 75%", },
+			{ &settings.Timeline_SetPlaybackSpeed_50, "Timeline: Set Playback Speed 50%", },
+			{ &settings.Timeline_SetPlaybackSpeed_25, "Timeline: Set Playback Speed 25%", },
 			{ &settings.Timeline_TogglePlayback, "Timeline: Toggle Playback", },
 			{ &settings.Timeline_ToggleMetronome, "Timeline: Toggle Metronome", },
 			{},

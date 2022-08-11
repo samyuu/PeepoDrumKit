@@ -428,7 +428,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 13896, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 14968, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -517,8 +517,12 @@ namespace PeepoDrumKit
 			X(Input.Timeline_SetGridDivision_1_64, "timeline_set_grid_division_1_64");
 			X(Input.Timeline_SetGridDivision_1_96, "timeline_set_grid_division_1_96");
 			X(Input.Timeline_SetGridDivision_1_192, "timeline_set_grid_division_1_192");
-			X(Input.Timeline_IncreasePlaybackSpeed, "timeline_increase_playback Speed");
-			X(Input.Timeline_DecreasePlaybackSpeed, "timeline_decrease_playback Speed");
+			X(Input.Timeline_IncreasePlaybackSpeed, "timeline_increase_playback_speed");
+			X(Input.Timeline_DecreasePlaybackSpeed, "timeline_decrease_playback_speed");
+			X(Input.Timeline_SetPlaybackSpeed_100, "timeline_set_playback_speed_100");
+			X(Input.Timeline_SetPlaybackSpeed_75, "timeline_set_playback_speed_75");
+			X(Input.Timeline_SetPlaybackSpeed_50, "timeline_set_playback_speed_50");
+			X(Input.Timeline_SetPlaybackSpeed_25, "timeline_set_playback_speed_25");
 			X(Input.Timeline_TogglePlayback, "timeline_toggle_playback");
 			X(Input.Timeline_ToggleMetronome, "timeline_toggle_metronome");
 			X(Input.TempoCalculator_Tap, "tempo_calculator_tap");
