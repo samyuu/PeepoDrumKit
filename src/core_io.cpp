@@ -396,12 +396,12 @@ namespace Shell
 			{
 			default:
 				break;
-		}
+			}
 #endif
 
 			fileDialog->Release();
 			return result;
-	}
+		}
 
 		IFACEMETHODIMP OnButtonClicked(IFileDialogCustomize*, DWORD) { return S_OK; }
 		IFACEMETHODIMP OnCheckButtonToggled(IFileDialogCustomize*, DWORD, BOOL) { return S_OK; }
@@ -424,7 +424,7 @@ namespace Shell
 
 			return E_OUTOFMEMORY;
 		}
-};
+	};
 
 	static constexpr uint32_t RandomFileDialogItemBaseID = 0x666;
 
@@ -501,7 +501,7 @@ namespace Shell
 
 				DWORD existingOptionFlags = 0;
 				hr = fileDialog->GetOptions(&existingOptionFlags);
-				hr = fileDialog->SetOptions(existingOptionFlags | FOS_FORCEFILESYSTEM | (pickType == DialogPickType::Folder ? FOS_PICKFOLDERS : 0));
+				hr = fileDialog->SetOptions(existingOptionFlags | FOS_NOCHANGEDIR | FOS_FORCEFILESYSTEM | (pickType == DialogPickType::Folder ? FOS_PICKFOLDERS : 0));
 
 				if (!dialog.InTitle.empty())
 					hr = fileDialog->SetTitle(UTF8::WideArg(dialog.InTitle).c_str());
