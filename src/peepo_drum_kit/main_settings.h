@@ -132,8 +132,8 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Timeline_StartEndRangeSelection = { KeyBinding(ImGuiKey_Tab) };
 			WithDefault<MultiInputBinding> Timeline_StepCursorLeft = { KeyBinding(ImGuiKey_LeftArrow) };
 			WithDefault<MultiInputBinding> Timeline_StepCursorRight = { KeyBinding(ImGuiKey_RightArrow) };
-			WithDefault<MultiInputBinding> Timeline_JumpToTimelineStart = { KeyBinding(ImGuiKey_PageUp) };
-			WithDefault<MultiInputBinding> Timeline_JumpToTimelineEnd = { KeyBinding(ImGuiKey_PageDown) };
+			WithDefault<MultiInputBinding> Timeline_JumpToTimelineStart = { KeyBinding(ImGuiKey_Home) };
+			WithDefault<MultiInputBinding> Timeline_JumpToTimelineEnd = { KeyBinding(ImGuiKey_End) };
 			WithDefault<MultiInputBinding> Timeline_IncreaseGridDivision = { KeyBinding(ImGuiKey_UpArrow) };
 			WithDefault<MultiInputBinding> Timeline_DecreaseGridDivision = { KeyBinding(ImGuiKey_DownArrow) };
 			WithDefault<MultiInputBinding> Timeline_SetGridDivision_1_4 = {};
