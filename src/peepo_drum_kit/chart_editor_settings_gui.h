@@ -7,24 +7,30 @@
 
 namespace PeepoDrumKit
 {
+	struct ChartSettingsWindowTempActiveWidgetGroup
+	{
+		void* ValuePtr;
+		Rect GroupRect;
+	};
+
+	struct ChartSettingsWindowTempInputState
+	{
+		WithDefault<MultiInputBinding>* SelectedMultiBinding = nullptr;
+		WithDefault<MultiInputBinding> SelectedMultiBindingOnOpenCopy = {};
+		f32 MultiBindingPopupFadeCurrent = 0.0f;
+		f32 MultiBindingPopupFadeTarget = 0.0f;
+		InputBinding* TempAssignedBinding {};
+		CPUStopwatch AssignedBindingStopwatch = {};
+	};
+
 	struct ChartSettingsWindow
 	{
 		b8 DrawGui(ChartContext& context, UserSettingsData& settings);
 
 	private:
-		b8 DrawTabMain(ChartContext& context, UserSettingsData& settings);
-		b8 DrawTabInput(ChartContext& context, UserSettingsData::InputData& settings);
-		b8 DrawTabAudio(ChartContext& context, UserSettingsData::AudioData& settings);
-
-		ImGuiTextFilter mainSettingsFilter = {};
-		struct LastActiveGroup { void* ValuePtr; Rect GroupRect; } lastActiveGroup = {};
-
-		ImGuiTextFilter inputSettingsFilter = {};
-		WithDefault<MultiInputBinding>* selectedMultiBinding = nullptr;
-		WithDefault<MultiInputBinding> selectedMultiBindingOnOpenCopy = {};
-		f32 multiBindingPopupFadeCurrent = 0.0f;
-		f32 multiBindingPopupFadeTarget = 0.0f;
-		InputBinding* tempAssignedBinding {};
-		CPUStopwatch assignedBindingStopwatch = {};
+		ImGuiTextFilter settingsFilterMain = {};
+		ImGuiTextFilter settingsFilterInput = {};
+		ChartSettingsWindowTempActiveWidgetGroup lastActiveGroup = {};
+		ChartSettingsWindowTempInputState inputState = {};
 	};
 }
