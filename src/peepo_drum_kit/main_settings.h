@@ -106,7 +106,7 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Dialog_SelectPreviousTab = { KeyBinding(ImGuiKey_Tab, ImGuiModFlags_Ctrl | ImGuiModFlags_Shift) };
 
 			WithDefault<MultiInputBinding> Editor_ToggleFullscreen = { KeyBinding(ImGuiKey_F11), KeyBinding(ImGuiKey_Enter, ImGuiModFlags_Alt), KeyBinding(ImGuiKey_KeypadEnter, ImGuiModFlags_Alt) };
-			WithDefault<MultiInputBinding> Editor_ToggleVSync = { KeyBinding(ImGuiKey_F10) };
+			WithDefault<MultiInputBinding> Editor_ToggleVSync = {};
 			WithDefault<MultiInputBinding> Editor_IncreaseGuiScale = { KeyBinding(ImGuiKey_Equal, ImGuiModFlags_Ctrl), KeyBinding(ImGuiKey_KeypadAdd, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_DecreaseGuiScale = { KeyBinding(ImGuiKey_Minus, ImGuiModFlags_Ctrl), KeyBinding(ImGuiKey_KeypadSubtract, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_ResetGuiScale = { KeyBinding(ImGuiKey_0, ImGuiModFlags_Ctrl) };

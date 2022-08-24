@@ -1555,6 +1555,7 @@ namespace PeepoDrumKit
 				}
 				else
 				{
+					Audio::Engine.EnsureStreamRunning();
 					const Beat cursorBeat = context.GetCursorBeat();
 					PlayNoteSoundAndHitAnimationsAtBeat(context, cursorBeat);
 
