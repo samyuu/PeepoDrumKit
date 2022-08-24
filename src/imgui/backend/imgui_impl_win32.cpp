@@ -14,6 +14,7 @@
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
 #include "imgui/3rdparty/imgui.h"
+#include "imgui/3rdparty/imgui_internal.h"
 #include "imgui/backend/imgui_impl_win32.h"
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -843,10 +844,11 @@ struct ImGui_ImplWin32_ViewportData
 {
     HWND    Hwnd;
     bool    HwndOwned;
+    bool    IsWindowFocused;
     DWORD   DwStyle;
     DWORD   DwExStyle;
 
-    ImGui_ImplWin32_ViewportData() { Hwnd = NULL; HwndOwned = false;  DwStyle = DwExStyle = 0; }
+    ImGui_ImplWin32_ViewportData() { Hwnd = NULL; HwndOwned = IsWindowFocused = false; DwStyle = DwExStyle = 0; }
     ~ImGui_ImplWin32_ViewportData() { IM_ASSERT(Hwnd == NULL); }
 };
 
@@ -1069,6 +1071,8 @@ static LRESULT CALLBACK ImGui_ImplWin32_WndProcHandler_PlatformWindow(HWND hWnd,
 
     if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle((void*)hWnd))
     {
+		auto userData = static_cast<ImGui_ImplWin32_ViewportData*>(viewport->PlatformUserData);
+
         switch (msg)
         {
         case WM_CLOSE:
@@ -1084,6 +1088,14 @@ static LRESULT CALLBACK ImGui_ImplWin32_WndProcHandler_PlatformWindow(HWND hWnd,
             if (viewport->Flags & ImGuiViewportFlags_NoFocusOnClick)
                 return MA_NOACTIVATE;
             break;
+		case WM_SETFOCUS:
+			if (userData != nullptr)
+				userData->IsWindowFocused = true;
+			break;
+		case WM_KILLFOCUS:
+			if (userData != nullptr)
+				userData->IsWindowFocused = false;
+			break;
         case WM_NCHITTEST:
             // Let mouse pass-through the window. This will allow the backend to call io.AddMouseViewportEvent() correctly. (which is optional).
             // The ImGuiViewportFlags_NoInputs flag is set while dragging a viewport, as want to detect the window behind the one we are dragging.
@@ -1190,6 +1202,20 @@ void ImGui_ImplWin32_EnableAlphaCompositing(void* hwnd)
         bb.dwFlags = DWM_BB_ENABLE;
         ::DwmEnableBlurBehindWindow((HWND)hwnd, &bb);
     }
+}
+
+bool	ImGui_ImplWin32_IsAnyViewportFocused()
+{
+	ImGuiContext* context = ImGui::GetCurrentContext();
+
+	for (int i = 0; i != context->Viewports.Size; i++)
+	{
+		auto userData = static_cast<ImGui_ImplWin32_ViewportData*>(context->Viewports[i]->PlatformUserData);
+		if (userData != nullptr && userData->IsWindowFocused)
+			return true;
+	}
+
+	return false;
 }
 
 //---------------------------------------------------------------------------------------------------------

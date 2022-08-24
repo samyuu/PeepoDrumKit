@@ -50,6 +50,10 @@ namespace ApplicationHost
 		ivec2 WindowPosition;
 		ivec2 WindowSize;
 		b8 IsBorderlessFullscreen;
+		b8 IsAnyWindowFocusedThisFrame;
+		b8 IsAnyWindowFocusedLastFrame;
+		b8 HasAllFocusBeenLostThisFrame;
+		b8 HasAnyFocusBeenGainedThisFrame;
 		// TODO: Implement the notion of "handling" a dropped file event
 		std::vector<std::string> FilePathsDroppedThisFrame;
 		std::string WindowTitle;

@@ -87,6 +87,7 @@ namespace ApplicationHost
 	static WINDOWPLACEMENT			GlobalPreFullscreenWindowPlacement = {};
 	static b8						GlobalIsWindowMinimized = false;
 	static b8						GlobalIsWindowBeingDragged = false;
+	static b8						GlobalIsWindowFocused = false;
 	static UINT_PTR					GlobalWindowRedrawTimerID = {};
 	static HANDLE					GlobalSwapChainWaitableObject = NULL;
 	static struct { const ImWchar *JP, *EN; } GlobalGlyphRanges = {};
@@ -417,6 +418,11 @@ namespace ApplicationHost
 			if (done)
 				break;
 
+			GlobalState.IsAnyWindowFocusedLastFrame = GlobalState.IsAnyWindowFocusedThisFrame;
+			GlobalState.IsAnyWindowFocusedThisFrame = (GlobalIsWindowFocused || ImGui_ImplWin32_IsAnyViewportFocused());
+			GlobalState.HasAnyFocusBeenGainedThisFrame = (GlobalState.IsAnyWindowFocusedThisFrame && !GlobalState.IsAnyWindowFocusedLastFrame);
+			GlobalState.HasAllFocusBeenLostThisFrame = (!GlobalState.IsAnyWindowFocusedThisFrame && GlobalState.IsAnyWindowFocusedLastFrame);
+
 			if (!GlobalState.SetWindowTitleNextFrame.empty())
 			{
 				if (GlobalState.SetWindowTitleNextFrame != GlobalState.WindowTitle)
@@ -611,13 +617,10 @@ namespace ApplicationHost
 			}
 			break;
 
-		case WM_ENTERSIZEMOVE:
-			GlobalIsWindowBeingDragged = true;
-			break;
-
-		case WM_EXITSIZEMOVE:
-			GlobalIsWindowBeingDragged = false;
-			break;
+		case WM_ENTERSIZEMOVE: GlobalIsWindowBeingDragged = true; break;
+		case WM_EXITSIZEMOVE: GlobalIsWindowBeingDragged = false; break;
+		case WM_SETFOCUS: GlobalIsWindowFocused = true; break;
+		case WM_KILLFOCUS: GlobalIsWindowFocused = false; break;
 
 		case WM_MOVE:
 			GlobalState.WindowPosition = ivec2(static_cast<i16>(LOWORD(lParam)), static_cast<i16>(HIWORD(lParam)));
