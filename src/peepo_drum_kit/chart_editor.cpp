@@ -49,6 +49,8 @@ namespace PeepoDrumKit
 		}
 	}
 
+	static b8 GlobalLastSetRequestExclusiveDeviceAccessAudioSetting = {};
+
 	ChartEditor::ChartEditor()
 	{
 		context.SongVoice = Audio::Engine.AddVoice(Audio::SourceHandle::Invalid, "ChartEditor SongVoice", false, 1.0f, true);
@@ -59,8 +61,11 @@ namespace PeepoDrumKit
 
 		showHelpWindow = true;
 
+		GlobalLastSetRequestExclusiveDeviceAccessAudioSetting = *Settings.Audio.RequestExclusiveDeviceAccess;
+		Audio::Engine.SetBackend(*Settings.Audio.RequestExclusiveDeviceAccess ? Audio::Backend::WASAPI_Exclusive : Audio::Backend::WASAPI_Shared);
 		Audio::Engine.SetMasterVolume(0.75f);
-		Audio::Engine.EnsureStreamRunning();
+		if (*Settings.Audio.OpenDeviceOnStartup)
+			Audio::Engine.OpenStartStream();
 	}
 
 	ChartEditor::~ChartEditor()
@@ -384,6 +389,28 @@ namespace PeepoDrumKit
 		}
 
 		UpdateApplicationWindowTitle(context);
+
+		// NOTE: Check for external changes made via the settings window
+		if (GlobalLastSetRequestExclusiveDeviceAccessAudioSetting != *Settings.Audio.RequestExclusiveDeviceAccess)
+		{
+			Audio::Engine.SetBackend(*Settings.Audio.RequestExclusiveDeviceAccess ? Audio::Backend::WASAPI_Exclusive : Audio::Backend::WASAPI_Shared);
+			GlobalLastSetRequestExclusiveDeviceAccessAudioSetting = *Settings.Audio.RequestExclusiveDeviceAccess;
+		}
+
+		// NOTE: Window focus audio engine response
+		{
+			if (ApplicationHost::GlobalState.HasAllFocusBeenLostThisFrame)
+			{
+				wasAudioEngineRunningIdleOnFocusLost = (Audio::Engine.GetIsStreamOpenRunning() && Audio::Engine.GetAllVoicesAreIdle());
+				if (wasAudioEngineRunningIdleOnFocusLost && *Settings.Audio.CloseDeviceOnIdleFocusLoss)
+					Audio::Engine.StopCloseStream();
+			}
+			if (ApplicationHost::GlobalState.HasAnyFocusBeenGainedThisFrame)
+			{
+				if (wasAudioEngineRunningIdleOnFocusLost && *Settings.Audio.CloseDeviceOnIdleFocusLoss)
+					Audio::Engine.OpenStartStream();
+			}
+		}
 
 		// NOTE: Apply volume
 		{

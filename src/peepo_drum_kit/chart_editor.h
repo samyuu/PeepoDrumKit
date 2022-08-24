@@ -78,9 +78,10 @@ namespace PeepoDrumKit
 		std::future<AsyncLoadSongResult> loadSongFuture {};
 		CPUStopwatch loadSongStopwatch = {};
 
+		b8 wasAudioEngineRunningIdleOnFocusLost = false;
 		b8 tryToCloseApplicationOnNextFrame = false;
+		
 		b8 showHelpWindow = false;
-
 		b8 showSettingsWindow = true;
 		b8 focusSettingsWindowNextFrame = false;
 

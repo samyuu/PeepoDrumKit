@@ -136,7 +136,7 @@ namespace PeepoDrumKit
 		template <> constexpr DataType TemplateToDataType<f32>() { return DataType::F32; }
 		template <> constexpr DataType TemplateToDataType<std::string>() { return DataType::StdString; }
 
-		enum class WidgetType : u32 { Default, I32_BarDivisionComboBox, F32_ExponentialSpeed, };
+		enum class WidgetType : u32 { Default, B8_ExclusiveAudioComboBox, I32_BarDivisionComboBox, F32_ExponentialSpeed, };
 
 		struct SettingsEntry
 		{
@@ -197,7 +197,14 @@ namespace PeepoDrumKit
 
 				if (inOutB8 != nullptr)
 				{
-					changesWereMade |= GuiBoolCombo("##", inOutB8);
+					if (in.Widget == WidgetType::B8_ExclusiveAudioComboBox)
+					{
+						changesWereMade |= GuiBoolCombo("##", inOutB8, { "True (Exclusive Mode)", "False" });
+					}
+					else
+					{
+						changesWereMade |= GuiBoolCombo("##", inOutB8);
+					}
 				}
 				else if (inOutI32 != nullptr)
 				{
@@ -763,9 +770,22 @@ namespace PeepoDrumKit
 				{
 					SettingsGui::SettingsEntry settingsEntriesAudio[] =
 					{
-						// TODO: Descriptions, implementation, etc.
-						SettingsGui::SettingsEntry(settings.Audio.OpenDeviceOnStartup, "Open Device on Startup", "Blah blah blah."),
-						SettingsGui::SettingsEntry(settings.Audio.CloseDeviceOnIdleFocusLoss, "Close Device on Idle Focus Loss", "Blah blah blah.")
+						SettingsGui::SettingsEntry(
+							settings.Audio.OpenDeviceOnStartup,
+							"Open Device on Startup",
+							"Create an audio session as soon as the program starts."),
+
+						SettingsGui::SettingsEntry(
+							settings.Audio.CloseDeviceOnIdleFocusLoss,
+							"Close Device on Idle Focus Loss",
+							"Automatically close the audio session when loosing window focus and while not playing any sounds."),
+
+						SettingsGui::SettingsEntry(
+							settings.Audio.RequestExclusiveDeviceAccess,
+							"Low-Latency Exclusive Mode",
+							"Reduce audio latency by requesting exlusive device access.\n"
+							"This will prevent all *other* applications from playing back or recording audio.",
+							SettingsGui::WidgetType::B8_ExclusiveAudioComboBox),
 					};
 
 					changesWereMade |= SettingsGui::DrawEntriesListTableGui(settingsEntriesAudio, ArrayCount(settingsEntriesAudio), nullptr, lastActiveGroup);
