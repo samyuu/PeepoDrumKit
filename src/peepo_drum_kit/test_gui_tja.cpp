@@ -139,334 +139,296 @@ namespace PeepoDrumKit
 		}
 #endif
 
-		DrawGuiFileContentWindow(isOpen);
-		DrawGuiTokensWindow(isOpen);
-		DrawGuiParsedWindow(isOpen);
-	}
-
-	void TJATestWindows::DrawGuiFileContentWindow(b8* isOpen)
-	{
-		if (Gui::Begin("TJA Test - File Content", isOpen, ImGuiWindowFlags_None))
+		if (Gui::Begin("TJA Import Test", isOpen, ImGuiWindowFlags_None))
 		{
-			if (Gui::BeginTabBar("FileContentTabBar", ImGuiTabBarFlags_None))
+			const ImVec2 originalFramePadding = Gui::GetStyle().FramePadding;
+			Gui::PushStyleVar(ImGuiStyleVar_FramePadding, GuiScale(vec2(10.0f, 5.0f)));
+			Gui::PushStyleColor(ImGuiCol_TabHovered, Gui::GetStyleColorVec4(ImGuiCol_HeaderActive));
+			Gui::PushStyleColor(ImGuiCol_TabActive, Gui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
+			if (Gui::BeginTabBar("TJATestTabs", ImGuiTabBarFlags_None))
 			{
-				if (Gui::BeginTabItem("Live Edit (Code)"))
+				auto beginEndTabItem = [&](cstr label, auto func)
 				{
-					// HACK: Make it almost impossible to tripple click select whole line because it's just annoying
-					const f32 originalMouseDoubleClickTime = Gui::GetIO().MouseDoubleClickTime;
-					Gui::GetIO().MouseDoubleClickTime = 0.1f;
-					defer { Gui::GetIO().MouseDoubleClickTime = originalMouseDoubleClickTime; };
-
-					Gui::BeginChild("Inner", Gui::GetContentRegionAvail(), true);
-					TJATextEditor.Render("TJATextEditor", Gui::GetContentRegionAvail(), false);
-					if (TJATextEditor.IsTextChanged())
-					{
-						LoadedTJAFile.FileContentUTF8 = TJATextEditor.GetText();
-						LoadedTJAFile.DebugReloadFromModifiedFileContentUTF8();
-						SetImGuiColorTextEditErrorMarkersFromErrorList(TJATextEditor, LoadedTJAFile.ParseErrors);
-						WasTJAEditedThisFrame = true;
-					}
-					Gui::EndChild();
-					Gui::EndTabItem();
-				}
-
-				if (Gui::BeginTabItem("Live Edit"))
-				{
-					Gui::BeginChild("Inner", Gui::GetContentRegionAvail(), true);
-					{
-						Gui::PushStyleColor(ImGuiCol_FrameBg, Gui::GetStyleColorVec4(ImGuiCol_WindowBg));
-
-						if (Gui::InputTextMultiline("##FileContent", &LoadedTJAFile.FileContentUTF8, Gui::GetContentRegionAvail(), ImGuiInputTextFlags_None))
-						{
-							LoadedTJAFile.DebugReloadFromModifiedFileContentUTF8();
-							TJATextEditor.SetText(LoadedTJAFile.FileContentUTF8);
-							SetImGuiColorTextEditErrorMarkersFromErrorList(TJATextEditor, LoadedTJAFile.ParseErrors);
-							WasTJAEditedThisFrame = true;
-						}
-
-						Gui::PopStyleColor();
-					}
-					Gui::EndChild();
-					Gui::EndTabItem();
-				}
-
-				if (Gui::BeginTabItem("Line View"))
-				{
-					Gui::BeginChild("Inner", Gui::GetContentRegionAvail(), true);
-					{
-						ASCII::ForEachLineInMultiLineString(LoadedTJAFile.FileContentUTF8, true, [this, lineIndex = 0](const std::string_view line) mutable
-						{
-							Gui::TextDisabled("[Line: %03d, 0x%04X:]:", ++lineIndex, static_cast<i32>(line.data() - LoadedTJAFile.FileContentUTF8.data()));
-							Gui::SameLine();
-							Gui::TextUnformatted(line);
-						});
-					}
-					Gui::EndChild();
-					Gui::EndTabItem();
-				}
-
+					if (Gui::BeginTabItem(label)) { Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding); func(); Gui::PopStyleVar(); Gui::EndTabItem(); }
+				};
+				beginEndTabItem("Parsed", [this] { DrawGuiParsedTabContent(); });
+				beginEndTabItem("Tokens", [this] { DrawGuiTokensTabContent(); });
+				beginEndTabItem("File Content", [this] { DrawGuiFileContentTabContent(); });
 				Gui::EndTabBar();
 			}
+			Gui::PopStyleColor(2);
+			Gui::PopStyleVar();
 		}
 		Gui::End();
 	}
 
-	void TJATestWindows::DrawGuiTokensWindow(b8* isOpen)
+	void TJATestWindows::DrawGuiFileContentTabContent()
 	{
-		if (Gui::Begin("TJA Test - Tokens", isOpen, ImGuiWindowFlags_None))
+		// HACK: Make it almost impossible to tripple click select whole line because it's just annoying
+		const f32 originalMouseDoubleClickTime = Gui::GetIO().MouseDoubleClickTime;
+		Gui::GetIO().MouseDoubleClickTime = 0.1f;
+		defer { Gui::GetIO().MouseDoubleClickTime = originalMouseDoubleClickTime; };
+
+		Gui::BeginChild("Inner", Gui::GetContentRegionAvail(), true);
+		TJATextEditor.Render("TJATextEditor", Gui::GetContentRegionAvail(), false);
+		if (TJATextEditor.IsTextChanged())
 		{
-			if (Gui::BeginTable("TokenTable", 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
+			LoadedTJAFile.FileContentUTF8 = TJATextEditor.GetText();
+			LoadedTJAFile.DebugReloadFromModifiedFileContentUTF8();
+			SetImGuiColorTextEditErrorMarkersFromErrorList(TJATextEditor, LoadedTJAFile.ParseErrors);
+			WasTJAEditedThisFrame = true;
+		}
+		Gui::EndChild();
+	}
+
+	void TJATestWindows::DrawGuiTokensTabContent()
+	{
+		if (Gui::BeginTable("TokenTable", 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
+		{
+			Gui::TableSetupScrollFreeze(0, 1);
+			Gui::TableSetupColumn("Type", ImGuiTableColumnFlags_None);
+			Gui::TableSetupColumn("Key", ImGuiTableColumnFlags_None);
+			Gui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
+			Gui::TableHeadersRow();
+
+			for (const TJA::Token& token : LoadedTJAFile.Tokens)
+			{
+				Gui::TableNextRow();
+
+				Gui::TableNextColumn();
+				Gui::TextUnformatted(TJATokenTypeNames[EnumToIndex(token.Type)]);
+
+				Gui::TableNextColumn();
+				{
+					if (token.Key >= TJA::Key::KeyColonValue_First && token.Key <= TJA::Key::KeyColonValue_Last)
+						Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Identifier)]);
+					else if (token.Key >= TJA::Key::HashCommand_First && token.Key <= TJA::Key::HashCommand_Last)
+						Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Preprocessor)]);
+					else
+						Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Default)]);
+
+					Gui::TextUnformatted(token.KeyString);
+
+					Gui::PopStyleColor();
+				}
+
+				Gui::TableNextColumn();
+				{
+					if (token.Type == TJA::TokenType::Comment)
+						Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Comment)]);
+					else if (token.Type == TJA::TokenType::ChartData)
+						Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Number)]);
+					else
+						Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Default)]);
+
+					Gui::TextUnformatted(token.ValueString);
+
+					Gui::PopStyleColor();
+				}
+			}
+			Gui::EndTable();
+		}
+	}
+
+	void TJATestWindows::DrawGuiParsedTabContent()
+	{
+		Gui::BeginChild("MainMetadataChild", { 0.0f, Gui::GetContentRegionAvail().y * 0.35f }, false);
+		{
+			if (Gui::BeginTable("MainMetadataTable", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
 			{
 				Gui::TableSetupScrollFreeze(0, 1);
-				Gui::TableSetupColumn("Type", ImGuiTableColumnFlags_None);
-				Gui::TableSetupColumn("Key", ImGuiTableColumnFlags_None);
+				Gui::TableSetupColumn("Main Metadata", ImGuiTableColumnFlags_None);
 				Gui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
 				Gui::TableHeadersRow();
-
-				for (const TJA::Token& token : LoadedTJAFile.Tokens)
 				{
-					Gui::TableNextRow();
-
-					Gui::TableNextColumn();
-					Gui::TextUnformatted(TJATokenTypeNames[EnumToIndex(token.Type)]);
-
-					Gui::TableNextColumn();
+					auto row = [](std::string_view propertyKey, std::string_view propertyValue)
 					{
-						if (token.Key >= TJA::Key::KeyColonValue_First && token.Key <= TJA::Key::KeyColonValue_Last)
-							Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Identifier)]);
-						else if (token.Key >= TJA::Key::HashCommand_First && token.Key <= TJA::Key::HashCommand_Last)
-							Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Preprocessor)]);
+						Gui::TableNextRow();
+						Gui::TableNextColumn();
+						Gui::TextUnformatted(propertyKey);
+						Gui::TableNextColumn();
+						if (!propertyValue.empty())
+							Gui::TextUnformatted(propertyValue);
 						else
-							Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Default)]);
+							Gui::TextDisabled("n/a");
+					};
 
-						Gui::TextUnformatted(token.KeyString);
+					const TJA::ParsedMainMetadata& metadata = LoadedTJAFile.Parsed.Metadata;
 
-						Gui::PopStyleColor();
-					}
-
-					Gui::TableNextColumn();
-					{
-						if (token.Type == TJA::TokenType::Comment)
-							Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Comment)]);
-						else if (token.Type == TJA::TokenType::ChartData)
-							Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Number)]);
-						else
-							Gui::PushStyleColor(ImGuiCol_Text, NiceImImGuiColorTextEditColorPalette[EnumToIndex(::TextEditor::PaletteIndex::Default)]);
-
-						Gui::TextUnformatted(token.ValueString);
-
-						Gui::PopStyleColor();
-					}
+					char b[256];
+					row("Title", metadata.TITLE);
+					if (!metadata.TITLE_JA.empty()) row("Title (JA)", metadata.TITLE_JA);
+					if (!metadata.TITLE_EN.empty()) row("Title (EN)", metadata.TITLE_EN);
+					if (!metadata.TITLE_CN.empty()) row("Title (CN)", metadata.TITLE_CN);
+					if (!metadata.TITLE_TW.empty()) row("Title (TW)", metadata.TITLE_TW);
+					if (!metadata.TITLE_KO.empty()) row("Title (KO)", metadata.TITLE_KO);
+					row("Subtitle", metadata.SUBTITLE);
+					if (!metadata.SUBTITLE_JA.empty()) row("Subtitle (JA)", metadata.SUBTITLE_JA);
+					if (!metadata.SUBTITLE_EN.empty()) row("Subtitle (EN)", metadata.SUBTITLE_EN);
+					if (!metadata.SUBTITLE_CN.empty()) row("Subtitle (CN)", metadata.SUBTITLE_CN);
+					if (!metadata.SUBTITLE_TW.empty()) row("Subtitle (TW)", metadata.SUBTITLE_TW);
+					if (!metadata.SUBTITLE_KO.empty()) row("Subtitle (KO)", metadata.SUBTITLE_KO);
+					row("Song File Name", metadata.WAVE);
+					if (!metadata.BGIMAGE.empty()) row("Background Image File Name", metadata.BGIMAGE);
+					if (!metadata.BGMOVIE.empty()) row("Background Movie File Name", metadata.BGMOVIE);
+					if (!metadata.LYRICS.empty()) row("Lyrics File Name", metadata.LYRICS);
+					row("Chart Creator", metadata.MAKER);
+					row("Initial Tempo", std::string_view(b, sprintf_s(b, "%g BPM", metadata.BPM.BPM)));
+					row("Initial Scroll Speed", std::string_view(b, sprintf_s(b, "%gx", metadata.HEADSCROLL)));
+					row("Song Offset", std::string_view(b, sprintf_s(b, "%g sec", metadata.OFFSET.Seconds)));
+					row("Movie Offset", std::string_view(b, sprintf_s(b, "%g sec", metadata.MOVIEOFFSET.Seconds)));
+					row("Demo Start Time", std::string_view(b, sprintf_s(b, "%g sec", metadata.DEMOSTART.Seconds)));
+					row("Song Volume", std::string_view(b, sprintf_s(b, "%g %%", ToPercent(metadata.SONGVOL))));
+					row("Sound Effect Volume", std::string_view(b, sprintf_s(b, "%g %%", ToPercent(metadata.SEVOL))));
+					row("Score Mode", TJAScoreModeNames[EnumToIndex(metadata.SCOREMODE)]);
+					row("Side", TJASongSelectSideNames[EnumToIndex(metadata.SIDE)]);
+					row("Life", (metadata.LIFE == 0) ? "" : std::string_view(b, sprintf_s(b, "%d", metadata.LIFE)));
+					row("Genre", metadata.GENRE);
+					row("Game", TJAGameTypeNames[EnumToIndex(metadata.GAME)]);
+					if (!metadata.TAIKOWEBSKIN.empty()) row("Taiko Web Skin", metadata.TAIKOWEBSKIN);
 				}
 				Gui::EndTable();
 			}
 		}
-		Gui::End();
-	}
+		Gui::EndChild();
 
-	void TJATestWindows::DrawGuiParsedWindow(b8* isOpen)
-	{
-		if (Gui::Begin("TJA Test - Parsed", isOpen, ImGuiWindowFlags_None))
+		if (Gui::BeginTabBar("CourseTabBar", ImGuiTabBarFlags_None))
 		{
-			Gui::BeginChild("MainMetadataChild", { 0.0f, Gui::GetContentRegionAvail().y * 0.35f }, false);
+			for (size_t courseIndex = 0; courseIndex < LoadedTJAFile.Parsed.Courses.size(); courseIndex++)
 			{
-				if (Gui::BeginTable("MainMetadataTable", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
+				const TJA::ParsedCourse& course = LoadedTJAFile.Parsed.Courses[courseIndex];
+
+				char tabNameBuffer[64];
+				sprintf_s(tabNameBuffer, "%s x%d (%s)###Course[%zu]",
+					TJADifficultyTypeNames[EnumToIndex(course.Metadata.COURSE)],
+					course.Metadata.LEVEL,
+					TJAStyleModeNames[EnumToIndex(course.Metadata.STYLE)],
+					courseIndex);
+
+				Gui::PushID(static_cast<ImGuiID>(courseIndex));
+				if (Gui::BeginTabItem(tabNameBuffer))
 				{
-					Gui::TableSetupScrollFreeze(0, 1);
-					Gui::TableSetupColumn("Main Metadata", ImGuiTableColumnFlags_None);
-					Gui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
-					Gui::TableHeadersRow();
+					Gui::BeginChild("LeftChild", { Gui::GetContentRegionAvail().x * 0.5f, 0.0f }, false);
+					if (Gui::BeginTable("CourseMetadataTable", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
 					{
-						auto row = [](std::string_view propertyKey, std::string_view propertyValue)
+						Gui::TableSetupScrollFreeze(0, 1);
+						Gui::TableSetupColumn("Course Metadata", ImGuiTableColumnFlags_None);
+						Gui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
+						Gui::TableHeadersRow();
 						{
-							Gui::TableNextRow();
-							Gui::TableNextColumn();
-							Gui::TextUnformatted(propertyKey);
-							Gui::TableNextColumn();
-							if (!propertyValue.empty())
-								Gui::TextUnformatted(propertyValue);
-							else
-								Gui::TextDisabled("n/a");
-						};
-
-						const TJA::ParsedMainMetadata& metadata = LoadedTJAFile.Parsed.Metadata;
-
-						char b[256];
-						row("Title", metadata.TITLE);
-						if (!metadata.TITLE_JA.empty()) row("Title (JA)", metadata.TITLE_JA);
-						if (!metadata.TITLE_EN.empty()) row("Title (EN)", metadata.TITLE_EN);
-						if (!metadata.TITLE_CN.empty()) row("Title (CN)", metadata.TITLE_CN);
-						if (!metadata.TITLE_TW.empty()) row("Title (TW)", metadata.TITLE_TW);
-						if (!metadata.TITLE_KO.empty()) row("Title (KO)", metadata.TITLE_KO);
-						row("Subtitle", metadata.SUBTITLE);
-						if (!metadata.SUBTITLE_JA.empty()) row("Subtitle (JA)", metadata.SUBTITLE_JA);
-						if (!metadata.SUBTITLE_EN.empty()) row("Subtitle (EN)", metadata.SUBTITLE_EN);
-						if (!metadata.SUBTITLE_CN.empty()) row("Subtitle (CN)", metadata.SUBTITLE_CN);
-						if (!metadata.SUBTITLE_TW.empty()) row("Subtitle (TW)", metadata.SUBTITLE_TW);
-						if (!metadata.SUBTITLE_KO.empty()) row("Subtitle (KO)", metadata.SUBTITLE_KO);
-						row("Song File Name", metadata.WAVE);
-						if (!metadata.BGIMAGE.empty()) row("Background Image File Name", metadata.BGIMAGE);
-						if (!metadata.BGMOVIE.empty()) row("Background Movie File Name", metadata.BGMOVIE);
-						if (!metadata.LYRICS.empty()) row("Lyrics File Name", metadata.LYRICS);
-						row("Chart Creator", metadata.MAKER);
-						row("Initial Tempo", std::string_view(b, sprintf_s(b, "%g BPM", metadata.BPM.BPM)));
-						row("Initial Scroll Speed", std::string_view(b, sprintf_s(b, "%gx", metadata.HEADSCROLL)));
-						row("Song Offset", std::string_view(b, sprintf_s(b, "%g sec", metadata.OFFSET.Seconds)));
-						row("Movie Offset", std::string_view(b, sprintf_s(b, "%g sec", metadata.MOVIEOFFSET.Seconds)));
-						row("Demo Start Time", std::string_view(b, sprintf_s(b, "%g sec", metadata.DEMOSTART.Seconds)));
-						row("Song Volume", std::string_view(b, sprintf_s(b, "%g %%", ToPercent(metadata.SONGVOL))));
-						row("Sound Effect Volume", std::string_view(b, sprintf_s(b, "%g %%", ToPercent(metadata.SEVOL))));
-						row("Score Mode", TJAScoreModeNames[EnumToIndex(metadata.SCOREMODE)]);
-						row("Side", TJASongSelectSideNames[EnumToIndex(metadata.SIDE)]);
-						row("Life", (metadata.LIFE == 0) ? "" : std::string_view(b, sprintf_s(b, "%d", metadata.LIFE)));
-						row("Genre", metadata.GENRE);
-						row("Game", TJAGameTypeNames[EnumToIndex(metadata.GAME)]);
-						if (!metadata.TAIKOWEBSKIN.empty()) row("Taiko Web Skin", metadata.TAIKOWEBSKIN);
-					}
-					Gui::EndTable();
-				}
-			}
-			Gui::EndChild();
-
-			if (Gui::BeginTabBar("CourseTabBar", ImGuiTabBarFlags_None))
-			{
-				for (size_t courseIndex = 0; courseIndex < LoadedTJAFile.Parsed.Courses.size(); courseIndex++)
-				{
-					const TJA::ParsedCourse& course = LoadedTJAFile.Parsed.Courses[courseIndex];
-
-					char tabNameBuffer[64];
-					sprintf_s(tabNameBuffer, "%s x%d (%s)###Course[%zu]",
-						TJADifficultyTypeNames[EnumToIndex(course.Metadata.COURSE)],
-						course.Metadata.LEVEL,
-						TJAStyleModeNames[EnumToIndex(course.Metadata.STYLE)],
-						courseIndex);
-
-					Gui::PushID(static_cast<ImGuiID>(courseIndex));
-					if (Gui::BeginTabItem(tabNameBuffer))
-					{
-						Gui::BeginChild("LeftChild", { Gui::GetContentRegionAvail().x * 0.5f, 0.0f }, false);
-						if (Gui::BeginTable("CourseMetadataTable", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
-						{
-							Gui::TableSetupScrollFreeze(0, 1);
-							Gui::TableSetupColumn("Course Metadata", ImGuiTableColumnFlags_None);
-							Gui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
-							Gui::TableHeadersRow();
+							auto row = [](std::string_view propertyKey, std::string_view propertyValue)
 							{
-								auto row = [](std::string_view propertyKey, std::string_view propertyValue)
-								{
-									Gui::TableNextRow();
-									Gui::TableNextColumn();
-									Gui::TextUnformatted(propertyKey);
-									Gui::TableNextColumn();
-									if (!propertyValue.empty())
-										Gui::TextUnformatted(propertyValue);
-									else
-										Gui::TextDisabled("n/a");
-								};
-
-								const TJA::ParsedCourseMetadata& metadata = course.Metadata;
-
-								char b[256];
-								row("Difficulty Type", TJADifficultyTypeNames[EnumToIndex(metadata.COURSE)]);
-								row("Difficulty Level", std::string_view(b, sprintf_s(b, "%d", metadata.LEVEL)));
-								row("Score Init", std::string_view(b, sprintf_s(b, "%d", metadata.SCOREINIT)));
-								row("Score Diff", std::string_view(b, sprintf_s(b, "%d", metadata.SCOREDIFF)));
-								row("Style", TJAStyleModeNames[EnumToIndex(metadata.STYLE)]);
-
-								auto rowBalloonPops = [](std::string_view propertyKey, const std::vector<i32>& i32s)
-								{
-									Gui::TableNextRow();
-									Gui::TableNextColumn();
-									Gui::TextUnformatted(propertyKey);
-									Gui::TableNextColumn();
-									if (i32s.empty())
-										Gui::TextDisabled("n/a");
-									else
-										for (const i32& v : i32s) { Gui::Text("%d", v); if (&v != &i32s.back()) { Gui::SameLine(0.0f, 0.0f); Gui::Text(", ", v); Gui::SameLine(0.0f, 0.0f); } }
-								};
-
-								rowBalloonPops("Balloon Pop Counts", metadata.BALLOON);
-								rowBalloonPops("Balloon Pop Counts (Normal)", metadata.BALLOON_Normal);
-								rowBalloonPops("Balloon Pop Counts (Expert)", metadata.BALLOON_Expert);
-								rowBalloonPops("Balloon Pop Counts (Master)", metadata.BALLOON_Master);
-							}
-							Gui::EndTable();
-						}
-						Gui::EndChild();
-						Gui::SameLine();
-						Gui::BeginChild("RightChild", Gui::GetContentRegionAvail(), false);
-						if (Gui::BeginTable("ChartCommandsTable", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
-						{
-							Gui::TableSetupScrollFreeze(0, 1);
-							Gui::TableSetupColumn("Chart Command", ImGuiTableColumnFlags_None);
-							Gui::TableSetupColumn("Param", ImGuiTableColumnFlags_None);
-							Gui::TableHeadersRow();
-
-							for (const TJA::ParsedChartCommand& command : course.ChartCommands)
-							{
-								char paramBuffer[512] = {};
-								const TJA::ParsedChartCommand::ParamData& param = command.Param;
-
-								switch (command.Type)
-								{
-								case TJA::ParsedChartCommandType::Unknown: {} break;
-								case TJA::ParsedChartCommandType::MeasureNotes:
-								{
-									static std::string strBuffer; strBuffer.clear();
-									for (const TJA::NoteType& note : param.MeasureNotes.Notes)
-									{
-										strBuffer += TJANoteTypeNames[EnumToIndex(note)];
-										if (&note != &param.MeasureNotes.Notes.back())
-											strBuffer += " ";
-									}
-									if (!strBuffer.empty())
-										memcpy(paramBuffer, strBuffer.data(), strBuffer.size() + sizeof('\0'));
-								} break;
-								case TJA::ParsedChartCommandType::MeasureEnd: {} break;
-								case TJA::ParsedChartCommandType::ChangeTimeSignature: { sprintf_s(paramBuffer, "%d / %d", param.ChangeTimeSignature.Value.Numerator, param.ChangeTimeSignature.Value.Denominator); } break;
-								case TJA::ParsedChartCommandType::ChangeTempo: { sprintf_s(paramBuffer, "%g BPM", param.ChangeTempo.Value.BPM); } break;
-								case TJA::ParsedChartCommandType::ChangeDelay: { sprintf_s(paramBuffer, "%g sec", param.ChangeDelay.Value.Seconds); } break;
-								case TJA::ParsedChartCommandType::ChangeScrollSpeed: { sprintf_s(paramBuffer, "%gx", param.ChangeScrollSpeed.Value); } break;
-								case TJA::ParsedChartCommandType::ChangeBarLine: { sprintf_s(paramBuffer, "%s", param.ChangeBarLine.Visible ? "On" : "Off"); } break;
-								case TJA::ParsedChartCommandType::GoGoStart: {} break;
-								case TJA::ParsedChartCommandType::GoGoEnd: {} break;
-								case TJA::ParsedChartCommandType::BranchStart: {} break;
-								case TJA::ParsedChartCommandType::BranchNormal: {} break;
-								case TJA::ParsedChartCommandType::BranchExpert: {} break;
-								case TJA::ParsedChartCommandType::BranchMaster: {} break;
-								case TJA::ParsedChartCommandType::BranchEnd: {} break;
-								case TJA::ParsedChartCommandType::BranchLevelHold: {} break;
-								case TJA::ParsedChartCommandType::ResetAccuracyValues: {} break;
-								case TJA::ParsedChartCommandType::SetLyricLine: {} break;
-								case TJA::ParsedChartCommandType::BMScroll: {} break;
-								case TJA::ParsedChartCommandType::HBScroll: {} break;
-								case TJA::ParsedChartCommandType::SENoteChange: {} break;
-								case TJA::ParsedChartCommandType::SetNextSong: {} break;
-								case TJA::ParsedChartCommandType::ChangeDirection: {} break;
-								case TJA::ParsedChartCommandType::SetSudden: {} break;
-								case TJA::ParsedChartCommandType::SetScrollTransition: {} break;
-								default: {} break;
-								}
-
 								Gui::TableNextRow();
-
 								Gui::TableNextColumn();
-								Gui::TextUnformatted(TJAParsedChartCommandTypeNames[EnumToIndex(command.Type)]);
-
+								Gui::TextUnformatted(propertyKey);
 								Gui::TableNextColumn();
-								Gui::TextUnformatted(paramBuffer);
+								if (!propertyValue.empty())
+									Gui::TextUnformatted(propertyValue);
+								else
+									Gui::TextDisabled("n/a");
+							};
+
+							const TJA::ParsedCourseMetadata& metadata = course.Metadata;
+
+							char b[256];
+							row("Difficulty Type", TJADifficultyTypeNames[EnumToIndex(metadata.COURSE)]);
+							row("Difficulty Level", std::string_view(b, sprintf_s(b, "%d", metadata.LEVEL)));
+							row("Score Init", std::string_view(b, sprintf_s(b, "%d", metadata.SCOREINIT)));
+							row("Score Diff", std::string_view(b, sprintf_s(b, "%d", metadata.SCOREDIFF)));
+							row("Style", TJAStyleModeNames[EnumToIndex(metadata.STYLE)]);
+
+							auto rowBalloonPops = [](std::string_view propertyKey, const std::vector<i32>& i32s)
+							{
+								Gui::TableNextRow();
+								Gui::TableNextColumn();
+								Gui::TextUnformatted(propertyKey);
+								Gui::TableNextColumn();
+								if (i32s.empty())
+									Gui::TextDisabled("n/a");
+								else
+									for (const i32& v : i32s) { Gui::Text("%d", v); if (&v != &i32s.back()) { Gui::SameLine(0.0f, 0.0f); Gui::Text(", ", v); Gui::SameLine(0.0f, 0.0f); } }
+							};
+
+							rowBalloonPops("Balloon Pop Counts", metadata.BALLOON);
+							rowBalloonPops("Balloon Pop Counts (Normal)", metadata.BALLOON_Normal);
+							rowBalloonPops("Balloon Pop Counts (Expert)", metadata.BALLOON_Expert);
+							rowBalloonPops("Balloon Pop Counts (Master)", metadata.BALLOON_Master);
+						}
+						Gui::EndTable();
+					}
+					Gui::EndChild();
+					Gui::SameLine();
+					Gui::BeginChild("RightChild", Gui::GetContentRegionAvail(), false);
+					if (Gui::BeginTable("ChartCommandsTable", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
+					{
+						Gui::TableSetupScrollFreeze(0, 1);
+						Gui::TableSetupColumn("Chart Command", ImGuiTableColumnFlags_None);
+						Gui::TableSetupColumn("Param", ImGuiTableColumnFlags_None);
+						Gui::TableHeadersRow();
+
+						for (const TJA::ParsedChartCommand& command : course.ChartCommands)
+						{
+							char paramBuffer[512] = {};
+							const TJA::ParsedChartCommand::ParamData& param = command.Param;
+
+							switch (command.Type)
+							{
+							case TJA::ParsedChartCommandType::Unknown: {} break;
+							case TJA::ParsedChartCommandType::MeasureNotes:
+							{
+								static std::string strBuffer; strBuffer.clear();
+								for (const TJA::NoteType& note : param.MeasureNotes.Notes)
+								{
+									strBuffer += TJANoteTypeNames[EnumToIndex(note)];
+									if (&note != &param.MeasureNotes.Notes.back())
+										strBuffer += " ";
+								}
+								if (!strBuffer.empty())
+									memcpy(paramBuffer, strBuffer.data(), strBuffer.size() + sizeof('\0'));
+							} break;
+							case TJA::ParsedChartCommandType::MeasureEnd: {} break;
+							case TJA::ParsedChartCommandType::ChangeTimeSignature: { sprintf_s(paramBuffer, "%d / %d", param.ChangeTimeSignature.Value.Numerator, param.ChangeTimeSignature.Value.Denominator); } break;
+							case TJA::ParsedChartCommandType::ChangeTempo: { sprintf_s(paramBuffer, "%g BPM", param.ChangeTempo.Value.BPM); } break;
+							case TJA::ParsedChartCommandType::ChangeDelay: { sprintf_s(paramBuffer, "%g sec", param.ChangeDelay.Value.Seconds); } break;
+							case TJA::ParsedChartCommandType::ChangeScrollSpeed: { sprintf_s(paramBuffer, "%gx", param.ChangeScrollSpeed.Value); } break;
+							case TJA::ParsedChartCommandType::ChangeBarLine: { sprintf_s(paramBuffer, "%s", param.ChangeBarLine.Visible ? "On" : "Off"); } break;
+							case TJA::ParsedChartCommandType::GoGoStart: {} break;
+							case TJA::ParsedChartCommandType::GoGoEnd: {} break;
+							case TJA::ParsedChartCommandType::BranchStart: {} break;
+							case TJA::ParsedChartCommandType::BranchNormal: {} break;
+							case TJA::ParsedChartCommandType::BranchExpert: {} break;
+							case TJA::ParsedChartCommandType::BranchMaster: {} break;
+							case TJA::ParsedChartCommandType::BranchEnd: {} break;
+							case TJA::ParsedChartCommandType::BranchLevelHold: {} break;
+							case TJA::ParsedChartCommandType::ResetAccuracyValues: {} break;
+							case TJA::ParsedChartCommandType::SetLyricLine: {} break;
+							case TJA::ParsedChartCommandType::BMScroll: {} break;
+							case TJA::ParsedChartCommandType::HBScroll: {} break;
+							case TJA::ParsedChartCommandType::SENoteChange: {} break;
+							case TJA::ParsedChartCommandType::SetNextSong: {} break;
+							case TJA::ParsedChartCommandType::ChangeDirection: {} break;
+							case TJA::ParsedChartCommandType::SetSudden: {} break;
+							case TJA::ParsedChartCommandType::SetScrollTransition: {} break;
+							default: {} break;
 							}
 
-							Gui::EndTable();
+							Gui::TableNextRow();
+
+							Gui::TableNextColumn();
+							Gui::TextUnformatted(TJAParsedChartCommandTypeNames[EnumToIndex(command.Type)]);
+
+							Gui::TableNextColumn();
+							Gui::TextUnformatted(paramBuffer);
 						}
-						Gui::EndChild();
-						Gui::EndTabItem();
+
+						Gui::EndTable();
 					}
-					Gui::PopID();
+					Gui::EndChild();
+					Gui::EndTabItem();
 				}
-				Gui::EndTabBar();
+				Gui::PopID();
 			}
+			Gui::EndTabBar();
 		}
-		Gui::End();
 	}
 }

@@ -7,13 +7,23 @@ namespace PeepoDrumKit
 	{
 		if (Gui::Begin("Audio Test", isOpen, ImGuiWindowFlags_None))
 		{
-			if (Gui::BeginTabBar("AudioTestWindowTabBar", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_NoTooltip))
+			const ImVec2 originalFramePadding = Gui::GetStyle().FramePadding;
+			Gui::PushStyleVar(ImGuiStyleVar_FramePadding, GuiScale(vec2(10.0f, 5.0f)));
+			Gui::PushStyleColor(ImGuiCol_TabHovered, Gui::GetStyleColorVec4(ImGuiCol_HeaderActive));
+			Gui::PushStyleColor(ImGuiCol_TabActive, Gui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
+			if (Gui::BeginTabBar("AudioTestWindowTabBar", ImGuiTabBarFlags_None))
 			{
-				if (Gui::BeginTabItem("Audio Engine")) { AudioEngineTabContent(); Gui::EndTabItem(); }
-				if (Gui::BeginTabItem("Active Voices")) { ActiveVoicesTabContent(); Gui::EndTabItem(); }
-				if (Gui::BeginTabItem("Loaded Sources")) { LoadedSourcesTabContent(); Gui::EndTabItem(); }
+				auto beginEndTabItem = [&](cstr label, auto func)
+				{
+					if (Gui::BeginTabItem(label)) { Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding); func(); Gui::PopStyleVar(); Gui::EndTabItem(); }
+				};
+				beginEndTabItem("Audio Engine", [this] { AudioEngineTabContent(); });
+				beginEndTabItem("Active Voices", [this] { ActiveVoicesTabContent(); });
+				beginEndTabItem("Loaded Sources", [this] { LoadedSourcesTabContent(); });
 				Gui::EndTabBar();
 			}
+			Gui::PopStyleColor(2);
+			Gui::PopStyleVar();
 		}
 		Gui::End();
 	}

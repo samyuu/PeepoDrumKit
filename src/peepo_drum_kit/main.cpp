@@ -44,7 +44,11 @@ namespace PeepoDrumKit
 			Gui::Begin("FullscreenDockSpaceWindow", nullptr, fullscreenWindowFlags);
 			Gui::PopStyleVar(3);
 			{
-				Gui::DockSpace(Gui::GetID("FullscreenDockSpace"), { 0.0f, 0.0f }, ImGuiDockNodeFlags_PassthruCentralNode);
+				const ImGuiID dockSpaceID = Gui::GetID("FullscreenDockSpace");
+				if (Gui::DockBuilderGetNode(dockSpaceID) == nullptr)
+					ChartEditor.RestoreDefaultDockSpaceLayout(dockSpaceID);
+
+				Gui::DockSpace(dockSpaceID, { 0.0f, 0.0f }, ImGuiDockNodeFlags_PassthruCentralNode);
 				ChartEditor.DrawFullscreenMenuBar();
 			}
 			Gui::End();
@@ -113,6 +117,7 @@ namespace PeepoDrumKit
 
 		while (true)
 		{
+			// TODO: Also set IsDirty in case of (older) version mismatch (?)
 			const auto response = ReadParseSettingsIniFile<UserSettingsData>(SettingsIniFileName, Settings_Mutable);
 			if (response == LoadSettingsResponse::FileNotFound) { Settings_Mutable.IsDirty = true; break; }
 			if (response == LoadSettingsResponse::AllGood) { break; }

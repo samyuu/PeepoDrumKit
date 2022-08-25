@@ -79,8 +79,8 @@ namespace PeepoDrumKit
 		void DrawGui(b8* isOpen);
 
 	private:
-		void DrawGuiFileContentWindow(b8* isOpen);
-		void DrawGuiTokensWindow(b8* isOpen);
-		void DrawGuiParsedWindow(b8* isOpen);
+		void DrawGuiFileContentTabContent();
+		void DrawGuiTokensTabContent();
+		void DrawGuiParsedTabContent();
 	};
 }

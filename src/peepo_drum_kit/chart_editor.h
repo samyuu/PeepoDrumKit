@@ -46,6 +46,7 @@ namespace PeepoDrumKit
 	public:
 		void DrawFullscreenMenuBar();
 		void DrawGui();
+		void RestoreDefaultDockSpaceLayout(ImGuiID dockSpaceID);
 		ApplicationHost::CloseResponse OnWindowCloseRequest();
 
 	public:
@@ -80,7 +81,7 @@ namespace PeepoDrumKit
 
 		b8 wasAudioEngineRunningIdleOnFocusLost = false;
 		b8 tryToCloseApplicationOnNextFrame = false;
-		
+
 		b8 showHelpWindow = false;
 		b8 showSettingsWindow = true;
 		b8 focusSettingsWindowNextFrame = false;

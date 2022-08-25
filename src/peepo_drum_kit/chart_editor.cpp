@@ -196,6 +196,19 @@ namespace PeepoDrumKit
 				if (Gui::MenuItem("Reset Style Colors", " "))
 					GuiStyleColorPeepoDrumKit();
 #endif
+
+#if PEEPO_DEBUG
+				if (Gui::BeginMenu("Embedded Icons Test"))
+				{
+					for (size_t i = 0; i < GetEmbeddedIconsList().Count; i++)
+					{
+						if (auto icon = GetEmbeddedIconsList().V[i]; Gui::MenuItem(icon.Name, icon.UTF8))
+							Gui::SetClipboardText(icon.UTF8);
+					}
+					Gui::EndMenu();
+				}
+#endif
+
 				Gui::EndMenu();
 			}
 
@@ -561,7 +574,7 @@ namespace PeepoDrumKit
 
 			if (test.ShowImGuiStyleEditor)
 			{
-				if (Gui::Begin("Style Editor", &test.ShowImGuiStyleEditor))
+				if (Gui::Begin("ImGui Style Editor", &test.ShowImGuiStyleEditor))
 				{
 					Gui::UpdateSmoothScrollWindow();
 					Gui::ShowStyleEditor();
@@ -723,6 +736,48 @@ namespace PeepoDrumKit
 		}
 
 		context.Undo.FlushAndExecuteEndOfFrameCommands();
+	}
+
+	void ChartEditor::RestoreDefaultDockSpaceLayout(ImGuiID dockSpaceID)
+	{
+		const ImGuiViewport* mainViewport = Gui::GetMainViewport();
+
+		// HACK: This kinda sucks. Referencing windows by hardcoded ID strings and also not allow for incremental window additions without rebuilding the entire node tree...
+		//		 This function can also only be called right before the fullscreen "Gui::DockSpace()" (meaining outside the chart editor update functions)
+		Gui::DockBuilderRemoveNode(dockSpaceID);
+		Gui::DockBuilderAddNode(dockSpaceID, ImGuiDockNodeFlags_DockSpace);
+		Gui::DockBuilderSetNodeSize(dockSpaceID, mainViewport->WorkSize);
+		{
+			struct DockIDs { ImGuiID Top, Bot, TopLeft, TopCenter, TopRight, TopRightBot; } dock = {};
+			Gui::DockBuilderSplitNode(dockSpaceID, ImGuiDir_Down, 0.55f, &dock.Bot, &dock.Top);
+			Gui::DockBuilderSplitNode(dock.Top, ImGuiDir_Left, 0.3f, &dock.TopLeft, &dock.TopRight);
+			Gui::DockBuilderSplitNode(dock.TopRight, ImGuiDir_Right, 0.4f, &dock.TopRight, &dock.TopCenter);
+			Gui::DockBuilderSplitNode(dock.TopRight, ImGuiDir_Down, 0.4f, &dock.TopRightBot, &dock.TopRight);
+
+			// HACK: Shitty dock tab order. Windows which are "Gui::Begin()"-added last (ones with higher focus priority) are always put on the right
+			//		 and it doesn't look like there's an easy way to change this...
+			Gui::DockBuilderDockWindow("Chart Timeline - Debug", dock.Bot);
+			Gui::DockBuilderDockWindow("Chart Timeline", dock.Bot);
+
+			Gui::DockBuilderDockWindow("Tempo Calculator", dock.TopLeft);
+			Gui::DockBuilderDockWindow("Chart Lyrics", dock.TopLeft);
+			Gui::DockBuilderDockWindow("Chart Tempo", dock.TopLeft);
+			Gui::DockBuilderDockWindow("TJA Export Debug View", dock.TopLeft);
+
+			Gui::DockBuilderDockWindow("Settings", dock.TopCenter);
+			Gui::DockBuilderDockWindow("Usage Guide", dock.TopCenter);
+			Gui::DockBuilderDockWindow("Game Preview", dock.TopCenter);
+			Gui::DockBuilderDockWindow("Audio Test", dock.TopCenter);
+			Gui::DockBuilderDockWindow("TJA Import Test", dock.TopCenter);
+			Gui::DockBuilderDockWindow("Dear ImGui Demo", dock.TopCenter);
+			Gui::DockBuilderDockWindow("ImGui Style Editor", dock.TopCenter);
+
+			Gui::DockBuilderDockWindow("Undo History", dock.TopRight);
+			Gui::DockBuilderDockWindow("Chart Properties", dock.TopRight);
+
+			Gui::DockBuilderDockWindow("Chart Inspector", dock.TopRightBot);
+		}
+		Gui::DockBuilderFinish(dockSpaceID);
 	}
 
 	ApplicationHost::CloseResponse ChartEditor::OnWindowCloseRequest()
