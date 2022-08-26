@@ -459,21 +459,20 @@ namespace PeepoDrumKit
 
 				Gui::PushStyleColor(ImGuiCol_Text, colors.WhiteBright);
 				Gui::TextWrapped(
-					"Despite what it might look like, Peepo Drum Kit is not really a \"TJA Editor\" in the traditional sense.\n"
-					"It's a Taiko chart editor that transparently converts *to* and *from* the TJA format\n"
-					"however its internal data representation of a chart is drastically different and optimized for easy data transformations.\n"
+					"Peepo Drum Kit is not really a TJA editor in the same sense that a text editor is one.\n"
+					"It's a Taiko chart editor that transparently converts to and from the TJA format,"
+					" however its internal data representation of a chart differs significantly.\n"
 					"\n"
-					"As such, potential data-loss is the convertion process *to some extend* is to be expected.\n"
+					"As such, potential data-loss is the convertion process (to some extend) is to be expected.\n"
 					"This may either take the form of general formatting differences (removing comments, white space, etc.),\n"
 					"issues with (yet) unimplemented features (such as branches and other commands)\n"
 					"or general \"rounding errors\" due to notes and other commands being quantized onto a fixed 1/192nd grid (as is a common rhythm game convention).\n"
 					"\n"
-					"To prevent the user from accidentally overwriting existing TJAs, edited TJAs will therefore always be saved with a \"%.*s\" suffix.\n"
-					"(... for now at least)\n"
+					"To prevent the user from accidentally overwriting existing TJAs, that have not originally been created via this program (as marked by a \"PeepoDrumKit\" comment),\n"
+					"edited TJAs will therefore have a \".bak\" backup file created in-place before being overwritten.\n"
 					"\n"
 					"With that said, none of this should be a problem when creating new charts from inside the program itself\n"
-					"as the goal is for the user to not have to interact with the \".tja\" in text form *at all* " UTF8_FeelsOkayMan
-					, FmtStrViewArgs(DEBUG_EXPORTED_PEEPODRUMKIT_FILE_SUFFIX));
+					"as the goal is for the user to not have to interact with the \".tja\" in text form at all " UTF8_PeepoCoffeeBlonket);
 				Gui::PopStyleColor();
 				Gui::PopFont();
 			}

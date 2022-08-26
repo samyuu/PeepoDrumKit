@@ -592,6 +592,7 @@ namespace PeepoDrumKit
 						// HACK: Incredibly inefficient of course but just here for quick testing
 						ChartProject convertedChart {};
 						CreateChartProjectFromTJA(test.TJATestGui.LoadedTJAFile.Parsed, convertedChart);
+						createBackupOfOriginalTJABeforeOverwriteSave = false;
 						context.Chart = std::move(convertedChart);
 						context.ChartFilePath = test.TJATestGui.LoadedTJAFile.FilePath;
 						context.ChartSelectedCourse = context.Chart.Courses.empty() ? context.Chart.Courses.emplace_back(std::make_unique<ChartCourse>()).get() : context.Chart.Courses.front().get();
@@ -813,6 +814,7 @@ namespace PeepoDrumKit
 		if (importChartFuture.valid()) importChartFuture.get();
 		UpdateAsyncLoading();
 
+		createBackupOfOriginalTJABeforeOverwriteSave = false;
 		context.Chart = {};
 		context.ChartFilePath.clear();
 		context.ChartSelectedCourse = context.Chart.Courses.empty() ? context.Chart.Courses.emplace_back(std::make_unique<ChartCourse>()).get() : context.Chart.Courses.front().get();
@@ -840,19 +842,21 @@ namespace PeepoDrumKit
 			std::string tjaText;
 			TJA::ConvertParsedToText(tja, tjaText, TJA::Encoding::UTF8);
 
-			// TODO: Proper saving to file + async (and create .bak backup if not already exists before overwriting existing .tja)
+			// TODO: Proper async file saving by copying in-memory
+			if (createBackupOfOriginalTJABeforeOverwriteSave)
+			{
+				static constexpr b8 overwriteExisting = false;
+				const std::string originalFileBackupPath { std::string(filePath).append(".bak") };
 
-#if 1 // DEBUG:
-			assert(Path::HasExtension(filePath, TJA::Extension));
-			std::string finalOutputPath { Path::GetDirectoryName(filePath) };
-			finalOutputPath.append("/").append(Path::GetFileName(filePath, false)).append(DEBUG_EXPORTED_PEEPODRUMKIT_FILE_SUFFIX).append(TJA::Extension);
-			File::WriteAllBytes(finalOutputPath, tjaText);
-#endif
+				File::Copy(filePath, originalFileBackupPath, overwriteExisting);
+				createBackupOfOriginalTJABeforeOverwriteSave = false;
+			}
+
+			File::WriteAllBytes(filePath, tjaText);
 
 			context.ChartFilePath = filePath;
 			context.Undo.ClearChangesWereMade();
 
-			// BUG: Doesn't work correctly with PEEPODRUMKIT_FILE_SUFFIX (rework file suffix and instead create backup of original file if no PeepoDrumKit comment)
 			PersistentApp.RecentFiles.Add(std::string { filePath });
 		}
 	}
@@ -1042,22 +1046,14 @@ namespace PeepoDrumKit
 			const Time previousChartSongOffset = context.Chart.SongOffset;
 
 			AsyncImportChartResult loadResult = importChartFuture.get();
+
+			// TODO: Maybe also do date version check (?)
+			createBackupOfOriginalTJABeforeOverwriteSave = !loadResult.TJA.Parsed.HasPeepoDrumKitComment;
+
 			context.Chart = std::move(loadResult.Chart);
 			context.ChartFilePath = std::move(loadResult.ChartFilePath);
 			context.ChartSelectedCourse = context.Chart.Courses.empty() ? context.Chart.Courses.emplace_back(std::make_unique<ChartCourse>()).get() : context.Chart.Courses.front().get();
 			StartAsyncLoadingSongAudioFile(Path::TryMakeAbsolute(context.Chart.SongFileName, context.ChartFilePath));
-
-#if 1 // DEBUG:
-			const std::string originalFilePath = context.ChartFilePath;
-			const std::string_view fileNameWithoutExtension = Path::GetFileName(originalFilePath, false);
-			if (ASCII::EndsWithInsensitive(fileNameWithoutExtension, DEBUG_EXPORTED_PEEPODRUMKIT_FILE_SUFFIX))
-			{
-				context.ChartFilePath = Path::GetDirectoryName(originalFilePath);
-				context.ChartFilePath.append("/");
-				context.ChartFilePath.append(ASCII::TrimSuffixInsensitive(fileNameWithoutExtension, DEBUG_EXPORTED_PEEPODRUMKIT_FILE_SUFFIX));
-				context.ChartFilePath.append(Path::GetExtension(originalFilePath));
-			}
-#endif
 
 			// NOTE: Prevent the cursor from changing screen position. Not needed if paused because a stable beat time is used instead
 			if (context.GetIsPlayback())

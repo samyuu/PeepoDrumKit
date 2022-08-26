@@ -390,6 +390,11 @@ namespace TJA
 	{
 		ParsedMainMetadata Metadata;
 		std::vector<ParsedCourse> Courses;
+
+		// NOTE: Only for internal use within PeepoDrumKit. TJAs that have been exported with this special comment marker
+		//		 are assumed to only make use of known and supported features that can be safely converted without having to worry about potential data loss
+		b8 HasPeepoDrumKitComment = false;
+		Date PeepoDrumKitCommentDate = {};
 	};
 
 	std::vector<std::string_view> SplitLines(std::string_view fileContent);

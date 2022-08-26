@@ -7,9 +7,6 @@
 
 namespace PeepoDrumKit
 {
-	// DEBUG: Save and automatically load a separate copy so to never overwrite the original .tja (due to conversion data loss)
-	constexpr std::string_view DEBUG_EXPORTED_PEEPODRUMKIT_FILE_SUFFIX = " (PeepoDrumKit)";
-
 	enum class NoteType : u8
 	{
 		// NOTE: Regular notes
@@ -257,7 +254,7 @@ namespace PeepoDrumKit
 
 	Beat FindCourseMaxUsedBeat(const ChartCourse& course);
 	b8 CreateChartProjectFromTJA(const TJA::ParsedTJA& inTJA, ChartProject& out);
-	b8 ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out);
+	b8 ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out, b8 includePeepoDrumKitComment = true);
 }
 
 namespace PeepoDrumKit

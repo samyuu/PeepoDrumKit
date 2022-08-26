@@ -78,6 +78,7 @@ namespace PeepoDrumKit
 		std::future<AsyncImportChartResult> importChartFuture {};
 		std::future<AsyncLoadSongResult> loadSongFuture {};
 		CPUStopwatch loadSongStopwatch = {};
+		b8 createBackupOfOriginalTJABeforeOverwriteSave = false;
 
 		b8 wasAudioEngineRunningIdleOnFocusLost = false;
 		b8 tryToCloseApplicationOnNextFrame = false;

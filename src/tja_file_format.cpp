@@ -3,6 +3,9 @@
 
 namespace TJA
 {
+	// NOTE: Comment marker stored in the format: "// PeepoDrumKit yyyy/MM/dd"
+	static constexpr std::string_view PeepoDrumKitCommentMarkerPrefix = "PeepoDrumKit";
+
 	static constexpr std::string_view KeyStrings[EnumCount<Key>] =
 	{
 		"",
@@ -395,6 +398,21 @@ namespace TJA
 			case TokenType::Comment:
 			{
 				// ...
+				if (!outTJA.HasPeepoDrumKitComment && ASCII::StartsWith(token.ValueString, PeepoDrumKitCommentMarkerPrefix))
+				{
+					outTJA.HasPeepoDrumKitComment = true;
+					outTJA.PeepoDrumKitCommentDate = Date::Zero();
+
+					std::string_view comment = token.ValueString.substr(PeepoDrumKitCommentMarkerPrefix.size());
+					comment = ASCII::Trim(comment);
+					comment = ASCII::TrimSuffix(ASCII::TrimPrefix(comment, "("), ")");
+					if (!comment.empty())
+					{
+						Date::FormatBuffer dateBuffer {};
+						CopyStringViewIntoFixedBuffer(dateBuffer.Data, comment);
+						outTJA.PeepoDrumKitCommentDate = Date::FromString(dateBuffer.Data, '/');
+					}
+				}
 			} break;
 
 			case TokenType::KeyColonValue:
@@ -759,7 +777,18 @@ namespace TJA
 			}
 		};
 
-		appendLine(out, "// PeepoDrumKit Export");
+		if (inContent.HasPeepoDrumKitComment)
+		{
+			out += "// ";
+			out += PeepoDrumKitCommentMarkerPrefix;
+			if (inContent.PeepoDrumKitCommentDate != Date::Zero())
+			{
+				out += " ";
+				out += inContent.PeepoDrumKitCommentDate.ToString().Data;
+			}
+			out += '\n';
+		}
+
 		appendProperyLine(out, Key::Main_TITLE, inContent.Metadata.TITLE);
 		appendProperyLineIfNotEmpty(out, Key::Main_TITLEJA, inContent.Metadata.TITLE_JA);
 		appendProperyLineIfNotEmpty(out, Key::Main_TITLEEN, inContent.Metadata.TITLE_EN);

@@ -1,4 +1,5 @@
 #include "chart.h"
+#include "core_build_info.h"
 #include <algorithm>
 
 namespace PeepoDrumKit
@@ -162,7 +163,7 @@ namespace PeepoDrumKit
 		return maxBeat;
 	}
 
-	b8 ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out)
+	b8 ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out, b8 includePeepoDrumKitComment)
 	{
 		static constexpr cstr FallbackTJAChartTitle = "Untitled Chart";
 		out.Metadata.TITLE = !in.ChartTitle[Language::Base].empty() ? in.ChartTitle[Language::Base] : FallbackTJAChartTitle;
@@ -188,6 +189,12 @@ namespace PeepoDrumKit
 		out.Metadata.BGIMAGE = in.BackgroundImageFileName;
 		out.Metadata.BGMOVIE = in.BackgroundMovieFileName;
 		out.Metadata.MOVIEOFFSET = in.MovieOffset;
+
+		if (includePeepoDrumKitComment)
+		{
+			out.HasPeepoDrumKitComment = true;
+			out.PeepoDrumKitCommentDate = BuildInfo::CompilationDateParsed;
+		}
 
 		if (!in.Courses.empty())
 		{
