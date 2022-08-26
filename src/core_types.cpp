@@ -1,5 +1,6 @@
 #include "core_types.h"
 #include <stdio.h>
+#include <time.h>
 
 static_assert(BitsPerByte == 8);
 static_assert((sizeof(u8) * BitsPerByte) == 8 && (sizeof(i8) * BitsPerByte) == 8);
@@ -13,7 +14,7 @@ static constexpr Time RoundToMilliseconds(Time value) { return Time::FromSeconds
 
 i32 Time::ToString(char* outBuffer, size_t bufferSize) const
 {
-	assert(bufferSize >= sizeof(FormatBuffer::Data));
+	assert(outBuffer != nullptr && bufferSize >= sizeof(FormatBuffer::Data));
 
 	static constexpr Time maxDisplayableTime = Time::FromSeconds(3599.999999);
 	static constexpr const char invalidFormatString[] = "--:--.---";
@@ -60,6 +61,55 @@ Time Time::FromString(cstr inBuffer)
 
 	const f64 outSeconds = (static_cast<f64>(min) * 60.0) + static_cast<f64>(sec) + (static_cast<f64>(ms) * 0.001);
 	return Time::FromSeconds(isNegative ? -outSeconds : outSeconds);
+}
+
+Date Date::GetToday()
+{
+	const time_t inTimeNow = ::time(nullptr); tm outDateNow;
+	const errno_t timeToDateError = ::localtime_s(&outDateNow, &inTimeNow);
+	if (timeToDateError != 0)
+		return Date::Zero();
+
+	Date result = {};
+	result.Year = static_cast<i16>(outDateNow.tm_year + 1900);
+	result.Month = static_cast<i8>(outDateNow.tm_mon + 1);
+	result.Day = static_cast<i8>(outDateNow.tm_mday);
+	return result;
+}
+
+Date TestDateToday = Date::GetToday();
+
+i32 Date::ToString(char* outBuffer, size_t bufferSize, char separator) const
+{
+	assert(outBuffer != nullptr && bufferSize >= sizeof(FormatBuffer::Data));
+	const u32 yyyy = Clamp<u32>(Year, 0, 9999);
+	const u32 mm = Clamp<u32>(Month, 0, 12);
+	const u32 dd = Clamp<u32>(Day, 0, 31);
+	return sprintf_s(outBuffer, bufferSize, "%04u%c%02u%c%02u", yyyy, separator, mm, separator, dd);
+}
+
+Date::FormatBuffer Date::ToString(char separator) const
+{
+	FormatBuffer buffer;
+	ToString(buffer.Data, ArrayCount(buffer.Data), separator);
+	return buffer;
+}
+
+Date Date::FromString(cstr inBuffer, char separator)
+{
+	assert(separator == '/' || separator == '-' || separator == '_');
+	char formatString[] = "%04u_%02u_%02u";
+	formatString[4] = separator;
+	formatString[9] = separator;
+
+	u32 yyyy = 0, mm = 0, dd = 0;
+	sscanf_s(inBuffer, formatString, &yyyy, &mm, &dd);
+
+	Date result = {};
+	result.Year = static_cast<i16>(Clamp<u32>(yyyy, 0, 9999));
+	result.Month = static_cast<i8>(Clamp<u32>(mm, 0, 12));
+	result.Day = static_cast<i8>(Clamp<u32>(dd, 0, 31));
+	return result;
 }
 
 #include <Windows.h>

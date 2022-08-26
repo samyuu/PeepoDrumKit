@@ -442,6 +442,32 @@ struct Time
 	static Time FromString(cstr inBuffer);
 };
 
+struct Date
+{
+	// NOTE: This struct is only intended for quick string formatting and version checks so the storage format matches that of how a human would write it
+	i16 Year; // NOTE: [0000-9999]
+	i8 Month; // NOTE: [01-12]
+	i8 Day;   // NOTE: [01-31]
+
+	static constexpr Date Zero() { return Date {}; }
+	constexpr b8 operator==(const Date& o) const { return (Year == o.Year) && (Month == o.Month) && (Day == o.Day); }
+	constexpr b8 operator!=(const Date& o) const { return !(*this == o); }
+	constexpr b8 operator<=(const Date& o) const { return (*this < o) || (*this == o); }
+	constexpr b8 operator>=(const Date& o) const { return (*this > o) || (*this == o); }
+	constexpr b8 operator<(const Date& o) const { return (Year < o.Year || Year == o.Year && (Month < o.Month || Month == o.Month && (Day < o.Day))); }
+	constexpr b8 operator>(const Date& o) const { return !(*this < o) && (*this != o); }
+
+	static Date GetToday();
+
+	// NOTE: Enough to store "yyyy/MM/dd"
+	struct FormatBuffer { char Data[12]; };
+	i32 ToString(char* outBuffer, size_t bufferSize, char separator) const;
+	FormatBuffer ToString(char separator = '/') const;
+	static Date FromString(cstr inBuffer, char separator = '/');
+};
+
+static_assert(sizeof(Date) == sizeof(u32));
+
 struct CPUTime
 {
 	i64 Ticks;
