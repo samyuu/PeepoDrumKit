@@ -105,7 +105,7 @@ namespace ApplicationHost
 #if HAS_EMBEDDED_ICONS
 	static void ImGuiAddEmeddedIconsToFontAtlas()
 	{
-		static constexpr i32 iconBorder = 2;
+		static constexpr i32 iconBorder = 4;
 		struct BitmapIcon { const EmbeddedIcon* Icon; i32 RectIDs[EnumCount<BuiltInFont>]; ivec2 RectSizes[EnumCount<BuiltInFont>]; };
 		BitmapIcon icons[ArrayCount(EmbeddedIcons)];
 		for (size_t i = 0; i < ArrayCount(EmbeddedIcons); i++)
