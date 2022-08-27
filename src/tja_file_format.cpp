@@ -1021,6 +1021,13 @@ namespace TJA
 				tempCommand.Param.SetLyricLine.Value = lyricChange.Lyric;
 			}
 
+			for (const ConvertedDelayChange& delayChange : inMeasure.DelayChanges)
+			{
+				ParsedChartCommand& tempCommand = tempBuffer.emplace_back(TempCommand { delayChange.TimeWithinMeasure }).ParsedCommand;
+				tempCommand.Type = ParsedChartCommandType::ChangeDelay;
+				tempCommand.Param.ChangeDelay.Value = delayChange.Delay;
+			}
+
 			for (const ConvertedNote& note : inMeasure.Notes)
 			{
 				ParsedChartCommand& tempCommand = tempBuffer.emplace_back(TempCommand { note.TimeWithinMeasure }).ParsedCommand;
@@ -1185,8 +1192,6 @@ namespace TJA
 				}
 				else if (command.Type == ParsedChartCommandType::ChangeDelay)
 				{
-					// TODO: Do these set persistent state or only delay the very next {command} (hopefully only notes tho and not tempo changes etc..??)
-					// some of the TJAs reset #DELAY back to 0 after a single bar but according to the taikoweb wiki that shouldn't be necessary (?)
 					currentMeasure->DelayChanges.push_back(ConvertedDelayChange { currentTimeWithinMeasure, command.Param.ChangeDelay.Value });
 				}
 				else if (command.Type == ParsedChartCommandType::ChangeScrollSpeed)

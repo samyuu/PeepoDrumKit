@@ -4,6 +4,9 @@
 
 namespace PeepoDrumKit
 {
+	struct TempTimedDelayCommand { Beat Beat; Time Delay; };
+	static constexpr Beat GetBeat(const TempTimedDelayCommand& v) { return v.Beat; }
+
 	static constexpr NoteType ConvertTJANoteType(TJA::NoteType tjaNoteType)
 	{
 		switch (tjaNoteType)
@@ -82,6 +85,14 @@ namespace PeepoDrumKit
 
 			i32 currentBalloonIndex = 0;
 
+			BeatSortedList<TempTimedDelayCommand> tempSortedDelayCommands;
+			BeatSortedForwardIterator<TempTimedDelayCommand> tempDelayCommandsIt;
+			for (const TJA::ConvertedMeasure& inMeasure : inCourse.Measures)
+			{
+				for (const TJA::ConvertedDelayChange& inDelayChange : inMeasure.DelayChanges)
+					tempSortedDelayCommands.InsertOrUpdate(TempTimedDelayCommand { inMeasure.StartTime + inDelayChange.TimeWithinMeasure, inDelayChange.Delay });
+			}
+
 			for (const TJA::ConvertedMeasure& inMeasure : inCourse.Measures)
 			{
 				for (const TJA::ConvertedNote& inNote : inMeasure.Notes)
@@ -101,6 +112,9 @@ namespace PeepoDrumKit
 					Note& outNote = outCourse.Notes_Normal.Sorted.emplace_back();
 					outNote.BeatTime = (inMeasure.StartTime + inNote.TimeWithinMeasure);
 					outNote.Type = outNoteType;
+
+					const TempTimedDelayCommand* delayCommandForThisNote = tempDelayCommandsIt.Next(tempSortedDelayCommands.Sorted, outNote.BeatTime);
+					outNote.TimeOffset = (delayCommandForThisNote != nullptr) ? delayCommandForThisNote->Delay : Time::Zero();
 
 					if (inNote.Type == TJA::NoteType::Start_Balloon || inNote.Type == TJA::NoteType::Start_BaloonSpecial)
 					{
@@ -260,6 +274,7 @@ namespace PeepoDrumKit
 				}
 			}
 
+			Time lastNoteTimeOffset = Time::Zero();
 			for (const Note& inNote : inCourse.Notes_Normal)
 			{
 				TJA::ConvertedMeasure* outConvertedMeasure = tryFindMeasureForBeat(outConvertedMeasures, inNote.BeatTime);
@@ -271,6 +286,13 @@ namespace PeepoDrumKit
 					TJA::ConvertedMeasure* outConvertedMeasure = tryFindMeasureForBeat(outConvertedMeasures, inNote.BeatTime + inNote.BeatDuration);
 					if (assert(outConvertedMeasure != nullptr); outConvertedMeasure != nullptr)
 						outConvertedMeasure->Notes.push_back(TJA::ConvertedNote { ((inNote.BeatTime + inNote.BeatDuration) - outConvertedMeasure->StartTime), TJA::NoteType::End_BalloonOrDrumroll });
+				}
+
+				const Time thisNoteTimeOffset = ApproxmiatelySame(inNote.TimeOffset.Seconds, 0.0) ? Time::Zero() : inNote.TimeOffset;
+				if (thisNoteTimeOffset != lastNoteTimeOffset)
+				{
+					outConvertedMeasure->DelayChanges.push_back(TJA::ConvertedDelayChange { (inNote.BeatTime - outConvertedMeasure->StartTime), thisNoteTimeOffset });
+					lastNoteTimeOffset = thisNoteTimeOffset;
 				}
 			}
 
@@ -286,7 +308,6 @@ namespace PeepoDrumKit
 				TJA::ConvertedMeasure* outConvertedMeasure = tryFindMeasureForBeat(outConvertedMeasures, barLineChange.BeatTime);
 				if (assert(outConvertedMeasure != nullptr); outConvertedMeasure != nullptr)
 					outConvertedMeasure->BarLineChanges.push_back(TJA::ConvertedBarLineChange { (barLineChange.BeatTime - outConvertedMeasure->StartTime), barLineChange.IsVisible });
-				// assert(outConvertedMeasure->BarLineChanges.size() == 1 && "This shouldn't be a vector at all (?)");
 			}
 
 			for (const LyricChange& inLyric : inCourse.Lyrics)
