@@ -65,12 +65,9 @@ namespace PeepoDrumKit
 		b8 OpenLoadAudioFileDialog(Undo::UndoHistory& undo);
 
 		void CheckOpenSaveConfirmationPopupThenCall(std::function<void()> onSuccess);
+		void InternalUpdateAsyncLoading();
 
 	private:
-		void UpdateAsyncLoading();
-
-	private:
-		// TODO: BRING BACK PepePls! (even makes sense in context because of the regular donchan dancing to the beat)
 		ChartContext context = {};
 		ChartTimeline timeline = {};
 		ChartGamePreview gamePreview = {};
@@ -79,12 +76,10 @@ namespace PeepoDrumKit
 		std::future<AsyncLoadSongResult> loadSongFuture {};
 		CPUStopwatch loadSongStopwatch = {};
 		b8 createBackupOfOriginalTJABeforeOverwriteSave = false;
-
 		b8 wasAudioEngineRunningIdleOnFocusLost = false;
 		b8 tryToCloseApplicationOnNextFrame = false;
 
-		b8 showHelpWindow = false;
-		b8 showSettingsWindow = true;
+		b8 focusHelpWindowNextFrame = false;
 		b8 focusSettingsWindowNextFrame = false;
 
 		ChartHelpWindow helpWindow = {};
@@ -95,6 +90,8 @@ namespace PeepoDrumKit
 		ChartTempoWindow tempoWindow = {};
 		ChartLyricsWindow lyricsWindow = {};
 		ChartSettingsWindow settingsWindow = {};
+		AudioTestWindow audioTestWindow = {};
+		TJATestWindow tjaTestWindow = {};
 
 		struct ZoomPopupData
 		{
@@ -110,17 +107,6 @@ namespace PeepoDrumKit
 			b8 OpenOnNextFrame;
 			std::function<void()> OnSuccessFunction;
 		} saveConfirmationPopup = {};
-
-		struct TestData
-		{
-			b8 ShowAudioTestWindow;
-			b8 ShowTJATestWindows;
-			b8 ShowTJAExportDebugView;
-			b8 ShowImGuiDemoWindow;
-			b8 ShowImGuiStyleEditor;
-			AudioTestWindow AudioTestWindow;
-			TJATestWindows TJATestGui;
-		} test = {};
 
 		struct PerformanceData
 		{

@@ -57,17 +57,9 @@ namespace PeepoDrumKit
 		}
 	};
 
-	struct TJATestWindows
+	struct TJATestWindow
 	{
-#if 0
-		//static constexpr std::string_view TestTJAFilePath = u8"test/Songs/Namco Original/åéâeSASURAI/åéâeSASURAI.tja";
-		//static constexpr std::string_view TestTJAFilePath = u8"test/Songs/Namco Original/ÉRÉiÉÇÉmÅô/ÉRÉiÉÇÉmÅô.tja";
-		static constexpr std::string_view TestTJAFilePath = u8"";
-		std::future<ParsedAndConvertedTJAFile> LoadTJAFuture = std::async(std::launch::async, []() { ParsedAndConvertedTJAFile tja; tja.LoadFromFile(TestTJAFilePath); return tja; });
-#else
 		std::future<ParsedAndConvertedTJAFile> LoadTJAFuture = {};
-#endif
-
 		ParsedAndConvertedTJAFile LoadedTJAFile;
 
 		::TextEditor TJATextEditor = CreateImGuiColorTextEditWithNiceTheme();

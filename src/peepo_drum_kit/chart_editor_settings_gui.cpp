@@ -647,7 +647,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 14968, "TODO: Add missing settings entries for newly added UserSettingsData fields");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15240, "TODO: Add missing settings entries for newly added UserSettingsData fields");
 
 					SettingsGui::SettingsEntry settingsEntriesMain[] =
 					{
@@ -694,7 +694,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsInputData = sizeof(UserSettingsData::InputData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 14740, "TODO: Add missing settings entries for newly added UserSettingsData::InputData bindings");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 15008, "TODO: Add missing settings entries for newly added UserSettingsData::InputData bindings");
 
 					SettingsGui::InputSettingsEntry settingsEntriesInput[] =
 					{
@@ -705,6 +705,7 @@ namespace PeepoDrumKit
 						{ &settings.Input.Editor_ResetGuiScale, "Editor: Reset Zoom", },
 						{ &settings.Input.Editor_Undo, "Editor: Undo", },
 						{ &settings.Input.Editor_Redo, "Editor: Redo", },
+						{ &settings.Input.Editor_OpenHelp, "Editor: Open Help", },
 						{ &settings.Input.Editor_OpenSettings, "Editor: Open Settings", },
 						{ &settings.Input.Editor_ChartNew, "Editor: Chart New", },
 						{ &settings.Input.Editor_ChartOpen, "Editor: Chart Open", },

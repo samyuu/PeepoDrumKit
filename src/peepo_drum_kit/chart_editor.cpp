@@ -59,8 +59,6 @@ namespace PeepoDrumKit
 		context.ChartSelectedCourse = context.Chart.Courses.emplace_back(std::make_unique<ChartCourse>()).get();
 		SetChartDefaultSettingsAndCourses(context.Chart);
 
-		showHelpWindow = true;
-
 		GlobalLastSetRequestExclusiveDeviceAccessAudioSetting = *Settings.Audio.RequestExclusiveDeviceAccess;
 		Audio::Engine.SetBackend(*Settings.Audio.RequestExclusiveDeviceAccess ? Audio::Backend::WASAPI_Exclusive : Audio::Backend::WASAPI_Shared);
 		Audio::Engine.SetMasterVolume(0.75f);
@@ -122,7 +120,7 @@ namespace PeepoDrumKit
 				if (Gui::MenuItem("Undo", ToShortcutString(*Settings.Input.Editor_Undo).Data, nullptr, context.Undo.CanUndo())) { context.Undo.Undo(); }
 				if (Gui::MenuItem("Redo", ToShortcutString(*Settings.Input.Editor_Redo).Data, nullptr, context.Undo.CanRedo())) { context.Undo.Redo(); }
 				Gui::Separator();
-				if (Gui::MenuItem("Settings", ToShortcutString(*Settings.Input.Editor_OpenSettings).Data, &showSettingsWindow)) { focusSettingsWindowNextFrame = showSettingsWindow; }
+				if (Gui::MenuItem("Settings", ToShortcutString(*Settings.Input.Editor_OpenSettings).Data)) { PersistentApp.LastSession.ShowWindow_Settings = focusSettingsWindowNextFrame = true; }
 				Gui::EndMenu();
 			}
 
@@ -185,13 +183,13 @@ namespace PeepoDrumKit
 
 			if (Gui::BeginMenu("Test Menu"))
 			{
-				Gui::MenuItem("Show Audio Test", "(Debug)", &test.ShowAudioTestWindow);
-				Gui::MenuItem("Show TJA Import Test", "(Debug)", &test.ShowTJATestWindows);
-				Gui::MenuItem("Show TJA Export View", "(Debug)", &test.ShowTJAExportDebugView);
+				Gui::MenuItem("Show Audio Test", "(Debug)", &PersistentApp.LastSession.ShowWindow_AudioTest);
+				Gui::MenuItem("Show TJA Import Test", "(Debug)", &PersistentApp.LastSession.ShowWindow_TJAImportTest);
+				Gui::MenuItem("Show TJA Export View", "(Debug)", &PersistentApp.LastSession.ShowWindow_TJAExportTest);
 #if !defined(IMGUI_DISABLE_DEMO_WINDOWS)
 				Gui::Separator();
-				Gui::MenuItem("Show ImGui Demo", " ", &test.ShowImGuiDemoWindow);
-				Gui::MenuItem("Show ImGui Style Editor", " ", &test.ShowImGuiStyleEditor);
+				Gui::MenuItem("Show ImGui Demo", " ", &PersistentApp.LastSession.ShowWindow_ImGuiDemo);
+				Gui::MenuItem("Show ImGui Style Editor", " ", &PersistentApp.LastSession.ShowWindow_ImGuiStyleEditor);
 				Gui::Separator();
 				if (Gui::MenuItem("Reset Style Colors", " "))
 					GuiStyleColorPeepoDrumKit();
@@ -219,9 +217,7 @@ namespace PeepoDrumKit
 				Gui::MenuItem("Build Date:", BuildInfo::CompilationDate(), false, false);
 				Gui::MenuItem("Build Configuration:", BuildInfo::BuildConfiguration(), false, false);
 				Gui::Separator();
-
-				// TODO: Maybe rename to something else
-				Gui::MenuItem("Show Help Window", nullptr, &showHelpWindow);
+				if (Gui::MenuItem("Usage Guide", ToShortcutString(*Settings.Input.Editor_OpenHelp).Data)) { PersistentApp.LastSession.ShowWindow_Help = focusHelpWindowNextFrame = true; }
 				Gui::EndMenu();
 			}
 
@@ -387,7 +383,7 @@ namespace PeepoDrumKit
 
 	void ChartEditor::DrawGui()
 	{
-		UpdateAsyncLoading();
+		InternalUpdateAsyncLoading();
 
 		if (tryToCloseApplicationOnNextFrame)
 		{
@@ -458,8 +454,8 @@ namespace PeepoDrumKit
 				if (Gui::IsAnyPressed(*Settings.Input.Editor_ToggleVSync, false))
 					ApplicationHost::GlobalState.SwapInterval = !ApplicationHost::GlobalState.SwapInterval;
 
-				if (Gui::IsAnyPressed(*Settings.Input.Editor_OpenSettings, true))
-					showSettingsWindow = focusSettingsWindowNextFrame = true;
+				if (Gui::IsAnyPressed(*Settings.Input.Editor_OpenHelp, true)) PersistentApp.LastSession.ShowWindow_Help = focusHelpWindowNextFrame = true;
+				if (Gui::IsAnyPressed(*Settings.Input.Editor_OpenSettings, true)) PersistentApp.LastSession.ShowWindow_Settings = focusSettingsWindowNextFrame = true;
 			}
 
 			if (noActiveID && noOpenPopup)
@@ -486,16 +482,19 @@ namespace PeepoDrumKit
 			}
 		}
 
-		if (showHelpWindow)
+		if (PersistentApp.LastSession.ShowWindow_Help)
 		{
-			if (Gui::Begin("Usage Guide", &showHelpWindow, ImGuiWindowFlags_None))
+			if (Gui::Begin("Usage Guide", &PersistentApp.LastSession.ShowWindow_Help, ImGuiWindowFlags_None))
+			{
 				helpWindow.DrawGui(context);
+			}
+			if (focusHelpWindowNextFrame) { focusHelpWindowNextFrame = false; Gui::SetWindowFocus(); }
 			Gui::End();
 		}
 
-		if (showSettingsWindow)
+		if (PersistentApp.LastSession.ShowWindow_Settings)
 		{
-			if (Gui::Begin("Settings", &showSettingsWindow, ImGuiWindowFlags_None))
+			if (Gui::Begin("Settings", &PersistentApp.LastSession.ShowWindow_Settings, ImGuiWindowFlags_None))
 			{
 				if (settingsWindow.DrawGui(context, Settings_Mutable))
 					Settings_Mutable.IsDirty = true;
@@ -564,17 +563,17 @@ namespace PeepoDrumKit
 
 		// NOTE: Test stuff
 		{
-			if (test.ShowImGuiDemoWindow)
+			if (PersistentApp.LastSession.ShowWindow_ImGuiDemo)
 			{
 				if (auto* window = Gui::FindWindowByName("Dear ImGui Demo"))
 					Gui::UpdateSmoothScrollWindow(window);
 
-				Gui::ShowDemoWindow(&test.ShowImGuiDemoWindow);
+				Gui::ShowDemoWindow(&PersistentApp.LastSession.ShowWindow_ImGuiDemo);
 			}
 
-			if (test.ShowImGuiStyleEditor)
+			if (PersistentApp.LastSession.ShowWindow_ImGuiStyleEditor)
 			{
-				if (Gui::Begin("ImGui Style Editor", &test.ShowImGuiStyleEditor))
+				if (Gui::Begin("ImGui Style Editor", &PersistentApp.LastSession.ShowWindow_ImGuiStyleEditor))
 				{
 					Gui::UpdateSmoothScrollWindow();
 					Gui::ShowStyleEditor();
@@ -582,32 +581,32 @@ namespace PeepoDrumKit
 				Gui::End();
 			}
 
-			if (test.ShowTJATestWindows)
+			if (PersistentApp.LastSession.ShowWindow_TJAImportTest)
 			{
-				test.TJATestGui.DrawGui(&test.ShowTJATestWindows);
-				if (test.TJATestGui.WasTJAEditedThisFrame)
+				tjaTestWindow.DrawGui(&PersistentApp.LastSession.ShowWindow_TJAImportTest);
+				if (tjaTestWindow.WasTJAEditedThisFrame)
 				{
 					CheckOpenSaveConfirmationPopupThenCall([&]
 					{
 						// HACK: Incredibly inefficient of course but just here for quick testing
 						ChartProject convertedChart {};
-						CreateChartProjectFromTJA(test.TJATestGui.LoadedTJAFile.Parsed, convertedChart);
+						CreateChartProjectFromTJA(tjaTestWindow.LoadedTJAFile.Parsed, convertedChart);
 						createBackupOfOriginalTJABeforeOverwriteSave = false;
 						context.Chart = std::move(convertedChart);
-						context.ChartFilePath = test.TJATestGui.LoadedTJAFile.FilePath;
+						context.ChartFilePath = tjaTestWindow.LoadedTJAFile.FilePath;
 						context.ChartSelectedCourse = context.Chart.Courses.empty() ? context.Chart.Courses.emplace_back(std::make_unique<ChartCourse>()).get() : context.Chart.Courses.front().get();
 						context.Undo.ClearAll();
 					});
 				}
 			}
 
-			if (test.ShowAudioTestWindow)
-				test.AudioTestWindow.DrawGui(&test.ShowAudioTestWindow);
+			if (PersistentApp.LastSession.ShowWindow_AudioTest)
+				audioTestWindow.DrawGui(&PersistentApp.LastSession.ShowWindow_AudioTest);
 
 			// DEBUG: LIVE PREVIEW PagMan
-			if (test.ShowTJAExportDebugView)
+			if (PersistentApp.LastSession.ShowWindow_TJAExportTest)
 			{
-				if (Gui::Begin("TJA Export Debug View", &test.ShowTJAExportDebugView))
+				if (Gui::Begin("TJA Export Debug View", &PersistentApp.LastSession.ShowWindow_TJAExportTest))
 				{
 					static struct { b8 Update = true; i32 Changes = -1, Undos = 0, Redos = 0;  std::string Text; ::TextEditor Editor = CreateImGuiColorTextEditWithNiceTheme(); } exportDebugViewData;
 					if (context.Undo.NumberOfChangesMade != exportDebugViewData.Changes) { exportDebugViewData.Update = true; exportDebugViewData.Changes = context.Undo.NumberOfChangesMade; }
@@ -812,7 +811,7 @@ namespace PeepoDrumKit
 		if (loadSongFuture.valid()) loadSongFuture.get();
 		if (!context.SongSourceFilePath.empty()) StartAsyncLoadingSongAudioFile("");
 		if (importChartFuture.valid()) importChartFuture.get();
-		UpdateAsyncLoading();
+		InternalUpdateAsyncLoading();
 
 		createBackupOfOriginalTJABeforeOverwriteSave = false;
 		context.Chart = {};
@@ -1037,7 +1036,7 @@ namespace PeepoDrumKit
 		}
 	}
 
-	void ChartEditor::UpdateAsyncLoading()
+	void ChartEditor::InternalUpdateAsyncLoading()
 	{
 		context.SfxVoicePool.UpdateAsyncLoading();
 

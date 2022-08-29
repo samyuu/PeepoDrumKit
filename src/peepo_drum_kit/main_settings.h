@@ -21,6 +21,21 @@ namespace PeepoDrumKit
 
 	void GuiStyleColorPeepoDrumKit(ImGuiStyle* destination = nullptr);
 
+	enum class BoolOrDefault : u8 { Default = 0, True = 1, False = 2 };
+	struct Optional_B8
+	{
+		BoolOrDefault Value;
+		constexpr void Reset() { Value = BoolOrDefault::Default; }
+		constexpr void SetValue(b8 value) { Value = value ? BoolOrDefault::True : BoolOrDefault::False; }
+		constexpr b8 IsTrue() const { return (Value == BoolOrDefault::True); }
+		constexpr b8 IsFalse() const { return (Value == BoolOrDefault::False); }
+		constexpr b8 HasValue() const { return (Value == BoolOrDefault::Default); }
+		constexpr b8 ValueOrDefault(b8 defaultValue) const { return (Value == BoolOrDefault::Default) ? defaultValue : (Value == BoolOrDefault::True); }
+	};
+
+	static_assert(sizeof(BoolOrDefault) == sizeof(b8));
+	static_assert(sizeof(Optional_B8) == sizeof(b8));
+
 	template <typename T>
 	struct WithDefault
 	{
@@ -50,11 +65,19 @@ namespace PeepoDrumKit
 		struct LastSessionData
 		{
 			f32 GuiScale = 1.0f;
-			i32 WindowSwapInterval = 1;
-			Rect WindowRegion = {};
-			Rect WindowRegionRestore = {};
-			b8 WindowIsFullscreen = false;
-			b8 WindowIsMaximized = false;
+			i32 OSWindow_SwapInterval = 1;
+			Rect OSWindow_Region = {};
+			Rect OSWindow_RegionRestore = {};
+			b8 OSWindow_IsFullscreen = false;
+			b8 OSWindow_IsMaximized = false;
+
+			b8 ShowWindow_Help = true;
+			b8 ShowWindow_Settings = true;
+			b8 ShowWindow_AudioTest = false;
+			b8 ShowWindow_TJAImportTest = false;
+			b8 ShowWindow_TJAExportTest = false;
+			b8 ShowWindow_ImGuiDemo = false;
+			b8 ShowWindow_ImGuiStyleEditor = false;
 		} LastSession = {};
 
 		RecentFilesList RecentFiles;
@@ -69,7 +92,6 @@ namespace PeepoDrumKit
 
 		struct GeneralData
 		{
-			// TODO: ...
 			WithDefault<std::string> DefaultCreatorName = {};
 			WithDefault<i32> DrumrollAutoHitBarDivision = 16;
 			// TODO: Adjust default values (?)
@@ -81,7 +103,6 @@ namespace PeepoDrumKit
 
 		struct AudioData
 		{
-			// TODO: ...
 			WithDefault<b8> OpenDeviceOnStartup = true;
 			WithDefault<b8> CloseDeviceOnIdleFocusLoss = false;
 			WithDefault<b8> RequestExclusiveDeviceAccess = false;
@@ -112,6 +133,7 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Editor_ResetGuiScale = { KeyBinding(ImGuiKey_0, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_Undo = { KeyBinding(ImGuiKey_Z, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_Redo = { KeyBinding(ImGuiKey_Y, ImGuiModFlags_Ctrl) };
+			WithDefault<MultiInputBinding> Editor_OpenHelp = { KeyBinding(ImGuiKey_F1) };
 			WithDefault<MultiInputBinding> Editor_OpenSettings = { KeyBinding(ImGuiKey_Comma, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_ChartNew = { KeyBinding(ImGuiKey_N, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Editor_ChartOpen = { KeyBinding(ImGuiKey_O, ImGuiModFlags_Ctrl) };
@@ -153,7 +175,7 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Timeline_SetPlaybackSpeed_50 = {};
 			WithDefault<MultiInputBinding> Timeline_SetPlaybackSpeed_25 = {};
 			WithDefault<MultiInputBinding> Timeline_TogglePlayback = { KeyBinding(ImGuiKey_Space) };
-			WithDefault<MultiInputBinding> Timeline_ToggleMetronome = { KeyBinding(ImGuiKey_F1) };
+			WithDefault<MultiInputBinding> Timeline_ToggleMetronome = { KeyBinding(ImGuiKey_M) };
 
 			WithDefault<MultiInputBinding> TempoCalculator_Tap = { KeyBinding(ImGuiKey_Space) };
 			WithDefault<MultiInputBinding> TempoCalculator_Reset = { KeyBinding(ImGuiKey_Escape) };

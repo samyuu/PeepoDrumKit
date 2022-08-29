@@ -132,7 +132,7 @@ namespace PeepoDrumKit
 		ApplicationHost::UserCallbacks callbacks = {};
 
 		GuiScaleFactor = ClampRoundGuiScaleFactor(PersistentApp.LastSession.GuiScale);
-		ApplicationHost::GlobalState.SwapInterval = PersistentApp.LastSession.WindowSwapInterval;
+		ApplicationHost::GlobalState.SwapInterval = PersistentApp.LastSession.OSWindow_SwapInterval;
 		startupParam.WindowTitle = PeepoDrumKitApplicationTitle;
 		// TODO: ...
 		// startupParam.WindowPosition = ...;
@@ -149,12 +149,15 @@ namespace PeepoDrumKit
 		};
 		callbacks.OnShutdown = []
 		{
+			app = nullptr;
+			Audio::Engine.ApplicationShutdown();
+
 			PersistentApp.LastSession.GuiScale = GuiScaleFactor;
-			PersistentApp.LastSession.WindowSwapInterval = ApplicationHost::GlobalState.SwapInterval;
-			PersistentApp.LastSession.WindowRegion = Rect::FromTLSize(vec2(ApplicationHost::GlobalState.WindowPosition), vec2(ApplicationHost::GlobalState.WindowSize));
-			// TODO: PersistentApp.LastSession.WindowRegionRestore = ...;
-			PersistentApp.LastSession.WindowIsFullscreen = ApplicationHost::GlobalState.IsBorderlessFullscreen;
-			// TODO: PersistentApp.LastSession.WindowIsMaximized = ...;
+			PersistentApp.LastSession.OSWindow_SwapInterval = ApplicationHost::GlobalState.SwapInterval;
+			PersistentApp.LastSession.OSWindow_Region = Rect::FromTLSize(vec2(ApplicationHost::GlobalState.WindowPosition), vec2(ApplicationHost::GlobalState.WindowSize));
+			// TODO: PersistentApp.LastSession.OSWindow_RegionRestore = ...;
+			PersistentApp.LastSession.OSWindow_IsFullscreen = ApplicationHost::GlobalState.IsBorderlessFullscreen;
+			// TODO: PersistentApp.LastSession.OSWindow_IsMaximized = ...;
 
 			std::string iniFileContent; iniFileContent.reserve(4096);
 			SettingsToIni(PersistentApp, iniFileContent); File::WriteAllBytes(PersistentAppIniFileName, iniFileContent);
@@ -165,9 +168,6 @@ namespace PeepoDrumKit
 				SettingsToIni(Settings, iniFileContent); File::WriteAllBytes(SettingsIniFileName, iniFileContent);
 				Settings_Mutable.IsDirty = false;
 			}
-
-			app = nullptr;
-			Audio::Engine.ApplicationShutdown();
 		};
 		callbacks.OnWindowCloseRequest = []
 		{

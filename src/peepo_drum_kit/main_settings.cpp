@@ -91,11 +91,26 @@ namespace PeepoDrumKit
 		return in ? "true" : "false";
 	}
 
+	static cstr BoolToString(Optional_B8 in)
+	{
+		return in.IsTrue() ? "true" : in.IsFalse() ? "false" : "";
+	}
+
 	static b8 BoolFromString(std::string_view in, b8& out)
 	{
+		if (in == "") { return true; }
 		if (in == "true") { out = true; return true; }
 		if (in == "false") { out = false; return true; }
 		if (i32 v = 0; ASCII::TryParseI32(in, v)) { out = (v != 0); return true; }
+		return false;
+	}
+
+	static b8 BoolFromString(std::string_view in, Optional_B8& out)
+	{
+		if (in == "") { out.Reset(); return true; }
+		if (in == "true") { out.SetValue(true); return true; }
+		if (in == "false") { out.SetValue(false); return true; }
+		if (i32 v = 0; ASCII::TryParseI32(in, v)) { out.SetValue((v != 0)); return true; }
 		return false;
 	}
 
@@ -278,7 +293,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfPersistentAppData = sizeof(PersistentAppData);
-	static_assert(PEEPO_RELEASE || SizeOfPersistentAppData == 88, "TODO: Add missing ini file handling for newly added PersistentAppData fields");
+	static_assert(PEEPO_RELEASE || SizeOfPersistentAppData == 96, "TODO: Add missing ini file handling for newly added PersistentAppData fields");
 
 	SettingsParseResult ParseSettingsIni(std::string_view fileContent, PersistentAppData& out)
 	{
@@ -300,30 +315,19 @@ namespace PeepoDrumKit
 						// TODO: ...
 					}
 				}
-				else if (it.Key == "gui_scale")
-				{
-					if (f32 v = out.LastSession.GuiScale; ASCII::TryParseF32(in, v)) out.LastSession.GuiScale = FromPercent(v); else return parser.Error_InvalidFloat();
-				}
-				else if (it.Key == "window_swap_interval")
-				{
-					if (!ASCII::TryParseI32(in, out.LastSession.WindowSwapInterval)) return parser.Error_InvalidInt();
-				}
-				else if (it.Key == "window_region")
-				{
-					if (!RectFromTLSizeString(in, out.LastSession.WindowRegion)) return parser.Error_InvalidRect();
-				}
-				else if (it.Key == "window_region_restore")
-				{
-					if (!RectFromTLSizeString(in, out.LastSession.WindowRegionRestore)) return parser.Error_InvalidRect();
-				}
-				else if (it.Key == "window_is_fullscreen")
-				{
-					if (!BoolFromString(in, out.LastSession.WindowIsFullscreen)) return parser.Error_InvalidBool();
-				}
-				else if (it.Key == "window_is_maximized")
-				{
-					if (!BoolFromString(in, out.LastSession.WindowIsMaximized)) return parser.Error_InvalidBool();
-				}
+				else if (it.Key == "gui_scale") { if (f32 v = out.LastSession.GuiScale; ASCII::TryParseF32(in, v)) out.LastSession.GuiScale = FromPercent(v); else return parser.Error_InvalidFloat(); }
+				else if (it.Key == "os_window_swap_interval") { if (!ASCII::TryParseI32(in, out.LastSession.OSWindow_SwapInterval)) return parser.Error_InvalidInt(); }
+				else if (it.Key == "os_window_region") { if (!RectFromTLSizeString(in, out.LastSession.OSWindow_Region)) return parser.Error_InvalidRect(); }
+				else if (it.Key == "os_window_region_restore") { if (!RectFromTLSizeString(in, out.LastSession.OSWindow_RegionRestore)) return parser.Error_InvalidRect(); }
+				else if (it.Key == "os_window_is_fullscreen") { if (!BoolFromString(in, out.LastSession.OSWindow_IsFullscreen)) return parser.Error_InvalidBool(); }
+				else if (it.Key == "os_window_is_maximized") { if (!BoolFromString(in, out.LastSession.OSWindow_IsMaximized)) return parser.Error_InvalidBool(); }
+				else if (it.Key == "show_window_help") { if (!BoolFromString(in, out.LastSession.ShowWindow_Help)) return parser.Error_InvalidBool(); }
+				else if (it.Key == "show_window_settings") { if (!BoolFromString(in, out.LastSession.ShowWindow_Settings)) return parser.Error_InvalidBool(); }
+				else if (it.Key == "show_window_audio_test") { if (!BoolFromString(in, out.LastSession.ShowWindow_AudioTest)) return parser.Error_InvalidBool(); }
+				else if (it.Key == "show_window_tja_import_test") { if (!BoolFromString(in, out.LastSession.ShowWindow_TJAImportTest)) return parser.Error_InvalidBool(); }
+				else if (it.Key == "show_window_tja_export_test") { if (!BoolFromString(in, out.LastSession.ShowWindow_TJAExportTest)) return parser.Error_InvalidBool(); }
+				else if (it.Key == "show_window_imgui_demo") { if (!BoolFromString(in, out.LastSession.ShowWindow_ImGuiDemo)) return parser.Error_InvalidBool(); }
+				else if (it.Key == "show_window_imgui_style_editor") { if (!BoolFromString(in, out.LastSession.ShowWindow_ImGuiStyleEditor)) return parser.Error_InvalidBool(); }
 			}
 			else if (parser.CurrentSection == "recent_files")
 			{
@@ -348,11 +352,18 @@ namespace PeepoDrumKit
 
 		writer.LineSection("last_session");
 		writer.LineKeyValue_F32("gui_scale", ToPercent(in.LastSession.GuiScale));
-		writer.LineKeyValue_I32("window_swap_interval", in.LastSession.WindowSwapInterval);
-		writer.LineKeyValue_Str("window_region", std::string_view(b, RectToTLSizeString(b, sizeof(b), in.LastSession.WindowRegion)));
-		writer.LineKeyValue_Str("window_region_restore", std::string_view(b, RectToTLSizeString(b, sizeof(b), in.LastSession.WindowRegionRestore)));
-		writer.LineKeyValue_Str("window_is_fullscreen", BoolToString(in.LastSession.WindowIsFullscreen));
-		writer.LineKeyValue_Str("window_is_maximized", BoolToString(in.LastSession.WindowIsMaximized));
+		writer.LineKeyValue_I32("os_window_swap_interval", in.LastSession.OSWindow_SwapInterval);
+		writer.LineKeyValue_Str("os_window_region", std::string_view(b, RectToTLSizeString(b, sizeof(b), in.LastSession.OSWindow_Region)));
+		writer.LineKeyValue_Str("os_window_region_restore", std::string_view(b, RectToTLSizeString(b, sizeof(b), in.LastSession.OSWindow_RegionRestore)));
+		writer.LineKeyValue_Str("os_window_is_fullscreen", BoolToString(in.LastSession.OSWindow_IsFullscreen));
+		writer.LineKeyValue_Str("os_window_is_maximized", BoolToString(in.LastSession.OSWindow_IsMaximized));
+		writer.LineKeyValue_Str("show_window_help", BoolToString(in.LastSession.ShowWindow_Help));
+		writer.LineKeyValue_Str("show_window_settings", BoolToString(in.LastSession.ShowWindow_Settings));
+		writer.LineKeyValue_Str("show_window_audio_test", BoolToString(in.LastSession.ShowWindow_AudioTest));
+		writer.LineKeyValue_Str("show_window_tja_import_test", BoolToString(in.LastSession.ShowWindow_TJAImportTest));
+		writer.LineKeyValue_Str("show_window_tja_export_test", BoolToString(in.LastSession.ShowWindow_TJAExportTest));
+		writer.LineKeyValue_Str("show_window_imgui_demo", BoolToString(in.LastSession.ShowWindow_ImGuiDemo));
+		writer.LineKeyValue_Str("show_window_imgui_style_editor", BoolToString(in.LastSession.ShowWindow_ImGuiStyleEditor));
 		writer.Line();
 
 		writer.LineSection("recent_files");
@@ -428,7 +439,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 14968, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15240, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -484,6 +495,7 @@ namespace PeepoDrumKit
 			X(Input.Editor_ResetGuiScale, "editor_reset_gui_scale");
 			X(Input.Editor_Undo, "editor_undo");
 			X(Input.Editor_Redo, "editor_redo");
+			X(Input.Editor_OpenHelp, "editor_open_help");
 			X(Input.Editor_OpenSettings, "editor_open_settings");
 			X(Input.Editor_ChartNew, "editor_chart_new");
 			X(Input.Editor_ChartOpen, "editor_chart_open");

@@ -110,7 +110,7 @@ namespace PeepoDrumKit
 		outTextEditor.SetErrorMarkers(errorMarkers);
 	}
 
-	void TJATestWindows::DrawGui(b8* isOpen)
+	void TJATestWindow::DrawGui(b8* isOpen)
 	{
 		WasTJAEditedThisFrame = false;
 
@@ -162,7 +162,7 @@ namespace PeepoDrumKit
 		Gui::End();
 	}
 
-	void TJATestWindows::DrawGuiFileContentTabContent()
+	void TJATestWindow::DrawGuiFileContentTabContent()
 	{
 		// HACK: Make it almost impossible to tripple click select whole line because it's just annoying
 		const f32 originalMouseDoubleClickTime = Gui::GetIO().MouseDoubleClickTime;
@@ -181,7 +181,7 @@ namespace PeepoDrumKit
 		Gui::EndChild();
 	}
 
-	void TJATestWindows::DrawGuiTokensTabContent()
+	void TJATestWindow::DrawGuiTokensTabContent()
 	{
 		if (Gui::BeginTable("TokenTable", 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY, Gui::GetContentRegionAvail()))
 		{
@@ -230,7 +230,7 @@ namespace PeepoDrumKit
 		}
 	}
 
-	void TJATestWindows::DrawGuiParsedTabContent()
+	void TJATestWindow::DrawGuiParsedTabContent()
 	{
 		Gui::BeginChild("MainMetadataChild", { 0.0f, Gui::GetContentRegionAvail().y * 0.35f }, false);
 		{
