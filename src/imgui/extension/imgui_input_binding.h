@@ -56,6 +56,7 @@ struct MultiInputBinding
 	constexpr MultiInputBinding(InputBinding a, InputBinding b, InputBinding c) : Count(3), Slots { a, b, c } {}
 	constexpr MultiInputBinding(InputBinding a, InputBinding b, InputBinding c, InputBinding d) : Count(4), Slots { a, b, c, d } {}
 	constexpr void RemoveAt(i32 index) { if (index >= 0 && index < Count) { for (i32 i = index; i < static_cast<i32>(Count) - 1; i++) { Slots[i] = Slots[i + 1]; } Count--; } }
+	constexpr void ClearAll() { Count = 0; for (i32 i = 0; i < MaxCount; i++) Slots[i] = {}; }
 
 	constexpr auto begin() const { return Slots; }
 	constexpr auto end() const { return Slots + Count; }

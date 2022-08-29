@@ -440,6 +440,7 @@ namespace PeepoDrumKit
 					{
 						GuiTextWithCategoryHighlight(entry.Name);
 						Gui::Separator();
+						if (Gui::MenuItem("Clear All", "", nullptr)) { entry.Binding->Value.ClearAll(); entry.Binding->SetHasValueIfNotDefault(); changesWereMade = true; }
 						if (Gui::MenuItem("Reset to Default", "", nullptr)) { entry.Binding->ResetToDefault(); changesWereMade = true; }
 						Gui::EndPopup();
 					}
@@ -449,18 +450,26 @@ namespace PeepoDrumKit
 					if (clicked) { state.SelectedMultiBinding = entry.Binding; memcpy(&state.SelectedMultiBindingOnOpenCopy, entry.Binding, sizeof(state.SelectedMultiBindingOnOpenCopy)); openMultiBindingPopupAtEndOfFrame = true; }
 
 					Gui::TableSetColumnIndex(2);
-					for (size_t i = 0; i < entry.Binding->Value.Count; i++)
+					if (entry.Binding->Value.Count > 0)
 					{
-						if (i > 0) { Gui::SameLine(0.0f, 0.0f); Gui::Text(" , "); Gui::SameLine(0.0f, 0.0f); }
-						const auto& binding = entry.Binding->Value.Slots[i];
-
-						Gui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, GuiScale(1.0f));
-						Gui::PushStyleColor(ImGuiCol_Border, Gui::GetColorU32(ImGuiCol_ButtonActive));
+						for (size_t i = 0; i < entry.Binding->Value.Count; i++)
 						{
-							Gui::SmallButton(ToShortcutString(binding).Data);
+							if (i > 0) { Gui::SameLine(0.0f, 0.0f); Gui::Text(" , "); Gui::SameLine(0.0f, 0.0f); }
+							const auto& binding = entry.Binding->Value.Slots[i];
+
+							Gui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, GuiScale(1.0f));
+							Gui::PushStyleColor(ImGuiCol_Border, Gui::GetColorU32(ImGuiCol_ButtonActive));
+							{
+								Gui::SmallButton(ToShortcutString(binding).Data);
+							}
+							Gui::PopStyleColor();
+							Gui::PopStyleVar();
 						}
-						Gui::PopStyleColor();
-						Gui::PopStyleVar();
+					}
+					else
+					{
+						// NOTE: Use a chouonpu here instead of a regular minus for a more readable and thicker glyph at smaller font sizes
+						Gui::TextDisabled("\xE3\x83\xBC"); // u8"Å[" // "-" // "(None)"
 					}
 
 					Gui::PopID();
@@ -488,9 +497,6 @@ namespace PeepoDrumKit
 				}
 				assert(state.SelectedMultiBinding != nullptr);
 
-				char popupTitleBuffer[128];
-				sprintf_s(popupTitleBuffer, "%s###EditBindingPopup", selectedBindingName);
-
 				const ImGuiWindowFlags allowInputWindowFlag = (state.MultiBindingPopupFadeCurrent < 0.9f) ? ImGuiWindowFlags_NoInputs : ImGuiWindowFlags_None;
 
 				Gui::PushStyleVar(ImGuiStyleVar_Alpha, state.MultiBindingPopupFadeCurrent);
@@ -499,7 +505,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleColor(ImGuiCol_Border, Gui::GetStyleColorVec4(ImGuiCol_TableBorderStrong));
 				Gui::SetNextWindowPos(Gui::GetMousePos(), ImGuiCond_Appearing, vec2(0.0f, 0.0f));
 				Gui::PushFont(FontMedium_EN);
-				Gui::Begin(popupTitleBuffer, nullptr, allowInputWindowFlag | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
+				Gui::Begin(selectedBindingName, nullptr, allowInputWindowFlag | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
 				{
 					if ((Gui::IsMouseClicked(ImGuiMouseButton_Left, false) && !Gui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) ||
 						(Gui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && Gui::GetActiveID() == 0 && state.TempAssignedBinding == nullptr && Gui::IsAnyPressed(*Settings.Input.Dialog_Cancel, false)))
@@ -508,6 +514,8 @@ namespace PeepoDrumKit
 						state.AssignedBindingStopwatch.Stop();
 						state.TempAssignedBinding = nullptr;
 					}
+
+					GuiTextWithCategoryHighlight(selectedBindingName);
 
 					if (Gui::BeginTable("SelectedBindingTable", 4, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
 					{
@@ -592,8 +600,6 @@ namespace PeepoDrumKit
 
 						Gui::EndTable();
 					}
-
-					Gui::InvisibleButton("##Spacing", vec2(Gui::GetFrameHeight() * 0.25f));
 
 					Gui::PushMultiItemsWidths(2, GuiScale(260.0f));
 					{
