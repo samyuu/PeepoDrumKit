@@ -75,7 +75,7 @@ namespace PeepoDrumKit
 		if (!parseResult.HasError)
 			return LoadSettingsResponse::AllGood;
 
-		PersistentApp.ResetDefault();
+		out.ResetDefault();
 
 		char messageBuffer[2048];
 		const int messageLength = sprintf_s(messageBuffer,
