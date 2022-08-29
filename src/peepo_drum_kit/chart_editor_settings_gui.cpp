@@ -136,7 +136,7 @@ namespace PeepoDrumKit
 		template <> constexpr DataType TemplateToDataType<f32>() { return DataType::F32; }
 		template <> constexpr DataType TemplateToDataType<std::string>() { return DataType::StdString; }
 
-		enum class WidgetType : u32 { Default, B8_ExclusiveAudioComboBox, I32_BarDivisionComboBox, F32_ExponentialSpeed, };
+		enum class WidgetType : u32 { Default, B8_ExclusiveAudioComboBox, I32_BarDivisionComboBox, F32_TimelineScrollSensitivity, F32_ExponentialSpeed, };
 
 		struct SettingsEntry
 		{
@@ -232,7 +232,23 @@ namespace PeepoDrumKit
 				}
 				else if (inOutF32 != nullptr)
 				{
-					if (in.Widget == WidgetType::F32_ExponentialSpeed)
+					if (in.Widget == WidgetType::F32_TimelineScrollSensitivity)
+					{
+						Gui::SetNextItemWidth(Max(1.0f, Gui::CalcItemWidth() - ((Gui::GetFrameHeight() + style.ItemInnerSpacing.x) * 3)));
+						changesWereMade |= Gui::SliderFloat("##", &inOutF32->Value, 50.0f, 350.0f, "%.0f", ImGuiSliderFlags_None);
+						Gui::SameLine(0, style.ItemInnerSpacing.x);
+						changesWereMade |= Gui::ButtonPlusMinusFloat('-', &inOutF32->Value, 1.0f, 10.0f);
+						Gui::SameLine(0, style.ItemInnerSpacing.x);
+						changesWereMade |= Gui::ButtonPlusMinusFloat('+', &inOutF32->Value, 1.0f, 10.0f);
+						Gui::SameLine(0.0f, style.ItemInnerSpacing.x);
+						if (Gui::BeginCombo("##Combo", "", ImGuiComboFlags_NoPreview | ImGuiComboFlags_PopupAlignLeft))
+						{
+							if (Gui::Selectable("Reset to Default", false, !inOutF32->HasValue ? ImGuiSelectableFlags_Disabled : 0)) { in.ResetToDefault(); changesWereMade = true; }
+							Gui::EndCombo();
+						}
+						if (changesWereMade) { inOutF32->Value = Clamp(inOutF32->Value, 50.0f, 5000.0f); }
+					}
+					else if (in.Widget == WidgetType::F32_ExponentialSpeed)
 					{
 						const b8 isDisabled = (inOutF32->Value <= 0.0f);
 						Gui::PushStyleColor(ImGuiCol_Text, Gui::GetStyleColorVec4(isDisabled ? ImGuiCol_TextDisabled : ImGuiCol_Text));
@@ -250,7 +266,7 @@ namespace PeepoDrumKit
 							if (Gui::Selectable("Disable Animation", false, (inOutF32->Value == 0.0f) ? ImGuiSelectableFlags_Disabled : 0)) { inOutF32->Value = 0.0f; changesWereMade = true; }
 							Gui::EndCombo();
 						}
-						if (changesWereMade) { inOutF32->Value = ClampBot(inOutF32->Value, 0.0f); }
+						if (changesWereMade) { inOutF32->Value = Clamp(inOutF32->Value, 0.0f, 1000.0f); }
 					}
 					else
 					{
@@ -653,7 +669,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15240, "TODO: Add missing settings entries for newly added UserSettingsData fields");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15496, "TODO: Add missing settings entries for newly added UserSettingsData fields");
 
 					SettingsGui::SettingsEntry settingsEntriesMain[] =
 					{
@@ -667,6 +683,23 @@ namespace PeepoDrumKit
 							"General: Drumroll Preview Interval",
 							"The interval at which drumrolls have their hit sounds previewed at.",
 							SettingsGui::WidgetType::I32_BarDivisionComboBox),
+
+						SettingsGui::SettingsEntry(
+							settings.General.TimelineScrollInvertMouseWheel,
+							"Timeline: Invert Scroll Wheel Direction",
+							"Invert the mouse wheel scroll direcion so that scrolling downwards results in moving forward through the timeline."),
+
+						SettingsGui::SettingsEntry(
+							settings.General.TimelineScrollDistancePerMouseWheelTick,
+							"Timeline: Scroll Wheel Sensitivity",
+							"The timeline distance moved per mouse wheel scroll tick.",
+							SettingsGui::WidgetType::F32_TimelineScrollSensitivity),
+
+						SettingsGui::SettingsEntry(
+							settings.General.TimelineScrollDistancePerMouseWheelTickFast,
+							"Timeline: Scroll Wheel Sensitivity (Shift)",
+							"The timeline distance moved per mouse wheel scroll tick while holding down shift.",
+							SettingsGui::WidgetType::F32_TimelineScrollSensitivity),
 
 						// TODO: Remove..?
 						// SettingsGui::SettingsEntry(settings.General.TimelineScrubAutoScrollPixelThreshold, "Timeline Scrub Auto Scroll Pixel Threshold", ""),

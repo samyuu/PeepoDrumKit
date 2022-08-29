@@ -319,23 +319,6 @@ namespace PeepoDrumKit
 	enum class WaveformDrawOrder { Background, Foreground };
 	static constexpr WaveformDrawOrder TimelineWaveformDrawOrder = WaveformDrawOrder::Background;
 
-	struct PlaybackSpeedsArrayView
-	{
-		i32 Count; const f32* V;
-		template <size_t Size>
-		constexpr PlaybackSpeedsArrayView(const f32(&v)[Size]) : Count(static_cast<i32>(Size)), V(v) {}
-		constexpr const f32* begin() const { return V; }
-		constexpr const f32* end() const { return V + Count; }
-	};
-
-	// TODO: Maybe make user configurable (?)
-	static constexpr f32 PresetPlaybackSpeedsFine[] = { 1.0f, 0.95f, 0.9f, 0.85f, 0.8f, 0.75f, 0.7f, 0.65f, 0.6f, 0.55f, 0.5f, 0.45f, 0.4f, 0.35f, 0.30f, 0.25f, 0.2f };
-	static constexpr f32 PresetPlaybackSpeedsRough[] = { 1.0f, 0.75f, 0.5f, 0.25f };
-	static constexpr f32 PresetPlaybackSpeeds[] = { 1.0f, 0.9f, 0.8f, 0.7f, 0.6f, 0.5f, 0.4f, 0.3f, 0.2f };
-	static constexpr PlaybackSpeedsArrayView PresetPlaybackSpeedsFine_View = PresetPlaybackSpeedsFine;
-	static constexpr PlaybackSpeedsArrayView PresetPlaybackSpeedsRough_View = PresetPlaybackSpeedsRough;
-	static constexpr PlaybackSpeedsArrayView PresetPlaybackSpeeds_View = PresetPlaybackSpeeds;
-
 	static constexpr f32 NoteHitAnimationDuration = 0.06f;
 	static constexpr f32 NoteHitAnimationScaleStart = 1.35f, NoteHitAnimationScaleEnd = 1.0f;
 	static constexpr f32 NoteDeleteAnimationDuration = 0.04f;
@@ -1091,26 +1074,33 @@ namespace PeepoDrumKit
 		// NOTE: Mouse scroll / zoom
 		if (!ApproxmiatelySame(Gui::GetIO().MouseWheel, 0.0f))
 		{
-			// BUG: Can't scroll while holding Ctrl...
-			const vec2 mouseScrollSpeed = vec2(Gui::GetIO().KeyShift ? 250.0f : 100.0f) * vec2(1.0f, 0.75f);
-			const vec2 mouseZoomSpeed = vec2(1.2f, 1.0f);
-			const vec2 newZoom = (Gui::GetIO().MouseWheel > 0.0f) ? (Camera.ZoomTarget * mouseZoomSpeed) : (Camera.ZoomTarget / mouseZoomSpeed);
+			vec2 scrollStep = vec2(Gui::GetIO().KeyShift ? *Settings.General.TimelineScrollDistancePerMouseWheelTickFast : *Settings.General.TimelineScrollDistancePerMouseWheelTick);
+			scrollStep.y *= 0.75f;
+			if (*Settings.General.TimelineScrollInvertMouseWheel)
+				scrollStep.x *= -1.0f;
 
 			if (IsSidebarWindowHovered)
 			{
 #if 0 // NOTE: Not needed at the moment for small number of rows
 				if (!Gui::GetIO().KeyAlt)
-					Camera.PositionTarget.y -= (Gui::GetIO().MouseWheel * mouseScrollSpeed.y);
+					Camera.PositionTarget.y -= (Gui::GetIO().MouseWheel * scrollStep.y);
 #endif
 			}
 			else if (IsContentHeaderWindowHovered || IsContentWindowHovered)
 			{
 				if (Gui::GetIO().KeyAlt)
-					Camera.SetZoomTargetAroundLocalPivot(newZoom, ScreenToLocalSpace(Gui::GetMousePos()));
-				else if (Gui::GetIO().KeyCtrl)
-					Camera.PositionTarget.y -= (Gui::GetIO().MouseWheel * mouseScrollSpeed.y);
+				{
+					const f32 zoomFactorX = *Settings.General.TimelineZoomFactorPerMouseWheelTick;
+					const f32 newZoomX = (Gui::GetIO().MouseWheel > 0.0f) ? (Camera.ZoomTarget.x * zoomFactorX) : (Camera.ZoomTarget.x / zoomFactorX);
+					Camera.SetZoomTargetAroundLocalPivot(vec2(newZoomX, Camera.ZoomTarget.y), ScreenToLocalSpace(Gui::GetMousePos()));
+				}
 				else
-					Camera.PositionTarget.x += (Gui::GetIO().MouseWheel * mouseScrollSpeed.x);
+				{
+					if (Gui::GetIO().KeyCtrl)
+						Camera.PositionTarget.y -= (Gui::GetIO().MouseWheel * scrollStep.y);
+					else
+						Camera.PositionTarget.x += (Gui::GetIO().MouseWheel * scrollStep.x);
+				}
 			}
 		}
 
@@ -1530,14 +1520,14 @@ namespace PeepoDrumKit
 			{
 				if (const auto& io = Gui::GetIO(); !io.KeyCtrl)
 				{
-					const auto speeds = io.KeyAlt ? PresetPlaybackSpeedsFine_View : io.KeyShift ? PresetPlaybackSpeedsRough_View : PresetPlaybackSpeeds_View;
+					const std::vector<f32>& speeds = io.KeyAlt ? Settings.General.PlaybackSpeedStepsPrecise->V : io.KeyShift ? Settings.General.PlaybackSpeedStepsRough->V : Settings.General.PlaybackSpeedSteps->V;
 
 					i32 closetPlaybackSpeedIndex = 0;
 					const f32 currentPlaybackSpeed = context.GetPlaybackSpeed();
-					for (const f32& it : speeds) if (it >= currentPlaybackSpeed) closetPlaybackSpeedIndex = ArrayItToIndexI32(&it, &speeds.V[0]);
+					for (const f32& it : speeds) if (it >= currentPlaybackSpeed) closetPlaybackSpeedIndex = ArrayItToIndexI32(&it, &speeds[0]);
 
-					if (Gui::IsAnyPressed(*Settings.Input.Timeline_IncreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex - 1, 0, speeds.Count - 1)]);
-					if (Gui::IsAnyPressed(*Settings.Input.Timeline_DecreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds.V[Clamp(closetPlaybackSpeedIndex + 1, 0, speeds.Count - 1)]);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_IncreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds[Clamp(closetPlaybackSpeedIndex - 1, 0, speeds.empty() ? 0 : static_cast<i32>(speeds.size() - 1))]);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_DecreasePlaybackSpeed, true, InputModifierBehavior::Relaxed)) context.SetPlaybackSpeed(speeds[Clamp(closetPlaybackSpeedIndex + 1, 0, speeds.empty() ? 0 : static_cast<i32>(speeds.size() - 1))]);
 				}
 
 				if (Gui::IsAnyPressed(*Settings.Input.Timeline_SetPlaybackSpeed_100, false)) context.SetPlaybackSpeed(FromPercent(100.0f));

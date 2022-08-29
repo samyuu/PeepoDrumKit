@@ -21,6 +21,14 @@ namespace PeepoDrumKit
 
 	void GuiStyleColorPeepoDrumKit(ImGuiStyle* destination = nullptr);
 
+	// NOTE: Expected to be stored in sorted decending order: "{ 1.0f, 0.75f, 0.5f, 0.25f }" etc.
+	struct PlaybackSpeedStepList
+	{
+		std::vector<f32> V;
+		inline PlaybackSpeedStepList() = default;
+		inline PlaybackSpeedStepList(std::initializer_list<f32> args) : V(std::forward<std::initializer_list<f32>>(args)) {}
+	};
+
 	enum class BoolOrDefault : u8 { Default = 0, True = 1, False = 2 };
 	struct Optional_B8
 	{
@@ -94,11 +102,17 @@ namespace PeepoDrumKit
 		{
 			WithDefault<std::string> DefaultCreatorName = {};
 			WithDefault<i32> DrumrollAutoHitBarDivision = 16;
+			WithDefault<b8> TimelineScrollInvertMouseWheel = false;
+			WithDefault<f32> TimelineScrollDistancePerMouseWheelTick = 100.0f;
+			WithDefault<f32> TimelineScrollDistancePerMouseWheelTickFast = 250.0f;
+			WithDefault<f32> TimelineZoomFactorPerMouseWheelTick = 1.2f;
 			// TODO: Adjust default values (?)
 			WithDefault<f32> TimelineScrubAutoScrollPixelThreshold = 160.0f;
 			WithDefault<f32> TimelineScrubAutoScrollSpeedMin = 150.0f;
 			WithDefault<f32> TimelineScrubAutoScrollSpeedMax = 3500.0f;
-			// TODO: Should probably also store timeline scroll / zoom increment "speed" here
+			WithDefault<PlaybackSpeedStepList> PlaybackSpeedSteps = PlaybackSpeedStepList { 1.0f, 0.9f, 0.8f, 0.7f, 0.6f, 0.5f, 0.4f, 0.3f, 0.2f };
+			WithDefault<PlaybackSpeedStepList> PlaybackSpeedStepsRough = PlaybackSpeedStepList { 1.0f, 0.75f, 0.5f, 0.25f };
+			WithDefault<PlaybackSpeedStepList> PlaybackSpeedStepsPrecise = PlaybackSpeedStepList { 1.0f, 0.95f, 0.9f, 0.85f, 0.8f, 0.75f, 0.7f, 0.65f, 0.6f, 0.55f, 0.5f, 0.45f, 0.4f, 0.35f, 0.3f, 0.25f, 0.2f };
 		} General;
 
 		struct AudioData
@@ -229,7 +243,7 @@ namespace PeepoDrumKit
 		IniVoidPtrTypeFromStringFunc FromStringFunc;
 		IniVoidPtrTypeToStringFunc ToStringFunc;
 	};
-	struct SettingsReflectionMap { SettingsReflectionMember MemberSlots[72]; size_t MemberCount; };
+	struct SettingsReflectionMap { SettingsReflectionMember MemberSlots[80]; size_t MemberCount; };
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap();
 	inline const SettingsReflectionMap AppSettingsReflectionMap = StaticallyInitializeAppSettingsReflectionMap();

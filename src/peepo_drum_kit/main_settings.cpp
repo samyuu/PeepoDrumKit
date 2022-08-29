@@ -168,14 +168,14 @@ namespace PeepoDrumKit
 			stringToAppendTo += BoolToString(in);
 		}
 
-		static void ToString(const std::string& in, std::string& stringToAppendTo)
-		{
-			stringToAppendTo += in;
-		}
-
 		static IniMemberParseResult FromString(std::string_view stringToParse, std::string& out)
 		{
 			out = stringToParse; return {};
+		}
+
+		static void ToString(const std::string& in, std::string& stringToAppendTo)
+		{
+			stringToAppendTo += in;
 		}
 
 		static IniMemberParseResult FromString(std::string_view stringToParse, Beat& out)
@@ -186,6 +186,30 @@ namespace PeepoDrumKit
 		static void ToString(const Beat& in, std::string& stringToAppendTo)
 		{
 			char b[32]; stringToAppendTo += std::string_view(b, sprintf_s(b, "%d", in.Ticks));
+		}
+
+		static IniMemberParseResult FromString(std::string_view stringToParse, PlaybackSpeedStepList& out)
+		{
+			b8 hasAnyError = false;
+			size_t expectedCount = 0;
+			ASCII::ForEachInCommaSeparatedList(stringToParse, [&](std::string_view) { expectedCount++; });
+			out.V.clear();
+			out.V.reserve(expectedCount);
+			ASCII::ForEachInCommaSeparatedList(stringToParse, [&](std::string_view commaSeparatedValue)
+			{
+				if (f32 v = 0.0f; ASCII::TryParseF32(ASCII::Trim(commaSeparatedValue), v))
+					out.V.push_back(FromPercent(v));
+				else
+					hasAnyError = true;
+			});
+			return hasAnyError ? MemberParseError("Invalid float") : IniMemberParseResult {};
+		}
+
+		static void ToString(const PlaybackSpeedStepList& in, std::string& stringToAppendTo)
+		{
+			char b[32];
+			for (size_t i = 0; i < in.V.size(); i++)
+				stringToAppendTo += std::string_view(b, sprintf_s(b, (i > 0) ? ", %g" : "%g", ToPercent(in.V[i])));
 		}
 
 		static IniMemberParseResult FromString(std::string_view stringToParse, MultiInputBinding& out)
@@ -439,7 +463,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15240, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15496, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -465,9 +489,16 @@ namespace PeepoDrumKit
 			SECTION("general");
 			X(General.DefaultCreatorName, "default_creator_name");
 			X(General.DrumrollAutoHitBarDivision, "drumroll_auto_hit_bar_division");
+			X(General.TimelineScrollInvertMouseWheel, "timeline_scroll_invert_mouse_wheel");
+			X(General.TimelineScrollDistancePerMouseWheelTick, "timeline_scroll_distance_per_mouse_wheel_tick");
+			X(General.TimelineScrollDistancePerMouseWheelTickFast, "timeline_scroll_distance_per_mouse_wheel_tick_fast");
+			X(General.TimelineZoomFactorPerMouseWheelTick, "timeline_zoom_factor_per_mouse_wheel_tick");
 			X(General.TimelineScrubAutoScrollPixelThreshold, "timeline_scrub_auto_scroll_pixel_threshold");
 			X(General.TimelineScrubAutoScrollSpeedMin, "timeline_scrub_auto_scroll_speed_min");
 			X(General.TimelineScrubAutoScrollSpeedMax, "timeline_scrub_auto_scroll_speed_max");
+			X(General.PlaybackSpeedSteps, "playback_speed_steps");
+			X(General.PlaybackSpeedStepsRough, "playback_speed_steps_rough");
+			X(General.PlaybackSpeedStepsPrecise, "playback_speed_steps_precise");
 
 			SECTION("audio");
 			X(Audio.OpenDeviceOnStartup, "open_device_on_startup");
