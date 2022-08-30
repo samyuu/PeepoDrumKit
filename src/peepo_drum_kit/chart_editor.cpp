@@ -547,8 +547,9 @@ namespace PeepoDrumKit
 		}
 		Gui::End();
 
-		// DEBUG: Manually submit debug window before the timeline window is drawn for better tab ordering
+#if PEEPO_DEBUG // DEBUG: Manually submit debug window before the timeline window is drawn for better tab ordering
 		if (Gui::Begin("Chart Timeline - Debug")) { /* ... */ } Gui::End();
+#endif
 
 		if (Gui::Begin("Game Preview", nullptr, ImGuiWindowFlags_None))
 		{

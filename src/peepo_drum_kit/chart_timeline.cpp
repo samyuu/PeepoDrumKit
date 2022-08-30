@@ -606,8 +606,9 @@ namespace PeepoDrumKit
 		UpdateInputAtStartOfFrame(context);
 		UpdateAllAnimationsAfterUserInput(context);
 
-		// DEBUG: Submit empty window first for more natural tab order sorting
+#if PEEPO_DEBUG // DEBUG: Submit empty window first for more natural tab order sorting
 		if (Gui::Begin("Chart Timeline - Debug")) { DrawTimelineDebugWindowContent(*this, context); } Gui::End();
+#endif
 
 		const auto& style = Gui::GetStyle();
 
