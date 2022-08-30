@@ -249,7 +249,7 @@ namespace PeepoDrumKit
 		std::string BackgroundMovieFileName;
 		Time MovieOffset = {};
 
-		inline Time GetDurationOrDefault() const { return (ChartDuration.Seconds <= 0.0) ? Time::FromMinutes(1.0) : ChartDuration; }
+		inline Time GetDurationOrDefault() const { return (ChartDuration.Seconds <= 0.0) ? Time::FromMin(1.0) : ChartDuration; }
 	};
 
 	Beat FindCourseMaxUsedBeat(const ChartCourse& course);

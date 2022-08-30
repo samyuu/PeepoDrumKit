@@ -9,7 +9,7 @@ Time TempoMapAccelerationStructure::ConvertBeatToTimeUsingLookupTableIndexing(Be
 	if (totalBeatTicks < 0) // NOTE: Negative tick (tempo changes are assumed to only be positive)
 	{
 		// NOTE: Calculate the duration of a Beat at the first tempo
-		const Time firstTickDuration = Time::FromSeconds((60.0 / FirstTempoBPM) / Beat::TicksPerBeat);
+		const Time firstTickDuration = Time::FromSec((60.0 / FirstTempoBPM) / Beat::TicksPerBeat);
 
 		// NOTE: Then scale by the negative tick
 		return firstTickDuration * totalBeatTicks;
@@ -20,7 +20,7 @@ Time TempoMapAccelerationStructure::ConvertBeatToTimeUsingLookupTableIndexing(Be
 		const Time lastTime = GetLastCalculatedTime();
 
 		// NOTE: Calculate the duration of a Beat at the last used tempo
-		const Time lastTickDuration = Time::FromSeconds((60.0 / LastTempoBPM) / Beat::TicksPerBeat);
+		const Time lastTickDuration = Time::FromSec((60.0 / LastTempoBPM) / Beat::TicksPerBeat);
 
 		// NOTE: Then scale by the remaining ticks
 		const i32 remainingTicks = (totalBeatTicks - beatTickToTimesCount) + 1;
@@ -37,10 +37,10 @@ Beat TempoMapAccelerationStructure::ConvertTimeToBeatUsingLookupTableBinarySearc
 	const i32 beatTickToTimesCount = static_cast<i32>(BeatTickToTimes.size());
 	const Time lastTime = GetLastCalculatedTime();
 
-	if (time < Time::FromSeconds(0.0)) // NOTE: Negative time
+	if (time < Time::FromSec(0.0)) // NOTE: Negative time
 	{
 		// NOTE: Calculate the duration of a Beat at the first tempo
-		const Time firstTickDuration = Time::FromSeconds((60.0 / FirstTempoBPM) / Beat::TicksPerBeat);
+		const Time firstTickDuration = Time::FromSec((60.0 / FirstTempoBPM) / Beat::TicksPerBeat);
 
 		// NOTE: Then the time by the negative tick, this is assuming all tempo changes happen on positive ticks
 		return Beat(static_cast<i32>(time / firstTickDuration));
@@ -50,7 +50,7 @@ Beat TempoMapAccelerationStructure::ConvertTimeToBeatUsingLookupTableBinarySearc
 		const Time timePastLast = (time - lastTime);
 
 		// NOTE: Each tick past the end has a duration of this value
-		const Time lastTickDuration = Time::FromSeconds((60.0 / LastTempoBPM) / Beat::TicksPerBeat);
+		const Time lastTickDuration = Time::FromSec((60.0 / LastTempoBPM) / Beat::TicksPerBeat);
 
 		// NOTE: So we just have to divide the remaining ticks by the duration
 		const f64 ticks = (timePastLast / lastTickDuration);
@@ -114,10 +114,10 @@ void TempoMapAccelerationStructure::Rebuild(const TempoChange* inTempoChanges, s
 		const size_t timesCount = isSingleOrLastTempo ? BeatTickToTimes.size() : (tempoChanges[tempoChangeIndex + 1].Beat.Ticks);
 
 		for (size_t i = 0, t = tempoChange.Beat.Ticks; t < timesCount; t++)
-			BeatTickToTimes[t] = Time::FromSeconds((tickDuration * i++) + lastEndTime);
+			BeatTickToTimes[t] = Time::FromSec((tickDuration * i++) + lastEndTime);
 
 		if (tempoCount > 1)
-			lastEndTime = BeatTickToTimes[timesCount - 1].TotalSeconds() + tickDuration;
+			lastEndTime = BeatTickToTimes[timesCount - 1].ToSec() + tickDuration;
 
 		FirstTempoBPM = (tempoChangeIndex == 0) ? bpm : FirstTempoBPM;
 		LastTempoBPM = bpm;

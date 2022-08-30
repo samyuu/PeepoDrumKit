@@ -242,7 +242,7 @@ namespace TJA
 		static constexpr auto tryParseTime = [](std::string_view in, Time* out) -> b8
 		{
 			if (in.empty()) { *out = Time::Zero(); return true; }
-			if (f32 v; ASCII::TryParseF32(in, v)) { *out = Time::FromSeconds(v); return true; }
+			if (f32 v; ASCII::TryParseF32(in, v)) { *out = Time::FromSec(v); return true; }
 			return false;
 		};
 		static constexpr auto tryParseTempo = [](std::string_view in, Tempo* out) -> b8
@@ -874,7 +874,7 @@ namespace TJA
 				} break;
 				case ParsedChartCommandType::ChangeDelay:
 				{
-					appendCommandLine(out, Key::Chart_DELAY, std::string_view(buffer, sprintf_s(buffer, "%g", command.Param.ChangeDelay.Value.TotalSeconds())));
+					appendCommandLine(out, Key::Chart_DELAY, std::string_view(buffer, sprintf_s(buffer, "%g", command.Param.ChangeDelay.Value.ToSec())));
 				} break;
 				case ParsedChartCommandType::ChangeScrollSpeed:
 				{

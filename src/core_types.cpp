@@ -10,16 +10,16 @@ static_assert((sizeof(u64) * BitsPerByte) == 64 && (sizeof(i64) * BitsPerByte) =
 static_assert((sizeof(f32) * BitsPerByte) == 32 && (sizeof(f64) * BitsPerByte) == 64);
 static_assert((sizeof(b8) * BitsPerByte) == 8);
 
-static constexpr Time RoundToMilliseconds(Time value) { return Time::FromSeconds((value.Seconds * 1000.0 + 0.5) * 0.001); }
+static constexpr Time RoundToMilliseconds(Time value) { return Time::FromSec((value.Seconds * 1000.0 + 0.5) * 0.001); }
 
 i32 Time::ToString(char* outBuffer, size_t bufferSize) const
 {
 	assert(outBuffer != nullptr && bufferSize >= sizeof(FormatBuffer::Data));
 
-	static constexpr Time maxDisplayableTime = Time::FromSeconds(3599.999999);
+	static constexpr Time maxDisplayableTime = Time::FromSec(3599.999999);
 	static constexpr const char invalidFormatString[] = "--:--.---";
 
-	const f64 msRoundSeconds = RoundToMilliseconds(Time::FromSeconds(Absolute(Seconds))).Seconds;
+	const f64 msRoundSeconds = RoundToMilliseconds(Time::FromSec(Absolute(Seconds))).Seconds;
 	if (::isnan(msRoundSeconds) || ::isinf(msRoundSeconds))
 	{
 		// NOTE: Array count of a string literal char array already accounts for the null terminator
@@ -27,7 +27,7 @@ i32 Time::ToString(char* outBuffer, size_t bufferSize) const
 		return static_cast<i32>(ArrayCount(invalidFormatString) - 1);
 	}
 
-	const f64 msRoundSecondsAbs = Min(msRoundSeconds, maxDisplayableTime.TotalSeconds());
+	const f64 msRoundSecondsAbs = Min(msRoundSeconds, maxDisplayableTime.ToSec());
 	const f64 min = Floor(Mod(msRoundSecondsAbs, 3600.0) / 60.0);
 	const f64 sec = Mod(msRoundSecondsAbs, 60.0);
 	const f64 ms = (sec - Floor(sec)) * 1000.0;
@@ -60,7 +60,7 @@ Time Time::FromString(cstr inBuffer)
 	ms = Clamp(ms, 0, 999);
 
 	const f64 outSeconds = (static_cast<f64>(min) * 60.0) + static_cast<f64>(sec) + (static_cast<f64>(ms) * 0.001);
-	return Time::FromSeconds(isNegative ? -outSeconds : outSeconds);
+	return Time::FromSec(isNegative ? -outSeconds : outSeconds);
 }
 
 Date Date::GetToday()
@@ -147,5 +147,5 @@ CPUTime CPUTime::GetNowAbsolute()
 Time CPUTime::DeltaTime(const CPUTime& startTime, const CPUTime& endTime)
 {
 	const i64 deltaTicks = (endTime.Ticks - startTime.Ticks);
-	return Time::FromSeconds(static_cast<f64>(deltaTicks) / static_cast<f64>(Win32GlobalPerformanceCounter.TicksPerSecond));
+	return Time::FromSec(static_cast<f64>(deltaTicks) / static_cast<f64>(Win32GlobalPerformanceCounter.TicksPerSecond));
 }

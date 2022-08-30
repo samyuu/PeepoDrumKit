@@ -131,7 +131,7 @@ namespace PeepoDrumKit
 
 	constexpr f32 TimeToNoteLaneRefSpaceX(Time cursorTime, Time noteTime, Tempo tempo, f32 scrollSpeed)
 	{
-		return ((tempo.BPM * scrollSpeed) / 60.0f) * static_cast<f32>((noteTime - cursorTime).TotalSeconds()) * GameRefLaneDistancePerBeat;
+		return ((tempo.BPM * scrollSpeed) / 60.0f) * (noteTime - cursorTime).ToSec_F32() * GameRefLaneDistancePerBeat;
 	}
 
 	inline NoteRadii GuiScaleNoteRadii(NoteRadii radii) { return NoteRadii { GuiScale(radii.BlackOuter), GuiScale(radii.WhiteInner), GuiScale(radii.ColorInner) }; }

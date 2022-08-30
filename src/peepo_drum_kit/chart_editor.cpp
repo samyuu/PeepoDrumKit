@@ -237,7 +237,7 @@ namespace PeepoDrumKit
 					static_cast<f64>(Audio::Engine.OutputSampleRate) / 1000.0,
 					sizeof(i16) * BitsPerByte,
 					Audio::Engine.OutputChannelCount,
-					Audio::FramesToTime(Audio::Engine.GetBufferFrameSize(), Audio::Engine.OutputSampleRate).TotalMilliseconds(),
+					Audio::FramesToTime(Audio::Engine.GetBufferFrameSize(), Audio::Engine.OutputSampleRate).ToMS(),
 					backendToString(Audio::Engine.GetBackend()));
 			}
 			else
@@ -635,9 +635,9 @@ namespace PeepoDrumKit
 		if (zoomPopup.IsOpen)
 		{
 			static constexpr Time fadeInDuration = Time::FromFrames(10.0), fadeOutDuration = Time::FromFrames(14.0);
-			static constexpr Time closeDuration = Time::FromSeconds(2.0);
-			const f32 fadeIn = static_cast<f32>(ConvertRangeClampInput(0.0, fadeInDuration.Seconds, 0.0, 1.0, zoomPopup.TimeSinceOpen.Seconds));
-			const f32 fadeOut = static_cast<f32>(ConvertRangeClampInput(0.0, fadeOutDuration.Seconds, 0.0, 1.0, (closeDuration - zoomPopup.TimeSinceLastChange).Seconds));
+			static constexpr Time closeDuration = Time::FromSec(2.0);
+			const f32 fadeIn = ConvertRangeClampInput(0.0f, fadeInDuration.ToSec_F32(), 0.0f, 1.0f, zoomPopup.TimeSinceOpen.ToSec_F32());
+			const f32 fadeOut = ConvertRangeClampInput(0.0f, fadeOutDuration.ToSec_F32(), 0.0f, 1.0f, (closeDuration - zoomPopup.TimeSinceLastChange).ToSec_F32());
 
 			b8 isWindowHovered = false;
 			Gui::PushStyleVar(ImGuiStyleVar_Alpha, (fadeIn < 1.0f) ? (fadeIn * fadeIn) : (fadeOut * fadeOut));
@@ -684,8 +684,8 @@ namespace PeepoDrumKit
 			else
 			{
 				// NOTE: Clamp so that the fade-in animation won't ever be fully skipped even with font rebuild lag
-				zoomPopup.TimeSinceOpen += Time::FromSeconds(ClampTop(Gui::GetIO().DeltaTime, 1.0f / 30.0f));
-				zoomPopup.TimeSinceLastChange = isWindowHovered ? (closeDuration * 0.5) : zoomPopup.TimeSinceLastChange + Time::FromSeconds(Gui::GetIO().DeltaTime);
+				zoomPopup.TimeSinceOpen += Time::FromSec(ClampTop(Gui::GetIO().DeltaTime, 1.0f / 30.0f));
+				zoomPopup.TimeSinceLastChange = isWindowHovered ? (closeDuration * 0.5) : zoomPopup.TimeSinceLastChange + Time::FromSec(Gui::GetIO().DeltaTime);
 			}
 		}
 
@@ -1063,7 +1063,7 @@ namespace PeepoDrumKit
 		}
 
 		// NOTE: Just in case there is something wrong with the animation, that could otherwise prevent the song from finishing to load
-		static constexpr Time maxWaveformFadeOutDelaySafetyLimit = Time::FromSeconds(0.5);
+		static constexpr Time maxWaveformFadeOutDelaySafetyLimit = Time::FromSec(0.5);
 		const b8 waveformHasFadedOut = (context.SongWaveformFadeAnimationCurrent <= 0.01f || loadSongStopwatch.GetElapsed() >= maxWaveformFadeOutDelaySafetyLimit);
 
 		if (loadSongFuture.valid() && loadSongFuture._Is_ready() && waveformHasFadedOut)

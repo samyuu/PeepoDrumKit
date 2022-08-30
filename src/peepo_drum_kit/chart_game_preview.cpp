@@ -180,7 +180,7 @@ namespace PeepoDrumKit
 		{ FrameToTime(39.0f), 1.0f, 1.0f, 1.0f },
 		{ FrameToTime(46.0f), 0.0f, 0.0f, 0.0f },
 	};
-	static constexpr Time NoteHitAnimationDuration = Time::FromSeconds(HitPath[ArrayCount(HitPath) - 1].Time); // Time::FromFrames(46.0);
+	static constexpr Time NoteHitAnimationDuration = Time::FromSec(HitPath[ArrayCount(HitPath) - 1].Time); // Time::FromFrames(46.0);
 
 	struct NoteHitPathAnimationData
 	{
@@ -194,7 +194,7 @@ namespace PeepoDrumKit
 		NoteHitPathAnimationData out {};
 		if (timeSinceHit >= Time::Zero())
 		{
-			const f32 animationTime = static_cast<f32>(timeSinceHit.TotalSeconds());
+			const f32 animationTime = timeSinceHit.ToSec_F32();
 			out.RefSpaceOffset.x = SampleBezierFCurve(RefSpaceNoteHitPathX, animationTime) - HitPath[0].Center.x;
 			out.RefSpaceOffset.y = SampleBezierFCurve(RefSpaceNoteHitPathY, animationTime) - HitPath[0].Center.y;
 #if 0 // TODO: Just doesn't really look that great... maybe also needs the other hit effects too

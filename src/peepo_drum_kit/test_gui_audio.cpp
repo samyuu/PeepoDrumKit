@@ -88,7 +88,7 @@ namespace PeepoDrumKit
 
 				Gui::Property::PropertyTextValueFunc("Callback Frequency", [&]
 				{
-					Gui::TextColored(Audio::Engine.GetIsStreamOpenRunning() ? greenColor : Gui::GetStyleColorVec4(ImGuiCol_TextDisabled), "%.3f ms", Audio::Engine.GetCallbackFrequency().TotalMilliseconds());
+					Gui::TextColored(Audio::Engine.GetIsStreamOpenRunning() ? greenColor : Gui::GetStyleColorVec4(ImGuiCol_TextDisabled), "%.3f ms", Audio::Engine.GetCallbackFrequency().ToMS());
 				});
 
 				Gui::Property::PropertyTextValueFunc("Buffer Size", [&]
@@ -111,7 +111,7 @@ namespace PeepoDrumKit
 				{
 					const auto durations = Audio::Engine.DebugGetRenderPerformanceHistory();
 					f32 durationsMS[durations.size()];
-					for (size_t i = 0; i < durations.size(); i++) durationsMS[i] = static_cast<f32>(durations[i].TotalMilliseconds());
+					for (size_t i = 0; i < durations.size(); i++) durationsMS[i] = durations[i].ToMS_F32();
 
 					f32 totalBufferProcessTimeMS = 0.0f;
 					for (const f32 v : durationsMS)totalBufferProcessTimeMS += v;

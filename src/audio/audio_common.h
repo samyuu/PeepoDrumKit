@@ -8,10 +8,10 @@ namespace Audio
 	constexpr f32 ConvertSampleI16ToF32(i16 v) { return static_cast<f32>(v) / static_cast<f32>(I16Max); }
 	constexpr i16 ConvertSampleF32ToI16(f32 v) { return static_cast<i16>(v * static_cast<f32>(I16Max)); }
 
-	constexpr Time FramesToTime(i64 frames, i64 sampleRate) { return Time::FromSeconds(static_cast<f64>(frames) / static_cast<f64>(sampleRate)); }
+	constexpr Time FramesToTime(i64 frames, i64 sampleRate) { return Time::FromSec(static_cast<f64>(frames) / static_cast<f64>(sampleRate)); }
 	constexpr Time FramesToTimeOrZero(i64 frames, i64 sampleRate) { return (sampleRate != 0) ? FramesToTime(frames, sampleRate) : Time::Zero(); }
 
-	constexpr i64 TimeToFrames(Time time, i64 sampleRate) { return static_cast<i64>(time.TotalSeconds() * static_cast<f64>(sampleRate)); }
+	constexpr i64 TimeToFrames(Time time, i64 sampleRate) { return static_cast<i64>(time.ToSec() * static_cast<f64>(sampleRate)); }
 	constexpr i64 TimeToFramesOrZero(Time time, i64 sampleRate) { return (sampleRate != 0) ? TimeToFramesOrZero(time, sampleRate) : 0; }
 
 	inline f32 ClampLinearVolume(f32 linear) { return Clamp(linear, 0.0f, 1.0f); }

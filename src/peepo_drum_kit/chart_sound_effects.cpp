@@ -106,7 +106,7 @@ namespace PeepoDrumKit
 			}
 			else if (timeSinceLastVoice <= fadeOutThreshold)
 			{
-				voiceVolume = static_cast<f32>(ConvertRangeClampInput<f64>(0.0, fadeOutThreshold.Seconds, 1.0, 0.0, timeSinceLastVoice.Seconds));
+				voiceVolume = ConvertRangeClampInput(0.0f, fadeOutThreshold.ToSec_F32(), 1.0f, 0.0f, timeSinceLastVoice.ToSec_F32());
 				if (voiceVolume != 0.0f) voiceVolume /= voiceVolume;
 			}
 		}

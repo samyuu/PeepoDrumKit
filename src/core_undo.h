@@ -54,7 +54,7 @@ namespace Undo
 		i32 NumberOfChangesMade = 0;
 
 		i32 NumberOfCommandsToDisallowMergesFor = 0;
-		Time CommandMergeTimeThreshold = Time::FromSeconds(2.0);
+		Time CommandMergeTimeThreshold = Time::FromSec(2.0);
 		CPUStopwatch LastExecutedCommandStopwatch = CPUStopwatch::StartNew();
 
 	public:

@@ -209,12 +209,12 @@ namespace Audio
 				if (voiceData.Flags & VoiceFlags_VariablePlaybackSpeed)
 				{
 					const Time frameDuration = FramesToTime(1, sampleRate) * voiceData.PlaybackSpeed;
-					const Time bufferDuration = Time::FromSeconds(frameDuration.TotalSeconds() * frameCount);
-					const Time voiceStartTime = Time::FromSeconds(voiceData.TimePositionSec) - bufferDuration;
+					const Time bufferDuration = Time::FromSec(frameDuration.ToSec() * frameCount);
+					const Time voiceStartTime = Time::FromSec(voiceData.TimePositionSec) - bufferDuration;
 
 					for (i64 f = 0; f < frameCount; f++)
 					{
-						const Time frameTime = Time::FromSeconds(voiceStartTime.TotalSeconds() + (f * frameDuration.TotalSeconds()));
+						const Time frameTime = Time::FromSec(voiceStartTime.ToSec() + (f * frameDuration.ToSec()));
 						const f32 frameVolume = SampleVolumeMapAt(volumeMapStartFrame, volumeMapEndFrame, startVolume, endVolume, TimeToFrames(frameTime, sampleRate)) * voiceVolume;
 
 						for (u32 c = 0; c < OutputChannelCount; c++)
@@ -257,7 +257,7 @@ namespace Audio
 				const b8 variablePlaybackSpeed = (voiceData.Flags & VoiceFlags_VariablePlaybackSpeed);
 				const b8 playPastEnd = (voiceData.Flags & VoiceFlags_PlayPastEnd);
 				b8 hasReachedEnd = (sourceData == nullptr) ? false :
-					(variablePlaybackSpeed ? (voiceData.TimePositionSec >= FramesToTime(sourceData->Buffer.FrameCount, sourceData->Buffer.SampleRate).TotalSeconds()) :
+					(variablePlaybackSpeed ? (voiceData.TimePositionSec >= FramesToTime(sourceData->Buffer.FrameCount, sourceData->Buffer.SampleRate).ToSec()) :
 					(voiceData.FramePosition >= sourceData->Buffer.FrameCount));
 
 				if (sourceData == nullptr && (voiceData.Flags & VoiceFlags_RemoveOnEnd))
@@ -268,7 +268,7 @@ namespace Audio
 					voiceData.SmoothTime.BaseCPUTimeTicks = CPUTime::GetNow().Ticks;
 					voiceData.SmoothTime.BaseVoiceTimeSec =
 						variablePlaybackSpeed ? voiceData.TimePositionSec.load() :
-						FramesToTime(voiceData.FramePosition, (sourceData != nullptr) ? sourceData->Buffer.SampleRate : OutputSampleRate).TotalSeconds();
+						FramesToTime(voiceData.FramePosition, (sourceData != nullptr) ? sourceData->Buffer.SampleRate : OutputSampleRate).ToSec();
 				}
 
 				if (voiceData.Flags & VoiceFlags_Playing)
@@ -321,7 +321,7 @@ namespace Audio
 		void CallbackProcessVariableSpeedVoiceSamples(i16* outputBuffer, const u32 bufferFrameCount, const b8 playPastEnd, const b8 hasReachedEnd, VoiceData& voiceData, SourceData* sourceData)
 		{
 			const u32 sampleRate = (sourceData != nullptr) ? sourceData->Buffer.SampleRate : OutputSampleRate;
-			const f64 bufferDurationSec = (FramesToTime(bufferFrameCount, sampleRate).TotalSeconds() * voiceData.PlaybackSpeed);
+			const f64 bufferDurationSec = (FramesToTime(bufferFrameCount, sampleRate).ToSec() * voiceData.PlaybackSpeed);
 
 			const i16* rawSamples = (sourceData != nullptr) ? sourceData->Buffer.InterleavedSamples.get() : nullptr;
 
@@ -365,7 +365,7 @@ namespace Audio
 
 			voiceData.TimePositionSec = voiceData.TimePositionSec + bufferDurationSec;
 			if (hasReachedEnd && !playPastEnd)
-				voiceData.TimePositionSec = (voiceData.Flags & VoiceFlags_Looping) ? 0.0 : FramesToTime(sourceData->Buffer.FrameCount, sampleRate).TotalSeconds();
+				voiceData.TimePositionSec = (voiceData.Flags & VoiceFlags_Looping) ? 0.0 : FramesToTime(sourceData->Buffer.FrameCount, sampleRate).ToSec();
 
 			CallbackApplyVoiceVolumeAndMixTempBufferIntoOutput(outputBuffer, framesRead, voiceData, sampleRate);
 		}
@@ -866,14 +866,14 @@ namespace Audio
 			if (ApproxmiatelySame(value, 1.0f))
 			{
 				if (voice->Flags & VoiceFlags_VariablePlaybackSpeed)
-					voice->FramePosition = TimeToFrames(Time::FromSeconds(voice->TimePositionSec), sampleRate);
+					voice->FramePosition = TimeToFrames(Time::FromSec(voice->TimePositionSec), sampleRate);
 
 				voice->Flags &= ~VoiceFlags_VariablePlaybackSpeed;
 			}
 			else
 			{
 				if (!(voice->Flags & VoiceFlags_VariablePlaybackSpeed))
-					voice->TimePositionSec = FramesToTime(voice->FramePosition, sampleRate).TotalSeconds();
+					voice->TimePositionSec = FramesToTime(voice->FramePosition, sampleRate).ToSec();
 
 				voice->Flags |= VoiceFlags_VariablePlaybackSpeed;
 			}
@@ -893,7 +893,7 @@ namespace Audio
 			const u32 sampleRate = (source != nullptr) ? source->Buffer.SampleRate : AudioEngine::OutputSampleRate;
 
 			if (voice->Flags & VoiceFlags_VariablePlaybackSpeed)
-				return Time::FromSeconds(voice->TimePositionSec);
+				return Time::FromSec(voice->TimePositionSec);
 			else
 				return FramesToTime(voice->FramePosition, sampleRate);
 		}
@@ -912,7 +912,7 @@ namespace Audio
 
 				const CPUTime systemTimeNow = CPUTime::GetNow();
 				const CPUTime systemTimeThen = CPUTime(voice->SmoothTime.BaseCPUTimeTicks);
-				const Time baseVoiceTime = Time::FromSeconds(voice->SmoothTime.BaseVoiceTimeSec);
+				const Time baseVoiceTime = Time::FromSec(voice->SmoothTime.BaseVoiceTimeSec);
 
 				const Time timeSincePlaybackStart = CPUTime::DeltaTime(systemTimeThen, systemTimeNow) * playbackSpeed;
 				const Time adjustedVoiceTime = timeSincePlaybackStart + baseVoiceTime;
@@ -936,7 +936,7 @@ namespace Audio
 			const SourceData* source = impl->TryGetSourceData(voice->Source, AudioEngine::Impl::GetSourceDataParam::ValidateBuffer);
 			const u32 sampleRate = (source != nullptr) ? source->Buffer.SampleRate : AudioEngine::OutputSampleRate;
 			voice->FramePosition = TimeToFrames(value, sampleRate);
-			voice->TimePositionSec = value.TotalSeconds();
+			voice->TimePositionSec = value.ToSec();
 			voice->SmoothTime.RequestUpdate = true;
 		}
 	}

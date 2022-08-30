@@ -72,7 +72,7 @@ namespace Audio
 
 		inline Time GetDuration() const
 		{
-			return Time::FromSeconds(static_cast<f64>(AllMips[0].AbsoluteSamples.size()) / AllMips[0].SamplesPerSecond);
+			return Time::FromSec(static_cast<f64>(AllMips[0].AbsoluteSamples.size()) / AllMips[0].SamplesPerSecond);
 		}
 
 		inline i32 GetUsedMipCount() const
@@ -112,7 +112,7 @@ namespace Audio
 
 			WaveformMip& baseMip = AllMips[0];
 			baseMip.PowerOfTwoSampleCount = RoundUpToPowerOfTwo(static_cast<u32>(inSampleBuffer.FrameCount));
-			baseMip.TimePerSample = Time::FromSeconds(1.0 / static_cast<f64>(inSampleBuffer.SampleRate));
+			baseMip.TimePerSample = Time::FromSec(1.0 / static_cast<f64>(inSampleBuffer.SampleRate));
 			baseMip.SamplesPerSecond = static_cast<f64>(inSampleBuffer.SampleRate);
 
 			if (includeFullSizeMip)

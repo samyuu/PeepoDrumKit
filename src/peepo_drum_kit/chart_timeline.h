@@ -64,7 +64,7 @@ namespace PeepoDrumKit
 		constexpr f32 TimeToWorldSpaceX(Time time) const { return static_cast<f32>(time.Seconds * WorldSpaceXUnitsPerSecond); }
 		constexpr f32 TimeToLocalSpaceX(Time time) const { return (TimeToWorldSpaceX(time) * ZoomCurrent.x) - PositionCurrent.x; }
 		constexpr f32 TimeToLocalSpaceX_AtTarget(Time time) const { return (TimeToWorldSpaceX(time) * ZoomTarget.x) - PositionTarget.x; }
-		constexpr Time WorldSpaceXToTime(f32 worldSpaceX) const { return Time::FromSeconds(worldSpaceX / WorldSpaceXUnitsPerSecond); }
+		constexpr Time WorldSpaceXToTime(f32 worldSpaceX) const { return Time::FromSec(worldSpaceX / WorldSpaceXUnitsPerSecond); }
 		constexpr Time LocalSpaceXToTime(f32 localSpaceX) const { return WorldSpaceXToTime((localSpaceX + PositionCurrent.x) / ZoomCurrent.x); }
 		constexpr Time LocalSpaceXToTime_AtTarget(f32 localSpaceX) const { return WorldSpaceXToTime((localSpaceX + PositionTarget.x) / ZoomTarget.x); }
 
@@ -72,8 +72,8 @@ namespace PeepoDrumKit
 	};
 
 	// NOTE: Making it so the Gui::DragScalar() screen space mouse movement matches the equivalent distance on the timeline
-	constexpr f32 TimelineDragScalarSpeedAtZoomSec(const TimelineCamera& camera) { return static_cast<f32>(camera.TimePerScreenPixel().TotalSeconds()); }
-	constexpr f32 TimelineDragScalarSpeedAtZoomMS(const TimelineCamera& camera) { return static_cast<f32>(camera.TimePerScreenPixel().TotalMilliseconds()); }
+	constexpr f32 TimelineDragScalarSpeedAtZoomSec(const TimelineCamera& camera) { return camera.TimePerScreenPixel().ToSec_F32(); }
+	constexpr f32 TimelineDragScalarSpeedAtZoomMS(const TimelineCamera& camera) { return camera.TimePerScreenPixel().ToMS_F32(); }
 
 	// TODO: If branches can only change notes (??) then could have multiple rows of notes for each branch with all but the active branch being grayed out (?)
 	enum class TimelineRowType : u8

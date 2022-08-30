@@ -64,13 +64,13 @@ namespace PeepoDrumKit
 	static b8 GuiAssignableInputBindingButton(InputBinding& inOutBinding, vec2 buttonSize, ImGuiButtonFlags buttonFlags, InputBinding*& inOutAwaitInputBinding, CPUStopwatch& inOutAwaitInputStopwatch)
 	{
 		static constexpr u32 activeTextColor = 0xFF3DEBD2;
-		static constexpr Time timeoutThreshold = Time::FromSeconds(4.0);
-		static constexpr Time mouseClickThreshold = Time::FromMilliseconds(200.0);
+		static constexpr Time timeoutThreshold = Time::FromSec(4.0);
+		static constexpr Time mouseClickThreshold = Time::FromMS(200.0);
 		static constexpr auto animateBlink = [&](Time elapsed)
 		{
-			constexpr f32 frequency = static_cast<f32>(timeoutThreshold.TotalSeconds() * 1.2);
+			constexpr f32 frequency = (timeoutThreshold.ToSec_F32() * 1.2f);
 			constexpr f32 low = 0.25f, high = 1.45f, min = 0.25f, max = 1.00f;
-			return Clamp(ConvertRange(-1.0f, +1.0f, low, high, ::sinf(static_cast<f32>(elapsed.TotalSeconds() * frequency) + 1.0f)), min, max);
+			return Clamp(ConvertRange(-1.0f, +1.0f, low, high, ::sinf((elapsed.ToSec_F32() * frequency) + 1.0f)), min, max);
 		};
 
 		auto requestAssignment = [&](InputBinding* inOut)

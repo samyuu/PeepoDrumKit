@@ -24,7 +24,7 @@ namespace PeepoDrumKit
 		Tempo LastTempoMin = Tempo(0.0f), LastTempoMax = Tempo(0.0f);
 		CPUStopwatch FirstTap = CPUStopwatch::StartNew();
 		CPUStopwatch LastTap = CPUStopwatch::StartNew();
-		Time ResetThreshold = Time::FromSeconds(2.0);
+		Time ResetThreshold = Time::FromSec(2.0);
 
 		inline b8 HasTimedOut() const { return ResetThreshold > Time::Zero() && LastTap.GetElapsed() >= ResetThreshold; }
 		inline void Reset() { FirstTap.Stop(); TapCount = 0; LastTempo = LastTempoMin = LastTempoMax = Tempo(0.0f); }
@@ -38,7 +38,7 @@ namespace PeepoDrumKit
 			LastTempoMax.BPM = (TapCount <= 2) ? LastTempo.BPM : Max(LastTempo.BPM, LastTempoMax.BPM);
 		}
 
-		static constexpr Tempo CalculateTempo(i32 tapCount, Time elapsed) { return Tempo((tapCount <= 0) ? 0.0f : static_cast<f32>(60.0 * tapCount / elapsed.TotalSeconds())); }
+		static constexpr Tempo CalculateTempo(i32 tapCount, Time elapsed) { return Tempo((tapCount <= 0) ? 0.0f : static_cast<f32>(60.0 * tapCount / elapsed.ToSec())); }
 	};
 
 	struct ChartHelpWindow

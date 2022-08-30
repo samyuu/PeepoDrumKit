@@ -309,8 +309,8 @@ namespace PeepoDrumKit
 	static constexpr i32 MaxTimeSignatureValue = Beat::TicksPerBeat * 4;
 	static constexpr f32 MinScrollSpeed = -100.0f;
 	static constexpr f32 MaxScrollSpeed = +100.0f;
-	static constexpr Time MinNoteTimeOffset = Time::FromMilliseconds(-25.0);
-	static constexpr Time MaxNoteTimeOffset = Time::FromMilliseconds(+25.0);
+	static constexpr Time MinNoteTimeOffset = Time::FromMS(-25.0);
+	static constexpr Time MaxNoteTimeOffset = Time::FromMS(+25.0);
 	static constexpr i16 MinBalloonCount = 0;
 	static constexpr i16 MaxBalloonCount = 999;
 
@@ -575,7 +575,7 @@ namespace PeepoDrumKit
 
 			Gui::PushFont(FontLarge_EN);
 			{
-				const Time lastBeatDuration = Time::FromSeconds(60.0 / Round(Calculator.LastTempo.BPM));
+				const Time lastBeatDuration = Time::FromSec(60.0 / Round(Calculator.LastTempo.BPM));
 				const f32 tapBeatLerpT = ImSaturate((Calculator.TapCount == 0) ? 1.0f : static_cast<f32>(Calculator.LastTap.GetElapsed() / lastBeatDuration));
 				const ImVec4 animatedButtonColor = ImLerp(Gui::GetStyleColorVec4(ImGuiCol_ButtonActive), Gui::GetStyleColorVec4(ImGuiCol_Button), tapBeatLerpT);
 
@@ -969,10 +969,10 @@ namespace PeepoDrumKit
 						{
 							MultiEditWidgetParam widgetIn = {};
 							widgetIn.EnableStepButtons = true;
-							widgetIn.Value.F32 = static_cast<f32>(sharedValues.TimeOffset().TotalMilliseconds());
+							widgetIn.Value.F32 = sharedValues.TimeOffset().ToMS_F32();
 							widgetIn.HasMixedValues = !(commonEqualMemberFlags & EnumToFlag(member));
-							widgetIn.MixedValuesMin.F32 = static_cast<f32>(mixedValuesMin.TimeOffset().TotalMilliseconds());
-							widgetIn.MixedValuesMax.F32 = static_cast<f32>(mixedValuesMax.TimeOffset().TotalMilliseconds());
+							widgetIn.MixedValuesMin.F32 = mixedValuesMin.TimeOffset().ToMS_F32();
+							widgetIn.MixedValuesMax.F32 = mixedValuesMax.TimeOffset().ToMS_F32();
 							widgetIn.ButtonStep.F32 = 1.0f;
 							widgetIn.ButtonStepFast.F32 = 5.0f;
 							widgetIn.EnableDragLabel = true;
@@ -983,14 +983,14 @@ namespace PeepoDrumKit
 							{
 								if (widgetOut.HasValueExact)
 								{
-									const Time valueExact = Clamp(Time::FromMilliseconds(widgetOut.ValueExact.F32), MinNoteTimeOffset, MaxNoteTimeOffset);
+									const Time valueExact = Clamp(Time::FromMS(widgetOut.ValueExact.F32), MinNoteTimeOffset, MaxNoteTimeOffset);
 									for (auto& selectedItem : SelectedItems)
 										selectedItem.MemberValues.TimeOffset() = valueExact;
 									valueWasChanged = true;
 								}
 								else if (widgetOut.HasValueIncrement)
 								{
-									const Time valueIncrement = Time::FromMilliseconds(widgetOut.ValueIncrement.F32);
+									const Time valueIncrement = Time::FromMS(widgetOut.ValueIncrement.F32);
 									for (auto& selectedItem : SelectedItems)
 										selectedItem.MemberValues.TimeOffset() = Clamp(selectedItem.MemberValues.TimeOffset() + valueIncrement, MinNoteTimeOffset, MaxNoteTimeOffset);
 									valueWasChanged = true;
@@ -1306,16 +1306,16 @@ namespace PeepoDrumKit
 				{
 					static_assert(sizeof(Time::Seconds) == sizeof(f64));
 					const Time timeSpaceOffset = (timeSpace == TimeSpace::Song) ? context.Chart.SongOffset : Time::Zero();
-					const Time min = timeSpaceOffset, max = Time::FromSeconds(F64Max);
+					const Time min = timeSpaceOffset, max = Time::FromSec(F64Max);
 
 					bool valueChanged = false;
 					Gui::Property::Property([&]
 					{
 						Gui::SetNextItemWidth(-1.0f);
-						f32 v = static_cast<f32>((*inOutValue + timeSpaceOffset).Seconds);
-						if (GuiDragLabelFloat(label, &v, TimelineDragScalarSpeedAtZoomSec(camera), static_cast<f32>(min.Seconds), static_cast<f32>(max.Seconds)))
+						f32 v = (*inOutValue + timeSpaceOffset).ToSec_F32();
+						if (GuiDragLabelFloat(label, &v, TimelineDragScalarSpeedAtZoomSec(camera), min.ToSec_F32(), max.ToSec_F32()))
 						{
-							*inOutValue = (Time::FromSeconds(v) - timeSpaceOffset);
+							*inOutValue = (Time::FromSec(v) - timeSpaceOffset);
 							valueChanged = true;
 						}
 					});
@@ -1354,14 +1354,14 @@ namespace PeepoDrumKit
 				Gui::Property::Property([&]
 				{
 					Gui::SetNextItemWidth(-1.0f);
-					if (f32 v = static_cast<f32>(chart.SongOffset.TotalMilliseconds()); GuiDragLabelFloat("Song Offset##DragFloatLabel", &v, TimelineDragScalarSpeedAtZoomMS(timeline.Camera)))
-						context.Undo.Execute<Commands::ChangeSongOffset>(&chart, Time::FromMilliseconds(v));
+					if (f32 v = chart.SongOffset.ToMS_F32(); GuiDragLabelFloat("Song Offset##DragFloatLabel", &v, TimelineDragScalarSpeedAtZoomMS(timeline.Camera)))
+						context.Undo.Execute<Commands::ChangeSongOffset>(&chart, Time::FromMS(v));
 				});
 				Gui::Property::Value([&]
 				{
 					Gui::SetNextItemWidth(-1.0f);
-					if (f32 v = static_cast<f32>(chart.SongOffset.TotalMilliseconds()); Gui::SpinFloat("##SongOffset", &v, 1.0f, 10.0f, "%.2f ms", ImGuiInputTextFlags_None))
-						context.Undo.Execute<Commands::ChangeSongOffset>(&chart, Time::FromMilliseconds(v));
+					if (f32 v = chart.SongOffset.ToMS_F32(); Gui::SpinFloat("##SongOffset", &v, 1.0f, 10.0f, "%.2f ms", ImGuiInputTextFlags_None))
+						context.Undo.Execute<Commands::ChangeSongOffset>(&chart, Time::FromMS(v));
 				});
 				// TODO: Disable merge if made inactive this frame (?)
 				// if (Gui::IsItemDeactivatedAfterEdit()) {}

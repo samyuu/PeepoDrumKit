@@ -402,14 +402,17 @@ struct Time
 	constexpr explicit Time(f64 sec) : Seconds(sec) {}
 
 	static constexpr Time Zero() { return Time(0.0); }
-	static constexpr Time FromMinutes(f64 min) { return Time(min * 60.0); }
-	static constexpr Time FromSeconds(f64 sec) { return Time(sec); }
-	static constexpr Time FromMilliseconds(f64 ms) { return Time(ms / 1000.0); }
+	static constexpr Time FromMin(f64 min) { return Time(min * 60.0); }
+	static constexpr Time FromSec(f64 sec) { return Time(sec); }
+	static constexpr Time FromMS(f64 ms) { return Time(ms / 1000.0); }
 	static constexpr Time FromFrames(f64 frames, f64 fps = 60.0) { return Time(frames / fps); }
 
-	constexpr f64 TotalMinutes() const { return Seconds / 60.0; }
-	constexpr f64 TotalSeconds() const { return Seconds; }
-	constexpr f64 TotalMilliseconds() const { return Seconds * 1000.0; }
+	constexpr f64 ToMin() const { return Seconds / 60.0; }
+	constexpr f32 ToMin_F32() const { return static_cast<f32>(ToMin()); }
+	constexpr f64 ToSec() const { return Seconds; }
+	constexpr f32 ToSec_F32() const { return static_cast<f32>(ToSec()); }
+	constexpr f64 ToMS() const { return Seconds * 1000.0; }
+	constexpr f32 ToMS_F32() const { return static_cast<f32>(ToMS()); }
 	constexpr f32 ToFrames(f32 fps = 60.0f) const { return static_cast<f32>(Seconds * static_cast<f64>(fps)); }
 
 	constexpr b8 operator==(const Time& other) const { return Seconds == other.Seconds; }
@@ -419,18 +422,17 @@ struct Time
 	constexpr b8 operator<(const Time& other) const { return Seconds < other.Seconds; }
 	constexpr b8 operator>(const Time& other) const { return Seconds > other.Seconds; }
 
-	constexpr Time operator+(const Time other) const { return FromSeconds(Seconds + other.Seconds); }
-	constexpr Time operator-(const Time other) const { return FromSeconds(Seconds - other.Seconds); }
+	constexpr Time operator+(const Time other) const { return FromSec(Seconds + other.Seconds); }
+	constexpr Time operator-(const Time other) const { return FromSec(Seconds - other.Seconds); }
 
 	constexpr Time& operator+=(const Time& other) { Seconds += other.Seconds; return *this; }
 	constexpr Time& operator-=(const Time& other) { Seconds -= other.Seconds; return *this; }
 
-	constexpr Time operator*(f64 other) const { return FromSeconds(Seconds * other); }
-	constexpr Time operator*(i32 other) const { return FromSeconds(Seconds * other); }
+	constexpr Time operator*(const f64 other) const { return FromSec(Seconds * other); }
+	constexpr Time operator*(const i32 other) const { return FromSec(Seconds * other); }
 
-	constexpr f64 operator/(Time other) const { return Seconds / other.Seconds; }
-	constexpr f64 operator/(f64 other) const { return Seconds / other; }
-	constexpr f64 operator/(i32 other) const { return Seconds / other; }
+	constexpr f64 operator/(const Time& other) const { return Seconds / other.Seconds; }
+	constexpr f64 operator/(const f64 other) const { return Seconds / other; }
 
 	constexpr Time operator+() const { return Time(+Seconds); }
 	constexpr Time operator-() const { return Time(-Seconds); }
@@ -485,10 +487,10 @@ struct CPUStopwatch
 	b8 IsRunning = false;
 	CPUTime StartTime = {};
 
-	void Start() { if (!IsRunning) { StartTime = CPUTime::GetNow(); IsRunning = true; } }
-	Time Restart() { const Time elapsed = Stop(); Start(); return elapsed; }
-	Time Stop() { const Time elapsed = GetElapsed(); IsRunning = false; StartTime = {}; return elapsed; }
-	Time GetElapsed() const { return IsRunning ? CPUTime::DeltaTime(StartTime, CPUTime::GetNow()) : Time::Zero(); }
+	inline void Start() { if (!IsRunning) { StartTime = CPUTime::GetNow(); IsRunning = true; } }
+	inline Time Restart() { const Time elapsed = Stop(); Start(); return elapsed; }
+	inline Time Stop() { const Time elapsed = GetElapsed(); IsRunning = false; StartTime = {}; return elapsed; }
+	inline Time GetElapsed() const { return IsRunning ? CPUTime::DeltaTime(StartTime, CPUTime::GetNow()) : Time::Zero(); }
 
 	static CPUStopwatch StartNew() { CPUStopwatch out; out.Start(); return out; }
 };
