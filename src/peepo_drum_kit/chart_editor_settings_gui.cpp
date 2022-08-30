@@ -669,7 +669,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15504, "TODO: Add missing settings entries for newly added UserSettingsData fields");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15512, "TODO: Add missing settings entries for newly added UserSettingsData fields");
 
 					SettingsGui::SettingsEntry settingsEntriesMain[] =
 					{
@@ -700,11 +700,6 @@ namespace PeepoDrumKit
 							"Timeline: Scroll Wheel Sensitivity (Shift)",
 							"The timeline distance moved per mouse wheel scroll tick while holding down shift.",
 							SettingsGui::WidgetType::F32_TimelineScrollSensitivity),
-
-						// TODO: Remove..?
-						// SettingsGui::SettingsEntry(settings.General.TimelineScrubAutoScrollPixelThreshold, "Timeline Scrub Auto Scroll Pixel Threshold", ""),
-						// SettingsGui::SettingsEntry(settings.General.TimelineScrubAutoScrollSpeedMin, "Timeline Scrub Auto Scroll Speed Min", ""),
-						// SettingsGui::SettingsEntry(settings.General.TimelineScrubAutoScrollSpeedMax, "Timeline Scrub Auto Scroll Speed Max", ""),
 
 						SettingsGui::SettingsEntry(settings.Animation.TimelineSmoothScrollSpeed,
 							"Animation: Timeline Smooth Scroll Speed",

@@ -463,7 +463,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15504, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15512, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -493,6 +493,7 @@ namespace PeepoDrumKit
 			X(General.TimelineScrollDistancePerMouseWheelTick, "timeline_scroll_distance_per_mouse_wheel_tick");
 			X(General.TimelineScrollDistancePerMouseWheelTickFast, "timeline_scroll_distance_per_mouse_wheel_tick_fast");
 			X(General.TimelineZoomFactorPerMouseWheelTick, "timeline_zoom_factor_per_mouse_wheel_tick");
+			X(General.TimelineScrubAutoScrollEnableClamp, "timeline_scrub_auto_scroll_enable_clamp");
 			X(General.TimelineScrubAutoScrollPixelThreshold, "timeline_scrub_auto_scroll_pixel_threshold");
 			X(General.TimelineScrubAutoScrollSpeedMin, "timeline_scrub_auto_scroll_speed_min");
 			X(General.TimelineScrubAutoScrollSpeedMax, "timeline_scrub_auto_scroll_speed_max");

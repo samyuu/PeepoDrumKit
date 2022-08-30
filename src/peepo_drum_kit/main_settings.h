@@ -106,9 +106,9 @@ namespace PeepoDrumKit
 			WithDefault<f32> TimelineScrollDistancePerMouseWheelTick = 100.0f;
 			WithDefault<f32> TimelineScrollDistancePerMouseWheelTickFast = 250.0f;
 			WithDefault<f32> TimelineZoomFactorPerMouseWheelTick = 1.2f;
-			// TODO: Adjust default values (?)
-			WithDefault<f32> TimelineScrubAutoScrollPixelThreshold = 160.0f;
-			WithDefault<f32> TimelineScrubAutoScrollSpeedMin = 150.0f;
+			WithDefault<b8> TimelineScrubAutoScrollEnableClamp = true;
+			WithDefault<f32> TimelineScrubAutoScrollPixelThreshold = 36.0f;
+			WithDefault<f32> TimelineScrubAutoScrollSpeedMin = 2500.0f;
 			WithDefault<f32> TimelineScrubAutoScrollSpeedMax = 3500.0f;
 			WithDefault<PlaybackSpeedStepList> PlaybackSpeedSteps = PlaybackSpeedStepList { 1.0f, 0.9f, 0.8f, 0.7f, 0.6f, 0.5f, 0.4f, 0.3f, 0.2f };
 			WithDefault<PlaybackSpeedStepList> PlaybackSpeedStepsRough = PlaybackSpeedStepList { 1.0f, 0.75f, 0.5f, 0.25f };

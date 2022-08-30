@@ -1386,21 +1386,39 @@ namespace PeepoDrumKit
 					const Beat oldCursorBeat = context.GetCursorBeat();
 					const Beat newCursorBeat = context.TimeToBeat(mouseCursorTime);
 
-					const f32 threshold = *Settings.General.TimelineScrubAutoScrollPixelThreshold;
+					const f32 threshold = ClampBot(GuiScale(*Settings.General.TimelineScrubAutoScrollPixelThreshold), 1.0f);
 					const f32 speedMin = *Settings.General.TimelineScrubAutoScrollSpeedMin, speedMax = *Settings.General.TimelineScrubAutoScrollSpeedMax;
 
 					const f32 modifier = Gui::GetIO().KeyAlt ? 0.25f : Gui::GetIO().KeyShift ? 2.0f : 1.0f;
 					if (const f32 left = threshold; mouseLocalSpaceX < left)
 					{
 						const f32 scrollIncrementThisFrame = ConvertRange(threshold, 0.0f, speedMin, speedMax, mouseLocalSpaceX) * modifier * Gui::DeltaTime();
-						Camera.PositionCurrent.x -= scrollIncrementThisFrame;
-						Camera.PositionTarget.x -= scrollIncrementThisFrame;
+						if (*Settings.General.TimelineScrubAutoScrollEnableClamp)
+						{
+							const f32 minScrollX = TimelineCameraBaseScrollX;
+							Camera.PositionCurrent.x = ClampBot(Camera.PositionCurrent.x - scrollIncrementThisFrame, ClampTop(Camera.PositionCurrent.x, minScrollX));
+							Camera.PositionTarget.x = ClampBot(Camera.PositionTarget.x - scrollIncrementThisFrame, ClampTop(Camera.PositionTarget.x, minScrollX));
+						}
+						else
+						{
+							Camera.PositionCurrent.x -= scrollIncrementThisFrame;
+							Camera.PositionTarget.x -= scrollIncrementThisFrame;
+						}
 					}
 					if (const f32 right = (Regions.ContentHeader.GetWidth() - threshold); mouseLocalSpaceX >= right)
 					{
 						const f32 scrollIncrementThisFrame = ConvertRange(0.0f, threshold, speedMin, speedMax, mouseLocalSpaceX - right) * modifier * Gui::DeltaTime();
-						Camera.PositionCurrent.x += scrollIncrementThisFrame;
-						Camera.PositionTarget.x += scrollIncrementThisFrame;
+						if (*Settings.General.TimelineScrubAutoScrollEnableClamp)
+						{
+							const f32 maxScrollX = Camera.WorldToLocalSpaceScale(vec2(Camera.TimeToWorldSpaceX(context.Chart.GetDurationOrDefault()), 0.0f)).x - Regions.ContentHeader.GetWidth() + 1.0f;
+							Camera.PositionCurrent.x = ClampTop(Camera.PositionCurrent.x + scrollIncrementThisFrame, ClampBot(Camera.PositionCurrent.x, maxScrollX));
+							Camera.PositionTarget.x = ClampTop(Camera.PositionTarget.x + scrollIncrementThisFrame, ClampBot(Camera.PositionTarget.x, maxScrollX));
+						}
+						else
+						{
+							Camera.PositionCurrent.x += scrollIncrementThisFrame;
+							Camera.PositionTarget.x += scrollIncrementThisFrame;
+						}
 					}
 
 					if (newCursorBeat != oldCursorBeat)
