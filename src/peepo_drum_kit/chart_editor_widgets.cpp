@@ -46,16 +46,16 @@ namespace PeepoDrumKit
 		Gui::BeginGroup();
 		Gui::PushID(Gui::StringViewStart(label), Gui::StringViewEnd(label));
 		{
-			const auto topLeftCursorPos = Gui::GetCursorScreenPos();
+			const ImVec2 topLeftCursorPos = Gui::GetCursorScreenPos();
 
-			// TODO: Implement properly without hacky invisible DragFloat (?)
 			Gui::PushStyleColor(ImGuiCol_Text, 0); Gui::PushStyleColor(ImGuiCol_FrameBg, 0); Gui::PushStyleColor(ImGuiCol_FrameBgHovered, 0); Gui::PushStyleColor(ImGuiCol_FrameBgActive, 0);
 			valueChanged = Gui::DragScalar("##DragScalar", dataType, inOutValue, speed, min, max, nullptr, flags | ImGuiSliderFlags_NoInput);
 			Gui::SetDragScalarMouseCursor();
 			Gui::PopStyleColor(4);
 
+			// NOTE: Calling GetColorU32(ImGuiCol_Text) here instead of GetStyleColorVec4() causes the disabled-item alpha factor to get applied twice
 			Gui::SetCursorScreenPos(topLeftCursorPos);
-			Gui::PushStyleColor(ImGuiCol_Text, Gui::IsItemActive() ? DragTextActiveColor : Gui::IsItemHovered() ? DragTextHoveredColor : Gui::GetColorU32(ImGuiCol_Text));
+			Gui::PushStyleColor(ImGuiCol_Text, Gui::IsItemActive() ? DragTextActiveColor : Gui::IsItemHovered() ? DragTextHoveredColor : Gui::ColorConvertFloat4ToU32(Gui::GetStyleColorVec4(ImGuiCol_Text)));
 			Gui::AlignTextToFramePadding(); Gui::TextUnformatted(Gui::StringViewStart(label), Gui::FindRenderedTextEnd(Gui::StringViewStart(label), Gui::StringViewEnd(label)));
 			Gui::PopStyleColor(1);
 		}
@@ -1374,6 +1374,16 @@ namespace PeepoDrumKit
 		{
 			if (Gui::Property::BeginTable(ImGuiTableFlags_BordersInner))
 			{
+				// NOTE: This might seem like a strange design decision at first (hence it at least being optional)
+				//		 but the widgets here can only be used for inserting / editing (single) changes directly underneath the cursor
+				//		 which in case of an active selection (in the properties window) can become confusing
+				//		 since there then are multiple edit widgets shown to the user with the same label yet that differ in functionality.
+				//		 To make it clear that selected items can only be edited via the properties window, these regular widgets here will therefore be disabled.
+				b8 isAnyItemOtherThanNotesSelected = false;
+				if (*Settings.General.DisableTempoWindowWidgetsIfHasSelection)
+					ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { if (!IsNotesList(it.List)) { isAnyItemOtherThanNotesSelected = true; } });
+				Gui::BeginDisabled(isAnyItemOtherThanNotesSelected); defer { Gui::EndDisabled(); };
+
 				// TODO: Might wanna disable during playbackt to not spam a bunch of tempo changes etc. (but don't dim out widgets as it might become annoying)
 				const Beat cursorBeat = FloorBeatToGrid(context.GetCursorBeat(), GetGridBeatSnap(timeline.CurrentGridBarDivision));
 				Gui::BeginDisabled(cursorBeat.Ticks < 0);
