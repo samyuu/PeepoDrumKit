@@ -1384,13 +1384,13 @@ namespace PeepoDrumKit
 					ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { if (!IsNotesList(it.List)) { isAnyItemOtherThanNotesSelected = true; } });
 				Gui::BeginDisabled(isAnyItemOtherThanNotesSelected); defer { Gui::EndDisabled(); };
 
-				// TODO: Might wanna disable during playbackt to not spam a bunch of tempo changes etc. (but don't dim out widgets as it might become annoying)
 				const Beat cursorBeat = FloorBeatToGrid(context.GetCursorBeat(), GetGridBeatSnap(timeline.CurrentGridBarDivision));
+				// NOTE: Specifically to prevent ugly "flashing" between add/remove labels during playback
+				const b8 disallowRemoveButton = (cursorBeat.Ticks < 0) || context.GetIsPlayback();
 				Gui::BeginDisabled(cursorBeat.Ticks < 0);
 
 				const TempoChange* tempoChangeAtCursor = course.TempoMap.Tempo.TryFindLastAtBeat(cursorBeat);
 				const Tempo tempoAtCursor = (tempoChangeAtCursor != nullptr) ? tempoChangeAtCursor->Tempo : FallbackTempo;
-
 				auto insertOrUpdateCursorTempoChange = [&](Tempo newTempo)
 				{
 					if (tempoChangeAtCursor == nullptr || tempoChangeAtCursor->Beat != cursorBeat)
@@ -1408,48 +1408,65 @@ namespace PeepoDrumKit
 				Gui::Property::Value([&]
 				{
 					Gui::SetNextItemWidth(-1.0f);
-					if (f32 v = tempoAtCursor.BPM;
-						Gui::SpinFloat("##TempoAtCursor", &v, 1.0f, 10.0f, "%g BPM", ImGuiInputTextFlags_None))
+					if (f32 v = tempoAtCursor.BPM; Gui::SpinFloat("##TempoAtCursor", &v, 1.0f, 10.0f, "%g BPM", ImGuiInputTextFlags_None))
 						insertOrUpdateCursorTempoChange(Tempo(Clamp(v, MinBPM, MaxBPM)));
 
-					if (Gui::Button("Remove##TempoAtCursor", vec2(-1.0f, 0.0f)))
+					if (!disallowRemoveButton && tempoChangeAtCursor != nullptr && tempoChangeAtCursor->Beat == cursorBeat)
 					{
-						if (tempoChangeAtCursor != nullptr && tempoChangeAtCursor->Beat == cursorBeat)
+						if (Gui::Button("Remove##TempoAtCursor", vec2(-1.0f, 0.0f)))
 							context.Undo.Execute<Commands::RemoveTempoChange>(&course.TempoMap, cursorBeat);
+					}
+					else
+					{
+						if (Gui::Button("Add##TempoAtCursor", vec2(-1.0f, 0.0f)))
+							insertOrUpdateCursorTempoChange(tempoAtCursor);
 					}
 				});
 				Gui::Property::PropertyTextValueFunc("Time Signature", [&]
 				{
 					const TimeSignatureChange* signatureChangeAtCursor = course.TempoMap.Signature.TryFindLastAtBeat(cursorBeat);
 					const TimeSignature signatureAtCursor = (signatureChangeAtCursor != nullptr) ? signatureChangeAtCursor->Signature : FallbackTimeSignature;
+					auto insertOrUpdateCursorSignatureChange = [&](TimeSignature newSignature)
+					{
+						// TODO: Also floor cursor beat to next whole bar (?)
+						if (signatureChangeAtCursor == nullptr || signatureChangeAtCursor->Beat != cursorBeat)
+							context.Undo.Execute<Commands::AddTimeSignatureChange>(&course.TempoMap, TimeSignatureChange(cursorBeat, newSignature));
+						else
+							context.Undo.Execute<Commands::UpdateTimeSignatureChange>(&course.TempoMap, TimeSignatureChange(cursorBeat, newSignature));
+					};
 
 					Gui::SetNextItemWidth(-1.0f);
 					if (ivec2 v = { signatureAtCursor.Numerator, signatureAtCursor.Denominator };
 						GuiInputFraction("##SignatureAtCursor", &v, ivec2(MinTimeSignatureValue, MaxTimeSignatureValue), 1, 4))
-					{
-						// TODO: Also floor cursor beat to ~~last~~ next whole bar
-						if (signatureChangeAtCursor == nullptr || signatureChangeAtCursor->Beat != cursorBeat)
-							context.Undo.Execute<Commands::AddTimeSignatureChange>(&course.TempoMap, TimeSignatureChange(cursorBeat, TimeSignature(v[0], v[1])));
-						else
-							context.Undo.Execute<Commands::UpdateTimeSignatureChange>(&course.TempoMap, TimeSignatureChange(cursorBeat, TimeSignature(v[0], v[1])));
-					}
+						insertOrUpdateCursorSignatureChange(TimeSignature(v[0], v[1]));
 
-					if (Gui::Button("Remove##SignatureAtCursor", vec2(-1.0f, 0.0f)))
+					if (!disallowRemoveButton && signatureChangeAtCursor != nullptr && signatureChangeAtCursor->Beat == cursorBeat)
 					{
-						if (signatureChangeAtCursor != nullptr && signatureChangeAtCursor->Beat == cursorBeat)
+						if (Gui::Button("Remove##SignatureAtCursor", vec2(-1.0f, 0.0f)))
 							context.Undo.Execute<Commands::RemoveTimeSignatureChange>(&course.TempoMap, cursorBeat);
+					}
+					else
+					{
+						if (Gui::Button("Add##SignatureAtCursor", vec2(-1.0f, 0.0f)))
+							insertOrUpdateCursorSignatureChange(signatureAtCursor);
 					}
 				});
 
 				const ScrollChange* scrollChangeChangeAtCursor = course.ScrollChanges.TryFindLastAtBeat(cursorBeat);
-				std::optional<f32> newScrollSpeedToSet = {};
+				auto insertOrUpdateCursorScrollSpeedChange = [&](f32 newScrollSpeed)
+				{
+					if (scrollChangeChangeAtCursor == nullptr || scrollChangeChangeAtCursor->BeatTime != cursorBeat)
+						context.Undo.Execute<Commands::AddScrollChange>(&course.ScrollChanges, ScrollChange { cursorBeat, newScrollSpeed });
+					else
+						context.Undo.Execute<Commands::UpdateScrollChange>(&course.ScrollChanges, ScrollChange { cursorBeat, newScrollSpeed });
+				};
 
 				Gui::Property::Property([&]
 				{
 					Gui::SetNextItemWidth(-1.0f);
 					if (f32 v = (scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed;
 						GuiDragLabelFloat("Scroll Speed##DragFloatLabel", &v, 0.005f, MinScrollSpeed, MaxScrollSpeed, ImGuiSliderFlags_AlwaysClamp))
-						newScrollSpeedToSet = v;
+						insertOrUpdateCursorScrollSpeedChange(v);
 				});
 				Gui::Property::Value([&]
 				{
@@ -1459,35 +1476,39 @@ namespace PeepoDrumKit
 						{
 							if (f32 v = (scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed;
 								Gui::SpinFloat("##ScrollSpeedAtCursor", &v, 0.1f, 0.5f, "%gx"))
-								newScrollSpeedToSet = Clamp(v, MinScrollSpeed, MaxScrollSpeed);
+								insertOrUpdateCursorScrollSpeedChange(Clamp(v, MinScrollSpeed, MaxScrollSpeed));
 						}
 						else
 						{
 							if (f32 v = ScrollSpeedToTempo((scrollChangeChangeAtCursor == nullptr) ? 1.0f : scrollChangeChangeAtCursor->ScrollSpeed, tempoAtCursor).BPM;
 								Gui::SpinFloat("##ScrollTempoAtCursor", &v, 1.0f, 10.0f, "%g BPM"))
-								newScrollSpeedToSet = ScrollTempoToSpeed(Tempo(Clamp(v, MinBPM, MaxBPM)), tempoAtCursor);
+								insertOrUpdateCursorScrollSpeedChange(ScrollTempoToSpeed(Tempo(Clamp(v, MinBPM, MaxBPM)), tempoAtCursor));
 						}
 						return false;
 					});
 
-					if (Gui::Button("Remove##ScrollSpeedAtCursor", vec2(-1.0f, 0.0f)))
+					if (!disallowRemoveButton && scrollChangeChangeAtCursor != nullptr && scrollChangeChangeAtCursor->BeatTime == cursorBeat)
 					{
-						if (scrollChangeChangeAtCursor != nullptr && scrollChangeChangeAtCursor->BeatTime == cursorBeat)
+						if (Gui::Button("Remove##ScrollSpeedAtCursor", vec2(-1.0f, 0.0f)))
 							context.Undo.Execute<Commands::RemoveScrollChange>(&course.ScrollChanges, cursorBeat);
 					}
-				});
-
-				if (newScrollSpeedToSet.has_value())
-				{
-					if (scrollChangeChangeAtCursor == nullptr || scrollChangeChangeAtCursor->BeatTime != cursorBeat)
-						context.Undo.Execute<Commands::AddScrollChange>(&course.ScrollChanges, ScrollChange { cursorBeat, newScrollSpeedToSet.value() });
 					else
-						context.Undo.Execute<Commands::UpdateScrollChange>(&course.ScrollChanges, ScrollChange { cursorBeat, newScrollSpeedToSet.value() });
-				}
+					{
+						if (Gui::Button("Add##ScrollSpeedAtCursor", vec2(-1.0f, 0.0f)))
+							insertOrUpdateCursorScrollSpeedChange((scrollChangeChangeAtCursor != nullptr) ? scrollChangeChangeAtCursor->ScrollSpeed : 1.0f);
+					}
+				});
 
 				Gui::Property::PropertyTextValueFunc("Bar Line Visibility", [&]
 				{
 					const BarLineChange* barLineChangeAtCursor = course.BarLineChanges.TryFindLastAtBeat(cursorBeat);
+					auto insertOrUpdateCursorBarLineChange = [&](b8 newIsVisible)
+					{
+						if (barLineChangeAtCursor == nullptr || barLineChangeAtCursor->BeatTime != cursorBeat)
+							context.Undo.Execute<Commands::AddBarLineChange>(&course.BarLineChanges, BarLineChange { cursorBeat, newIsVisible });
+						else
+							context.Undo.Execute<Commands::UpdateBarLineChange>(&course.BarLineChanges, BarLineChange { cursorBeat, newIsVisible });
+					};
 
 					static constexpr auto guiOnOffButton = [](cstr label, cstr onLabel, cstr offLabel, b8* inOutIsOn) -> b8
 					{
@@ -1506,19 +1527,18 @@ namespace PeepoDrumKit
 					};
 
 					Gui::SetNextItemWidth(-1.0f);
-					if (b8 v = (barLineChangeAtCursor == nullptr) ? true : barLineChangeAtCursor->IsVisible;
-						guiOnOffButton("##OnOffBarLineAtCursor", "Visible", "Hidden", &v))
-					{
-						if (barLineChangeAtCursor == nullptr || barLineChangeAtCursor->BeatTime != cursorBeat)
-							context.Undo.Execute<Commands::AddBarLineChange>(&course.BarLineChanges, BarLineChange { cursorBeat, v });
-						else
-							context.Undo.Execute<Commands::UpdateBarLineChange>(&course.BarLineChanges, BarLineChange { cursorBeat, v });
-					}
+					if (b8 v = (barLineChangeAtCursor == nullptr) ? true : barLineChangeAtCursor->IsVisible; guiOnOffButton("##OnOffBarLineAtCursor", "Visible", "Hidden", &v))
+						insertOrUpdateCursorBarLineChange(v);
 
-					if (Gui::Button("Remove##BarLineAtCursor", vec2(-1.0f, 0.0f)))
+					if (!disallowRemoveButton && barLineChangeAtCursor != nullptr && barLineChangeAtCursor->BeatTime == cursorBeat)
 					{
-						if (barLineChangeAtCursor != nullptr && barLineChangeAtCursor->BeatTime == cursorBeat)
+						if (Gui::Button("Remove##BarLineAtCursor", vec2(-1.0f, 0.0f)))
 							context.Undo.Execute<Commands::RemoveBarLineChange>(&course.BarLineChanges, cursorBeat);
+					}
+					else
+					{
+						if (Gui::Button("Add##BarLineAtCursor", vec2(-1.0f, 0.0f)))
+							insertOrUpdateCursorBarLineChange((barLineChangeAtCursor != nullptr) ? barLineChangeAtCursor->IsVisible : true);
 					}
 				});
 				Gui::Property::PropertyTextValueFunc("Go-Go Time", [&]
@@ -1542,11 +1562,13 @@ namespace PeepoDrumKit
 					}
 					Gui::EndDisabled();
 
+					Gui::BeginDisabled(gogoRangeAtCursor == nullptr);
 					if (Gui::Button("Remove##GoGoAtCursor", vec2(-1.0f, 0.0f)))
 					{
 						if (gogoRangeAtCursor != nullptr)
 							context.Undo.Execute<Commands::RemoveGoGoRange>(&course.GoGoRanges, gogoRangeAtCursor->BeatTime);
 					}
+					Gui::EndDisabled();
 				});
 
 				Gui::EndDisabled();
