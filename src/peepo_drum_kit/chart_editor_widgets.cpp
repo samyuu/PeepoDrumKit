@@ -293,6 +293,54 @@ namespace PeepoDrumKit
 		Gui::PopID();
 		return out;
 	}
+
+	static b8 GuiPropertyRangeInterpolationEditWidget(std::string_view label, f32 inOutStartEnd[2], f32 step, f32 stepFast, f32 minValue, f32 maxValue, cstr format, const cstr previewStrings[2])
+	{
+		b8 wasValueChanged = false;
+		Gui::PushID(Gui::StringViewStart(label), Gui::StringViewEnd(label));
+		Gui::Property::PropertyTextValueFunc(label, [&]
+		{
+			static constexpr i32 components = 2; // NOTE: Unicode "Rightwards Arrow" U+2192
+			static constexpr std::string_view divisionText = "  \xE2\x86\x92  "; // "  ->  "; // " < > ";
+			const f32 divisionLabelWidth = Gui::CalcTextSize(Gui::StringViewStart(divisionText), Gui::StringViewEnd(divisionText)).x;
+			const f32 perComponentInputFloatWidth = Floor(((Gui::GetContentRegionAvail().x - divisionLabelWidth) / static_cast<f32>(components)));
+
+			for (i32 component = 0; component < components; component++)
+			{
+				Gui::PushID(&inOutStartEnd[component]);
+				b8& textInputActiveLastFrame = *Gui::GetStateStorage()->GetBoolRef(Gui::GetID("TextInputActiveLastFrame"), false);
+				const b8 showPreviewStrings = ((previewStrings[component] != nullptr) && !textInputActiveLastFrame);
+				const b8 isLastComponent = ((component + 1) == components);
+
+				Gui::SetNextItemWidth(isLastComponent ? (Gui::GetContentRegionAvail().x - 1.0f) : perComponentInputFloatWidth);
+				Gui::InputScalarWithButtonsExData exData {}; exData.TextColor = Gui::GetColorU32(ImGuiCol_Text, showPreviewStrings ? 0.0f : 1.0f); exData.SpinButtons = true;
+				Gui::InputScalarWithButtonsResult result = Gui::InputScalar_WithExtraStuff("##Component", ImGuiDataType_Float, &inOutStartEnd[component], &step, &stepFast, format, ImGuiInputTextFlags_None, &exData);
+				if (result.ValueChanged)
+				{
+					inOutStartEnd[component] = Clamp(inOutStartEnd[component], minValue, maxValue);
+					wasValueChanged = true;
+				}
+				textInputActiveLastFrame = result.IsTextItemActive;
+
+				if (showPreviewStrings)
+				{
+					Gui::PushStyleColor(ImGuiCol_Text, Gui::GetColorU32(ImGuiCol_Text, 0.6f));
+					Gui::RenderTextClipped(result.TextItemRect[0].TL + vec2(Gui::GetStyle().FramePadding.x, 0.0f), result.TextItemRect[0].BR, previewStrings[component], nullptr, nullptr, { 0.0f, 0.5f });
+					Gui::PopStyleColor();
+				}
+
+				if (!isLastComponent)
+				{
+					Gui::SameLine(0.0f, 0.0f);
+					Gui::TextUnformatted(divisionText);
+					Gui::SameLine(0.0f, 0.0f);
+				}
+				Gui::PopID();
+			}
+		});
+		Gui::PopID();
+		return wasValueChanged;
+	}
 }
 
 namespace PeepoDrumKit
@@ -883,6 +931,24 @@ namespace PeepoDrumKit
 						} break;
 						case GenericMember::F32_ScrollSpeed:
 						{
+							b8 areAllScrollSpeedsTheSame = (commonEqualMemberFlags & EnumToFlag(member));
+							b8 areAllScrollTemposTheSame = true;
+							Tempo commonScrollTempo = {}, minScrollTempo {}, maxScrollTempo {};
+							for (const auto& selectedItem : SelectedItems)
+							{
+								const Tempo scrollTempo = ScrollSpeedToTempo(selectedItem.MemberValues.ScrollSpeed(), selectedItem.BaseScrollTempo);
+								if (&selectedItem == &SelectedItems[0])
+								{
+									commonScrollTempo = minScrollTempo = maxScrollTempo = scrollTempo;
+								}
+								else
+								{
+									minScrollTempo.BPM = Min(minScrollTempo.BPM, scrollTempo.BPM);
+									maxScrollTempo.BPM = Max(maxScrollTempo.BPM, scrollTempo.BPM);
+									areAllScrollTemposTheSame &= ApproxmiatelySame(scrollTempo.BPM, commonScrollTempo.BPM, 0.001f);
+								}
+							}
+
 							for (size_t i = 0; i < 2; i++)
 							{
 								MultiEditWidgetParam widgetIn = {};
@@ -903,25 +969,6 @@ namespace PeepoDrumKit
 								}
 								else
 								{
-									b8 areAllScrollTemposTheSame = true, isFirstScroll = true;
-									Tempo commonScrollTempo = {}, minScrollTempo {}, maxScrollTempo {};
-									for (const auto& selectedItem : SelectedItems)
-									{
-										if (selectedItem.List != GenericList::ScrollChanges)
-											continue;
-
-										if (const Tempo scrollTempo = ScrollSpeedToTempo(selectedItem.MemberValues.ScrollSpeed(), selectedItem.BaseScrollTempo); isFirstScroll)
-										{
-											isFirstScroll = false;
-											commonScrollTempo = minScrollTempo = maxScrollTempo = scrollTempo;
-										}
-										else
-										{
-											minScrollTempo.BPM = Min(minScrollTempo.BPM, scrollTempo.BPM);
-											maxScrollTempo.BPM = Max(maxScrollTempo.BPM, scrollTempo.BPM);
-											areAllScrollTemposTheSame &= ApproxmiatelySame(scrollTempo.BPM, commonScrollTempo.BPM, 0.001f);
-										}
-									}
 									widgetIn.Value.F32 = commonScrollTempo.BPM;
 									widgetIn.HasMixedValues = !areAllScrollTemposTheSame;
 									widgetIn.MixedValuesMin.F32 = minScrollTempo.BPM;
@@ -963,6 +1010,70 @@ namespace PeepoDrumKit
 									}
 									valueWasChanged = true;
 								}
+							}
+
+							for (size_t i = 0; i < 2; i++)
+							{
+								// TODO: Maybe option to switch between Beat/Time interpolation modes (?)
+								static constexpr auto getT = [](const TempChartItem& item) -> f64 { return static_cast<f64>(item.MemberValues.BeatStart().Ticks); };
+								static constexpr auto getInterpolatedScrollSpeed = [](const TempChartItem& startItem, const TempChartItem& endItem, const TempChartItem& thisItem, f32 startValue, f32 endValue) -> f32
+								{
+									return static_cast<f32>(ConvertRange<f64>(getT(startItem), getT(endItem), startValue, endValue, getT(thisItem)));
+								};
+
+								TempChartItem* startItem = !SelectedItems.empty() ? &SelectedItems.front() : nullptr;
+								TempChartItem* endItem = !SelectedItems.empty() ? &SelectedItems.back() : nullptr;
+								f32 inOutStartEnd[2] =
+								{
+									 (i == 0) ? startItem->MemberValues.ScrollSpeed() : ScrollSpeedToTempo(startItem->MemberValues.ScrollSpeed(), startItem->BaseScrollTempo).BPM,
+									 (i == 0) ? endItem->MemberValues.ScrollSpeed() : ScrollSpeedToTempo(endItem->MemberValues.ScrollSpeed(), endItem->BaseScrollTempo).BPM,
+								};
+
+								const b8 isSelectionTooSmall = (SelectedItems.size() < 2);
+								b8 isSelectionAlreadyInterpolated = true;
+								if (!isSelectionTooSmall)
+								{
+									for (const auto& thisItem : SelectedItems)
+									{
+										const f32 thisValue = getInterpolatedScrollSpeed(*startItem, *endItem, thisItem, inOutStartEnd[0], inOutStartEnd[1]);
+										if (!ApproxmiatelySame(thisItem.MemberValues.ScrollSpeed(), (i == 0) ? thisValue : ScrollTempoToSpeed(Tempo(thisValue), thisItem.BaseScrollTempo)))
+											isSelectionAlreadyInterpolated = false;
+									}
+								}
+
+								// NOTE: Invalid selection		-> "..." dummied out
+								//		 All the same			-> "=" marker
+								//		 Mixed values			-> "()" values
+								//		 Already interpolated	-> regular values
+								char previewBuffersStartEnd[2][64]; cstr previewStrings[2] = { nullptr, nullptr };
+								if (isSelectionTooSmall)
+								{
+									previewStrings[0] = "...";
+									previewStrings[1] = "...";
+								}
+								else if ((i == 0) ? areAllScrollSpeedsTheSame : areAllScrollTemposTheSame)
+								{
+									previewStrings[1] = "=";
+								}
+								else if (!isSelectionAlreadyInterpolated)
+								{
+									previewStrings[0] = previewBuffersStartEnd[0]; sprintf_s(previewBuffersStartEnd[0], (i == 0) ? "(%gx)" : "(%g BPM)", inOutStartEnd[0]);
+									previewStrings[1] = previewBuffersStartEnd[1]; sprintf_s(previewBuffersStartEnd[1], (i == 0) ? "(%gx)" : "(%g BPM)", inOutStartEnd[1]);
+								}
+
+								Gui::BeginDisabled(isSelectionTooSmall);
+								if ((i == 0) ?
+									GuiPropertyRangeInterpolationEditWidget("Interpolate: Scroll Speed", inOutStartEnd, 0.1f, 0.5f, MinScrollSpeed, MaxScrollSpeed, "%gx", previewStrings) :
+									GuiPropertyRangeInterpolationEditWidget("Interpolate: Scroll Speed Tempo", inOutStartEnd, 1.0f, 10.0f, MinBPM, MaxBPM, "%g BPM", previewStrings))
+								{
+									for (auto& thisItem : SelectedItems)
+									{
+										const f32 thisValue = getInterpolatedScrollSpeed(*startItem, *endItem, thisItem, inOutStartEnd[0], inOutStartEnd[1]);
+										thisItem.MemberValues.ScrollSpeed() = (i == 0) ? thisValue : ScrollTempoToSpeed(Tempo(thisValue), thisItem.BaseScrollTempo);
+									}
+									valueWasChanged = true;
+								}
+								Gui::EndDisabled();
 							}
 						} break;
 						case GenericMember::Time_Offset:
