@@ -201,6 +201,20 @@ namespace PeepoDrumKit
 			ScrollChange NewValue;
 		};
 
+		struct AddMultipleScrollChanges : Undo::Command
+		{
+			AddMultipleScrollChanges(SortedScrollChangesList* scrollChanges, std::vector<ScrollChange> newValues) : ScrollChanges(scrollChanges), NewScrollChanges(std::move(newValues)) {}
+
+			void Undo() override { for (const auto& scroll : NewScrollChanges) ScrollChanges->RemoveAtBeat(scroll.BeatTime); }
+			void Redo() override { for (const auto& scroll : NewScrollChanges) ScrollChanges->InsertOrUpdate(scroll); }
+
+			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override { return Undo::MergeResult::Failed; }
+			Undo::CommandInfo GetInfo() const override { return { "Add Scroll Changes" }; }
+
+			SortedScrollChangesList* ScrollChanges;
+			std::vector<ScrollChange> NewScrollChanges;
+		};
+
 		struct RemoveScrollChange : Undo::Command
 		{
 			RemoveScrollChange(SortedScrollChangesList* scrollChanges, Beat beat) : ScrollChanges(scrollChanges), OldValue(*ScrollChanges->TryFindExactAtBeat(beat)) { assert(OldValue.BeatTime == beat); }

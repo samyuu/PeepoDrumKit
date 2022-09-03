@@ -669,7 +669,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15512, "TODO: Add missing settings entries for newly added UserSettingsData fields");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 15520, "TODO: Add missing settings entries for newly added UserSettingsData fields");
 
 					SettingsGui::SettingsEntry settingsEntriesMain[] =
 					{

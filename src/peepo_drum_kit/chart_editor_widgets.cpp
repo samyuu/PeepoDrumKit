@@ -1488,17 +1488,20 @@ namespace PeepoDrumKit
 				// NOTE: This might seem like a strange design decision at first (hence it at least being optional)
 				//		 but the widgets here can only be used for inserting / editing (single) changes directly underneath the cursor
 				//		 which in case of an active selection (in the properties window) can become confusing
-				//		 since there then are multiple edit widgets shown to the user with the same label yet that differ in functionality.
+				//		 since there then are multiple edit widgets shown to the user with similar labels yet that differ in functionality.
 				//		 To make it clear that selected items can only be edited via the properties window, these regular widgets here will therefore be disabled.
-				b8 isAnyItemOtherThanNotesSelected = false;
+				b8 disableWidgetsBeacuseOfSelection = false;
 				if (*Settings.General.DisableTempoWindowWidgetsIfHasSelection)
+				{
+					b8 isAnyItemOtherThanNotesSelected = false;
 					ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { if (!IsNotesList(it.List)) { isAnyItemOtherThanNotesSelected = true; } });
-				Gui::BeginDisabled(isAnyItemOtherThanNotesSelected); defer { Gui::EndDisabled(); };
+					disableWidgetsBeacuseOfSelection = isAnyItemOtherThanNotesSelected;
+				}
 
 				const Beat cursorBeat = FloorBeatToGrid(context.GetCursorBeat(), GetGridBeatSnap(timeline.CurrentGridBarDivision));
 				// NOTE: Specifically to prevent ugly "flashing" between add/remove labels during playback
 				const b8 disallowRemoveButton = (cursorBeat.Ticks < 0) || context.GetIsPlayback();
-				Gui::BeginDisabled(cursorBeat.Ticks < 0);
+				Gui::BeginDisabled(disableWidgetsBeacuseOfSelection || cursorBeat.Ticks < 0);
 
 				const TempoChange* tempoChangeAtCursor = course.TempoMap.Tempo.TryFindLastAtBeat(cursorBeat);
 				const Tempo tempoAtCursor = (tempoChangeAtCursor != nullptr) ? tempoChangeAtCursor->Tempo : FallbackTempo;
@@ -1533,6 +1536,7 @@ namespace PeepoDrumKit
 							insertOrUpdateCursorTempoChange(tempoAtCursor);
 					}
 				});
+
 				Gui::Property::PropertyTextValueFunc("Time Signature", [&]
 				{
 					const TimeSignatureChange* signatureChangeAtCursor = course.TempoMap.Signature.TryFindLastAtBeat(cursorBeat);
@@ -1683,8 +1687,46 @@ namespace PeepoDrumKit
 				});
 
 				Gui::EndDisabled();
+
 				Gui::Property::EndTable();
 			}
+
+			size_t nonScrollChangeSelectedItemCount = 0;
+			ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { nonScrollChangeSelectedItemCount += (it.List != GenericList::ScrollChanges); });
+
+			Gui::BeginDisabled(nonScrollChangeSelectedItemCount <= 0);
+			if (Gui::Button("Insert Scroll Changes (Selection)", vec2(-1.0f, 0.0f)))
+			{
+				std::vector<ScrollChange*> scrollChangesThatAlreadyExist; scrollChangesThatAlreadyExist.reserve(nonScrollChangeSelectedItemCount);
+				std::vector<ScrollChange> scrollChangesToAdd; scrollChangesToAdd.reserve(nonScrollChangeSelectedItemCount);
+				ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it)
+				{
+					if (it.List != GenericList::ScrollChanges)
+					{
+						const Beat itBeat = it.GetBeat(course);
+						if (ScrollChange* lastScrollChange = course.ScrollChanges.TryFindLastAtBeat(itBeat); lastScrollChange != nullptr && lastScrollChange->BeatTime == itBeat)
+							scrollChangesThatAlreadyExist.push_back(lastScrollChange);
+						else
+							scrollChangesToAdd.push_back(ScrollChange { itBeat, (lastScrollChange != nullptr) ? lastScrollChange->ScrollSpeed : 1.0f });
+					}
+				});
+
+				if (!scrollChangesThatAlreadyExist.empty() || !scrollChangesToAdd.empty())
+				{
+					if (*Settings.General.InsertSelectionScrollChangesUnselectOld)
+						ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { it.SetIsSelected(course, false); });
+
+					if (*Settings.General.InsertSelectionScrollChangesSelectNew)
+					{
+						for (auto* it : scrollChangesThatAlreadyExist) { it->IsSelected = true; }
+						for (auto& it : scrollChangesToAdd) { it.IsSelected = true; }
+					}
+
+					if (!scrollChangesToAdd.empty())
+						context.Undo.Execute<Commands::AddMultipleScrollChanges>(&course.ScrollChanges, std::move(scrollChangesToAdd));
+				}
+			}
+			Gui::EndDisabled();
 		}
 	}
 

@@ -1323,8 +1323,7 @@ namespace PeepoDrumKit
 									data.Index = it.Index;
 									data.List = it.List;
 									data.Member = GenericMember::Beat_Start;
-									TryGetGeneric(selectedCourse, it.List, it.Index, GenericMember::Beat_Start, data.NewValue);
-									data.NewValue.Beat += dragBeatIncrement;
+									data.NewValue.Beat = it.GetBeat(selectedCourse) + dragBeatIncrement;
 								});
 
 								context.Undo.Execute<Commands::ChangeMultipleGenericProperties_MoveItems>(&selectedCourse, std::move(itemsToChange));

@@ -417,18 +417,40 @@ namespace PeepoDrumKit
 	b8 TryRemoveGenericStruct(ChartCourse& course, GenericList list, const GenericListStruct& inValueToRemove);
 	b8 TryRemoveGenericStruct(ChartCourse& course, GenericList list, Beat beatToRemove);
 
-	struct ForEachChartItemData { GenericList List; size_t Index; };
+	struct ForEachChartItemData
+	{
+		GenericList List;
+		size_t Index;
+
+		// NOTE: Again just little accessor helpers for the members that should always be available for each list type
+		inline b8 GetIsSelected(const ChartCourse& c) const { GenericMemberUnion v {}; TryGetGeneric(c, List, Index, GenericMember::B8_IsSelected, v); return v.B8; }
+		inline void SetIsSelected(ChartCourse& c, b8 isSelected) const { GenericMemberUnion v {}; v.B8 = isSelected; TrySetGeneric(c, List, Index, GenericMember::B8_IsSelected, v); }
+		inline Beat GetBeat(const ChartCourse& c) const { GenericMemberUnion v {}; TryGetGeneric(c, List, Index, GenericMember::Beat_Start, v); return v.Beat; }
+		inline Beat GetBeatDuration(const ChartCourse& c) const { GenericMemberUnion v {}; TryGetGeneric(c, List, Index, GenericMember::Beat_Duration, v); return v.Beat; }
+		inline void SetBeat(ChartCourse& c, Beat beat) const { GenericMemberUnion v {}; v.Beat = beat; TrySetGeneric(c, List, Index, GenericMember::Beat_Start, v); }
+	};
 
 	template <typename Func>
 	void ForEachSelectedChartItem(const ChartCourse& course, Func perSelectedItemFunc)
 	{
+#if 0
 		for (GenericList list = {}; list < GenericList::Count; IncrementEnum(list))
 		{
 			for (size_t i = 0; i < GetGenericListCount(course, list); i++)
-			{
 				if (GenericMemberUnion value; TryGetGeneric(course, list, i, GenericMember::B8_IsSelected, value) && value.B8)
 					perSelectedItemFunc(ForEachChartItemData { list, i });
-			}
 		}
+#else // NOTE: Manually unrolled to avoid redundant inner branches
+		for (size_t i = 0; i < course.TempoMap.Tempo.size(); i++) if (course.TempoMap.Tempo[i].IsSelected) perSelectedItemFunc(ForEachChartItemData { GenericList::TempoChanges, i });
+		for (size_t i = 0; i < course.TempoMap.Signature.size(); i++) if (course.TempoMap.Signature[i].IsSelected) perSelectedItemFunc(ForEachChartItemData { GenericList::SignatureChanges, i });
+		for (size_t i = 0; i < course.Notes_Normal.size(); i++) if (course.Notes_Normal[i].IsSelected) perSelectedItemFunc(ForEachChartItemData { GenericList::Notes_Normal, i });
+		for (size_t i = 0; i < course.Notes_Expert.size(); i++) if (course.Notes_Expert[i].IsSelected) perSelectedItemFunc(ForEachChartItemData { GenericList::Notes_Expert, i });
+		for (size_t i = 0; i < course.Notes_Master.size(); i++) if (course.Notes_Master[i].IsSelected) perSelectedItemFunc(ForEachChartItemData { GenericList::Notes_Master, i });
+		for (size_t i = 0; i < course.ScrollChanges.size(); i++) if (course.ScrollChanges[i].IsSelected) perSelectedItemFunc(ForEachChartItemData { GenericList::ScrollChanges, i });
+		for (size_t i = 0; i < course.BarLineChanges.size(); i++) if (course.BarLineChanges[i].IsSelected) perSelectedItemFunc(ForEachChartItemData { GenericList::BarLineChanges, i });
+		for (size_t i = 0; i < course.GoGoRanges.size(); i++) if (course.GoGoRanges[i].IsSelected) perSelectedItemFunc(ForEachChartItemData { GenericList::GoGoRanges, i });
+		for (size_t i = 0; i < course.Lyrics.size(); i++) if (course.Lyrics[i].IsSelected) perSelectedItemFunc(ForEachChartItemData { GenericList::Lyrics, i });
+		static_assert(EnumCount<GenericList> == 9);
+#endif
 	}
 }
