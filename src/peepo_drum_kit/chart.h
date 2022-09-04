@@ -402,6 +402,7 @@ namespace PeepoDrumKit
 
 	constexpr b8 IsNotesList(GenericList list) { return (list == GenericList::Notes_Normal) || (list == GenericList::Notes_Expert) || (list == GenericList::Notes_Master); }
 	constexpr b8 ListHasDurations(GenericList list) { return IsNotesList(list) || (list == GenericList::GoGoRanges); }
+	constexpr b8 ListUsesInclusiveBeatCheck(GenericList list) { return IsNotesList(list) || (list != GenericList::GoGoRanges && list != GenericList::Lyrics); }
 
 	size_t GetGenericMember_RawByteSize(GenericMember member);
 	size_t GetGenericListCount(const ChartCourse& course, GenericList list);

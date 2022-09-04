@@ -1020,7 +1020,7 @@ namespace PeepoDrumKit
 
 				auto itemAlreadyExistsOrIsBad = [&](const GenericListStructWithType& item)
 				{
-					const b8 inclusiveBeatCheck = IsNotesList(item.List) || !ListHasDurations(item.List);
+					const b8 inclusiveBeatCheck = ListUsesInclusiveBeatCheck(item.List);
 					auto check = [&](auto& list, auto& i) { return (GetBeat(i) < Beat::Zero()) || (list.TryFindOverlappingBeat(GetBeat(i), GetBeat(i) + GetBeatDuration(i), inclusiveBeatCheck) != nullptr); };
 					switch (item.List)
 					{
@@ -1230,7 +1230,10 @@ namespace PeepoDrumKit
 						if (listCount <= 0)
 							return true;
 
-						const b8 inclusiveBeatCheck = IsNotesList(list) || !ListHasDurations(list);
+						// BUG: It's possible to move two non-empty lyric changes on top of each other, which isn't a critical bug (as it's still handled correctly) 
+						//		but definitely annoying and a bit confusing
+						// TODO: Rework LyricChange to be Beat+Duration based to avoid the problem all together and also simplify the rest of the code
+						const b8 inclusiveBeatCheck = ListUsesInclusiveBeatCheck(list);
 						if (beatIncrement > Beat::Zero())
 						{
 							for (i32 thisIndex = 0; thisIndex < listCount; thisIndex++)
