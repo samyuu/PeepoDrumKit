@@ -216,6 +216,9 @@ namespace ApplicationHost
 		if (rebuild)
 			io.Fonts->Clear();
 
+		// NOTE: Reset in case the default font was changed via the style editor font selector (as this ptr would no longer be valid)
+		io.FontDefault = nullptr;
+
 		// NOTE: Unfortunately Dear ImGui does not allow avoiding these copies at the moment as far as I can tell (except for maybe some super hacky "inject nullptrs before shutdown")
 		FontMain_JP = addFont(GuiScaleI32(FontBaseSizes[0]), GlobalGlyphRanges.JP, Ownership::Copy);
 		FontMedium_EN = addFont(GuiScaleI32(FontBaseSizes[1]), GlobalGlyphRanges.EN, Ownership::Copy);
