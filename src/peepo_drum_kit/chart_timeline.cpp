@@ -271,7 +271,7 @@ namespace PeepoDrumKit
 	};
 
 	template <typename Func>
-	static void ForEachTimelineVisibleGridLine(ChartTimeline& timeline, ChartContext& context, Func perGridFunc)
+	static void ForEachTimelineVisibleGridLine(ChartTimeline& timeline, ChartContext& context, Time visibleTimeOverdraw, Func perGridFunc)
 	{
 		// TODO: Rewrite all of this to correctly handle tempo map changes and take GuiScaleFactor text size into account
 		/* // TEMP: */ static constexpr Time GridTimeStep = Time::FromSec(1.0);
@@ -293,7 +293,7 @@ namespace PeepoDrumKit
 				break;
 		}
 
-		const auto minMaxVisibleTime = timeline.GetMinMaxVisibleTime(Time::FromSec(1.0));
+		const auto minMaxVisibleTime = timeline.GetMinMaxVisibleTime(visibleTimeOverdraw);
 		const i32 gridLineModToSkip = (1 << gridLineSubDivisions);
 		i32 gridLineIndex = 0;
 
@@ -2177,7 +2177,8 @@ namespace PeepoDrumKit
 			const vec2 screenSpaceTextOffsetBarTime = GuiScale(vec2(4.0f, 13.0f));
 
 			Gui::PushFont(FontMedium_EN);
-			ForEachTimelineVisibleGridLine(*this, context, [&](const ForEachGridLineData& gridIt)
+			const Time visibleTimeOverdraw = Camera.TimePerScreenPixel() * (Gui::CalcTextSize("00:00.000").x + Gui::GetFrameHeight());
+			ForEachTimelineVisibleGridLine(*this, context, visibleTimeOverdraw, [&](const ForEachGridLineData& gridIt)
 			{
 				const u32 lineColor = gridIt.IsBar ? TimelineGridBarLineColor : TimelineGridBeatLineColor;
 
@@ -2187,7 +2188,6 @@ namespace PeepoDrumKit
 				const vec2 headerScreenSpaceTL = LocalToScreenSpace_ContentHeader(vec2(Camera.TimeToLocalSpaceX(gridIt.Time), 0.0f));
 				DrawListContentHeader->AddLine(headerScreenSpaceTL, headerScreenSpaceTL + vec2(0.0f, Regions.ContentHeader.GetHeight()), lineColor);
 
-				// BUG: WHERE THE FUCK DID THE TIME / BAR LABELS GO
 				// HACK: Try to prevent overlapping text for the very last grid line at least
 				//if (!ApproxmiatelySame(gridIt.Time.Seconds, context.GetDurationOrDefault().Seconds) && (lastDrawnScreenSpaceTextTL.x + screenSpaceTimeTextWidth) > headerScreenSpaceTL.x)
 				{
@@ -2271,7 +2271,8 @@ namespace PeepoDrumKit
 
 		// NOTE: Row labels, lines and items
 		{
-			const DrawTimelineContentItemRowParam rowParam = { *this, context, DrawListContent, GetMinMaxVisibleTime(Time::FromSec(1.0)), isPlayback, cursorTime, cursorBeatOnPlaybackStart };
+			const Time visibleTimeOverdraw = Camera.TimePerScreenPixel() * (Gui::GetFrameHeight() * 4.0f);
+			const DrawTimelineContentItemRowParam rowParam = { *this, context, DrawListContent, GetMinMaxVisibleTime(visibleTimeOverdraw), isPlayback, cursorTime, cursorBeatOnPlaybackStart };
 			Gui::PushFont(FontMedium_EN);
 			ForEachTimelineRow(*this, [&](const ForEachRowData& rowIt)
 			{
