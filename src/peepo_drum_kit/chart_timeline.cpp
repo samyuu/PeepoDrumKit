@@ -279,8 +279,8 @@ namespace PeepoDrumKit
 			return;
 
 		// TODO: Not too sure about the exact values here, these just came from randomly trying out numbers until it looked about right
-		static constexpr f32 minAllowedSpacing = 128.0f;
-		static constexpr i32 maxSubDivisions = 6;
+		const f32 minAllowedSpacing = GuiScale(128.0f);
+		const i32 maxSubDivisions = 6;
 
 		// TODO: Go the extra step and add a fade animation for these too
 		i32 gridLineSubDivisions = 0;
@@ -422,6 +422,218 @@ namespace PeepoDrumKit
 				if (timeAtPixel > waveformDuration) break;
 				DrawSingleWaveformLine(drawList,
 					screenCenter, waveformAnimationScale * Clamp(waveform.GetAmplitudeAt(waveformMip, timeAtPixel, waveformTimePerPixel) * halfHeight, 1.0f, halfHeight), waveformColor);
+			}
+		}
+	}
+
+	struct DrawTimelineContentItemRowParam
+	{
+		ChartTimeline& Timeline;
+		ChartContext& Context;
+		ImDrawList* DrawListContent;
+		ChartTimeline::MinMaxTime VisibleTime;
+		b8 IsPlayback;
+		Time CursorTime;
+		Beat CursorBeatOnPlaybackStart;
+	};
+
+	template <typename T, TimelineRowType RowType>
+	static void DrawTimelineContentItemRowT(DrawTimelineContentItemRowParam param, const ForEachRowData& rowIt, const BeatSortedList<T>& list)
+	{
+		ChartTimeline& timeline = param.Timeline;
+		ChartContext& context = param.Context;
+		ImDrawList* drawListContent = param.DrawListContent;
+		const TimelineCamera& camera = timeline.Camera;
+		const ChartTimeline::MinMaxTime visibleTime = param.VisibleTime;
+
+		// TODO: Do culling by first determining min/max visible beat times then use those to continue / break inside loop (although problematic with TimeOffset?)
+		if constexpr (std::is_same_v<T, Note>)
+		{
+			// TODO: Draw unselected branch notes grayed and at a slightly smaller scale (also nicely animate between selecting different branched!)
+
+			// TODO: It looks like there'll also have to be one scroll speed lane per branch type
+			//		 which means the scroll speed change line should probably extend all to the way down to its corresponding note lane (?)
+
+			for (const Note& it : list)
+			{
+				const Time startTime = context.BeatToTime(it.GetStart()) + it.TimeOffset;
+				const Time endTime = (it.BeatDuration > Beat::Zero()) ? context.BeatToTime(it.GetEnd()) + it.TimeOffset : startTime;
+				if (endTime < visibleTime.Min || startTime > visibleTime.Max)
+					continue;
+
+				const vec2 localTL = vec2(timeline.Camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
+				const vec2 localCenter = localTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
+
+				if (it.BeatDuration > Beat::Zero())
+				{
+					const vec2 localTR = vec2(timeline.Camera.TimeToLocalSpaceX(endTime), rowIt.LocalY);
+					const vec2 localCenterEnd = localTR + vec2(0.0f, rowIt.LocalHeight * 0.5f);
+					DrawTimelineNoteDuration(drawListContent, timeline.LocalToScreenSpace(localCenter), timeline.LocalToScreenSpace(localCenterEnd), it.Type);
+				}
+
+				const f32 noteScaleFactor = GetTimelineNoteScaleFactor(param.IsPlayback, param.CursorTime, param.CursorBeatOnPlaybackStart, it, startTime);
+				DrawTimelineNote(drawListContent, timeline.LocalToScreenSpace(localCenter), noteScaleFactor, it.Type);
+
+				if (IsBalloonNote(it.Type) || it.BalloonPopCount > 0)
+					DrawTimelineNoteBalloonPopCount(drawListContent, timeline.LocalToScreenSpace(localCenter), noteScaleFactor, it.BalloonPopCount);
+
+				if (it.IsSelected)
+				{
+					// NOTE: Draw the note itself with the time offset applied but draw the hitbox at the original beat center
+					const f32 localSpaceTimeOffsetX = timeline.Camera.WorldToLocalSpaceScale(vec2(timeline.Camera.TimeToWorldSpaceX(it.TimeOffset), 0.0f)).x;
+
+					const vec2 hitBoxSize = vec2(GuiScale((IsBigNote(it.Type) ? TimelineSelectedNoteHitBoxSizeBig : TimelineSelectedNoteHitBoxSizeSmall)));
+					timeline.TempSelectionBoxesDrawBuffer.push_back(ChartTimeline::TempDrawSelectionBox { Rect::FromCenterSize(timeline.LocalToScreenSpace(localCenter - vec2(localSpaceTimeOffsetX, 0.0f)), hitBoxSize), TimelineSelectedNoteBoxBackgroundColor, TimelineSelectedNoteBoxBorderColor });
+				}
+			}
+
+			static constexpr BranchType branchForThisRow = TimelineRowToBranchType(RowType);
+			if (!timeline.TempDeletedNoteAnimationsBuffer.empty())
+			{
+				for (const auto& data : timeline.TempDeletedNoteAnimationsBuffer)
+				{
+					if (data.Branch != branchForThisRow)
+						continue;
+
+					const Time startTime = context.BeatToTime(data.OriginalNote.BeatTime) + data.OriginalNote.TimeOffset;
+					const Time endTime = startTime;
+					if (endTime < visibleTime.Min || startTime > visibleTime.Max)
+						continue;
+
+					const vec2 localTL = vec2(camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
+					const vec2 localCenter = localTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
+
+					const f32 noteScaleFactor = ConvertRange(0.0f, NoteDeleteAnimationDuration, 1.0f, 0.0f, ClampBot(data.ElapsedTimeSec, 0.0f));
+					DrawTimelineNote(drawListContent, timeline.LocalToScreenSpace(localCenter), noteScaleFactor, data.OriginalNote.Type);
+					// TODO: Also animate duration fading out or "collapsing" some other way (?)
+				}
+			}
+
+			if (!timeline.TempSelectionBoxesDrawBuffer.empty())
+			{
+				for (const auto& box : timeline.TempSelectionBoxesDrawBuffer)
+				{
+					drawListContent->AddRectFilled(box.ScreenSpaceRect.TL, box.ScreenSpaceRect.BR, box.FillColor);
+					drawListContent->AddRect(box.ScreenSpaceRect.TL, box.ScreenSpaceRect.BR, box.BorderColor);
+				}
+				timeline.TempSelectionBoxesDrawBuffer.clear();
+			}
+
+			// NOTE: Long note placement preview
+			if (timeline.LongNotePlacement.IsActive && context.ChartSelectedBranch == branchForThisRow)
+			{
+				const Beat minBeat = timeline.LongNotePlacement.GetMin(), maxBeat = timeline.LongNotePlacement.GetMax();
+				const vec2 localTL = vec2(timeline.Camera.TimeToLocalSpaceX(context.BeatToTime(minBeat)), rowIt.LocalY);
+				const vec2 localCenter = localTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
+				const vec2 localTR = vec2(timeline.Camera.TimeToLocalSpaceX(context.BeatToTime(maxBeat)), rowIt.LocalY);
+				const vec2 localCenterEnd = localTR + vec2(0.0f, rowIt.LocalHeight * 0.5f);
+				DrawTimelineNoteDuration(drawListContent, timeline.LocalToScreenSpace(localCenter), timeline.LocalToScreenSpace(localCenterEnd), timeline.LongNotePlacement.NoteType, 0.7f);
+				DrawTimelineNote(drawListContent, timeline.LocalToScreenSpace(localCenter), 1.0f, timeline.LongNotePlacement.NoteType, 0.7f);
+
+				if (IsBalloonNote(timeline.LongNotePlacement.NoteType))
+					DrawTimelineNoteBalloonPopCount(drawListContent, timeline.LocalToScreenSpace(localCenter), 1.0f, DefaultBalloonPopCount(maxBeat - minBeat, timeline.CurrentGridBarDivision));
+			}
+		}
+		else if constexpr (std::is_same_v<T, GoGoRange>)
+		{
+			for (const GoGoRange& it : list)
+			{
+				const Time startTime = context.BeatToTime(it.GetStart());
+				const Time endTime = context.BeatToTime(it.GetEnd());
+				if (endTime < visibleTime.Min || startTime > visibleTime.Max)
+					continue;
+
+				static constexpr f32 margin = 1.0f;
+				const vec2 localTL = vec2(camera.TimeToLocalSpaceX(startTime), 0.0f) + vec2(0.0f, rowIt.LocalY + margin);
+				const vec2 localBR = vec2(camera.TimeToLocalSpaceX(endTime), 0.0f) + vec2(0.0f, rowIt.LocalY + rowIt.LocalHeight - (margin * 2.0f));
+				DrawTimelineGoGoTimeBackground(drawListContent, timeline.LocalToScreenSpace(localTL) + vec2(0.0f, 2.0f), timeline.LocalToScreenSpace(localBR), it.ExpansionAnimationCurrent, it.IsSelected);
+			}
+		}
+		else if constexpr (std::is_same_v<T, LyricChange>)
+		{
+			const Beat chartBeatDuration = context.TimeToBeat(context.Chart.GetDurationOrDefault());
+
+			Gui::PushFont(FontMain_JP);
+			for (size_t i = 0; i < list.size(); i++)
+			{
+				const LyricChange* prevLyric = IndexOrNull(static_cast<i32>(i) - 1, list);
+				const LyricChange& thisLyric = list[i];
+				const LyricChange* nextLyric = IndexOrNull(i + 1, list);
+				if (thisLyric.Lyric.empty() && prevLyric != nullptr && !prevLyric->Lyric.empty())
+					continue;
+
+				const Beat lastBeat = (thisLyric.BeatTime <= chartBeatDuration) ? chartBeatDuration : Beat::FromTicks(I32Max);
+				const Time startTime = context.BeatToTime(thisLyric.BeatTime);
+				const Time endTime = context.BeatToTime(thisLyric.Lyric.empty() ? thisLyric.BeatTime : (nextLyric != nullptr) ? nextLyric->BeatTime : lastBeat);
+				if (endTime < visibleTime.Min || startTime > visibleTime.Max)
+					continue;
+
+				const vec2 localSpaceTL = vec2(camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
+				const vec2 localSpaceBR = vec2(camera.TimeToLocalSpaceX(endTime), rowIt.LocalY + rowIt.LocalHeight);
+				const vec2 localSpaceCenter = localSpaceTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
+
+				const f32 textHeight = Gui::GetFontSize();
+				const vec2 textPosition = timeline.LocalToScreenSpace(localSpaceCenter + vec2(4.0f, textHeight * -0.5f));
+
+				Gui::DisableFontPixelSnap(true);
+				{
+					const Rect lyricsBarRect = Rect(timeline.LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), timeline.LocalToScreenSpace(localSpaceBR));
+
+					DrawTimelineLyricsBackground(drawListContent, lyricsBarRect.TL, lyricsBarRect.BR, thisLyric.IsSelected);
+
+					// HACK: Try to at least somewhat visalize the tail being selected, for now
+					if (thisLyric.IsSelected || (nextLyric != nullptr && nextLyric->IsSelected))
+					{
+						const vec2 width = vec2(GuiScale(1.0f), 0.0f);
+						drawListContent->AddRectFilled(lyricsBarRect.GetTR() - width, lyricsBarRect.GetBR() + width, (nextLyric != nullptr && nextLyric->IsSelected) ? TimelineLyricsBackgroundColorBorderSelected : TimelineLyricsBackgroundColorBorder);
+					}
+
+					static constexpr f32 borderLeft = 2.0f, borderRight = 5.0f;
+					const ImVec4 clipRect = { lyricsBarRect.TL.x + borderLeft, lyricsBarRect.TL.y, lyricsBarRect.BR.x - borderRight, lyricsBarRect.BR.y };
+
+					if (Absolute(clipRect.z - clipRect.x) > (borderLeft + borderRight))
+						Gui::AddTextWithDropShadow(drawListContent, nullptr, 0.0f, textPosition, TimelineLyricsTextColor, thisLyric.Lyric, 0.0f, &clipRect, TimelineLyricsTextColorShadow);
+				}
+				Gui::DisableFontPixelSnap(false);
+			}
+			Gui::PopFont();
+		}
+		else
+		{
+			static constexpr f32 compactFormatStringZoomLevelThreshold = 0.25f;
+			const b8 useCompactFormat = (camera.ZoomTarget.x < compactFormatStringZoomLevelThreshold);
+			const f32 textHeight = Gui::GetFontSize();
+
+			for (const auto& it : list)
+			{
+				const Time startTime = context.BeatToTime(GetBeat(it));
+				if (startTime < visibleTime.Min || startTime > visibleTime.Max)
+					continue;
+
+				const vec2 localSpaceTL = vec2(camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
+				const vec2 localSpaceBL = localSpaceTL + vec2(0.0f, rowIt.LocalHeight);
+				const vec2 localSpaceCenter = localSpaceTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
+				const vec2 textPosition = timeline.LocalToScreenSpace(localSpaceCenter + vec2(3.0f, textHeight * -0.5f));
+
+				Gui::DisableFontPixelSnap(true);
+				{
+					[[maybe_unused]] char b[32]; std::string_view text; u32 lineColor; u32 textColor = TimelineItemTextColor;
+					if constexpr (std::is_same_v<T, TempoChange>) { text = std::string_view(b, sprintf_s(b, useCompactFormat ? "%.0f BPM" : "%g BPM", it.Tempo.BPM)); lineColor = TimelineTempoChangeLineColor; }
+					if constexpr (std::is_same_v<T, TimeSignatureChange>) { text = std::string_view(b, sprintf_s(b, "%d/%d", it.Signature.Numerator, it.Signature.Denominator)); lineColor = TimelineSignatureChangeLineColor; textColor = IsTimeSignatureSupported(it.Signature) ? TimelineItemTextColor : TimelineItemTextColorWarning; }
+					if constexpr (std::is_same_v<T, ScrollChange>) { text = std::string_view(b, sprintf_s(b, "%gx", it.ScrollSpeed)); lineColor = TimelineScrollChangeLineColor; }
+					if constexpr (std::is_same_v<T, BarLineChange>) { text = it.IsVisible ? "On" : "Off"; lineColor = TimelineBarLineChangeLineColor; }
+
+					const vec2 textSize = Gui::CalcTextSize(text);
+					drawListContent->AddRectFilled(vec2(timeline.LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
+					drawListContent->AddLine(timeline.LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), timeline.LocalToScreenSpace(localSpaceBL), it.IsSelected ? TimelineSelectedItemLineColor : lineColor);
+					Gui::AddTextWithDropShadow(drawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
+
+#if 1 // TODO: Is this a good idea (?)
+					if (static constexpr f32 lineOffsetY = 0.0f; it.IsSelected)
+						drawListContent->AddLine(textPosition + vec2(0.0f, textSize.y + lineOffsetY), textPosition + vec2(textSize.x, textSize.y + lineOffsetY), Gui::ColorU32WithAlpha(TimelineItemTextColor, 0.8f));
+#endif
+				}
+				Gui::DisableFontPixelSnap(false);
 			}
 		}
 	}
@@ -2059,10 +2271,11 @@ namespace PeepoDrumKit
 
 		// NOTE: Row labels, lines and items
 		{
+			const DrawTimelineContentItemRowParam rowParam = { *this, context, DrawListContent, GetMinMaxVisibleTime(Time::FromSec(1.0)), isPlayback, cursorTime, cursorBeatOnPlaybackStart };
 			Gui::PushFont(FontMedium_EN);
-			const MinMaxTime visibleTime = GetMinMaxVisibleTime(Time::FromSec(1.0));
 			ForEachTimelineRow(*this, [&](const ForEachRowData& rowIt)
 			{
+				// NOTE: Row label text
 				{
 					const vec2 sidebarScreenSpaceTL = LocalToScreenSpace_Sidebar(vec2(0.0f, rowIt.LocalY));
 					const vec2 sidebarScreenSpaceBL = LocalToScreenSpace_Sidebar(vec2(0.0f, rowIt.LocalY + rowIt.LocalHeight));
@@ -2083,278 +2296,25 @@ namespace PeepoDrumKit
 					Gui::DisableFontPixelSnap(false);
 				}
 
+				// NOTE: Row separator line
 				{
 					const vec2 screenSpaceBL = LocalToScreenSpace(vec2(0.0f, rowIt.LocalY + rowIt.LocalHeight));
 					DrawListContent->AddLine(screenSpaceBL, screenSpaceBL + vec2(Regions.Content.GetWidth(), 0.0f), TimelineHorizontalRowLineColor);
+				}
 
-					static constexpr f32 compactFormatStringZoomLevelThreshold = 0.25f;
-					const b8 useCompactFormat = (Camera.ZoomTarget.x < compactFormatStringZoomLevelThreshold);
-
-					// TODO: Do culling by first determining min/max visible beat times then use those to continue / break inside loop (although problematic with TimeOffset?)
-					switch (rowIt.RowType)
-					{
-					case TimelineRowType::Tempo:
-					{
-						for (const auto& tempoChange : context.ChartSelectedCourse->TempoMap.Tempo)
-						{
-							const Time startTime = context.BeatToTime(tempoChange.Beat);
-							if (startTime < visibleTime.Min || startTime > visibleTime.Max)
-								continue;
-
-							const vec2 localSpaceTL = vec2(Camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
-							const vec2 localSpaceBL = localSpaceTL + vec2(0.0f, rowIt.LocalHeight);
-							const vec2 localSpaceCenter = localSpaceTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-
-							const f32 textHeight = Gui::GetFontSize();
-							const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(3.0f, textHeight * -0.5f));
-
-							Gui::DisableFontPixelSnap(true);
-							char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, useCompactFormat ? "%.0f BPM" : "%g BPM", tempoChange.Tempo.BPM));
-							const vec2 textSize = Gui::CalcTextSize(text);
-							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
-
-							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), tempoChange.IsSelected ? TimelineSelectedItemLineColor : TimelineTempoChangeLineColor);
-							Gui::AddTextWithDropShadow(DrawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
-							Gui::DisableFontPixelSnap(false);
-						}
-					} break;
-
-					case TimelineRowType::TimeSignature:
-					{
-						for (const auto& signatureChange : context.ChartSelectedCourse->TempoMap.Signature)
-						{
-							const Time startTime = context.BeatToTime(signatureChange.Beat);
-							if (startTime < visibleTime.Min || startTime > visibleTime.Max)
-								continue;
-
-							const vec2 localSpaceTL = vec2(Camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
-							const vec2 localSpaceBL = localSpaceTL + vec2(0.0f, rowIt.LocalHeight);
-							const vec2 localSpaceCenter = localSpaceTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-
-							const f32 textHeight = Gui::GetFontSize();
-							const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(3.0f, textHeight * -0.5f));
-
-							Gui::DisableFontPixelSnap(true);
-							char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, "%d/%d", signatureChange.Signature.Numerator, signatureChange.Signature.Denominator));
-							const vec2 textSize = Gui::CalcTextSize(text);
-							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
-
-							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), signatureChange.IsSelected ? TimelineSelectedItemLineColor : TimelineSignatureChangeLineColor);
-							Gui::AddTextWithDropShadow(DrawListContent, textPosition, IsTimeSignatureSupported(signatureChange.Signature) ? TimelineItemTextColor : TimelineItemTextColorWarning, text, TimelineItemTextColorShadow);
-							Gui::DisableFontPixelSnap(false);
-						}
-					} break;
-
-					case TimelineRowType::Notes_Normal:
-					case TimelineRowType::Notes_Expert:
-					case TimelineRowType::Notes_Master:
-					{
-						// TODO: Draw unselected branch notes grayed and at a slightly smaller scale (also nicely animate between selecting different branched!)
-
-						// TODO: It looks like there'll also have to be one scroll speed lane per branch type
-						//		 which means the scroll speed change line should probably extend all to the way down to its corresponding note lane (?)
-						const BranchType branchForThisRow = TimelineRowToBranchType(rowIt.RowType);
-						for (const Note& note : context.ChartSelectedCourse->GetNotes(branchForThisRow))
-						{
-							const Time startTime = context.BeatToTime(note.GetStart()) + note.TimeOffset;
-							const Time endTime = (note.BeatDuration > Beat::Zero()) ? context.BeatToTime(note.GetEnd()) + note.TimeOffset : startTime;
-							if (endTime < visibleTime.Min || startTime > visibleTime.Max)
-								continue;
-
-							const vec2 localTL = vec2(Camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
-							const vec2 localCenter = localTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-
-							if (note.BeatDuration > Beat::Zero())
-							{
-								const vec2 localTR = vec2(Camera.TimeToLocalSpaceX(endTime), rowIt.LocalY);
-								const vec2 localCenterEnd = localTR + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-								DrawTimelineNoteDuration(DrawListContent, LocalToScreenSpace(localCenter), LocalToScreenSpace(localCenterEnd), note.Type);
-							}
-
-							const f32 noteScaleFactor = GetTimelineNoteScaleFactor(isPlayback, cursorTime, cursorBeatOnPlaybackStart, note, startTime);
-							DrawTimelineNote(DrawListContent, LocalToScreenSpace(localCenter), noteScaleFactor, note.Type);
-
-							if (IsBalloonNote(note.Type) || note.BalloonPopCount > 0)
-								DrawTimelineNoteBalloonPopCount(DrawListContent, LocalToScreenSpace(localCenter), noteScaleFactor, note.BalloonPopCount);
-
-							if (note.IsSelected)
-							{
-								// NOTE: Draw the note itself with the time offset applied but draw the hitbox at the original beat center
-								const f32 localSpaceTimeOffsetX = Camera.WorldToLocalSpaceScale(vec2(Camera.TimeToWorldSpaceX(note.TimeOffset), 0.0f)).x;
-
-								const vec2 hitBoxSize = vec2(GuiScale((IsBigNote(note.Type) ? TimelineSelectedNoteHitBoxSizeBig : TimelineSelectedNoteHitBoxSizeSmall)));
-								TempSelectionBoxesDrawBuffer.push_back(TempDrawSelectionBox { Rect::FromCenterSize(LocalToScreenSpace(localCenter - vec2(localSpaceTimeOffsetX, 0.0f)), hitBoxSize), TimelineSelectedNoteBoxBackgroundColor, TimelineSelectedNoteBoxBorderColor });
-							}
-						}
-
-						if (!TempDeletedNoteAnimationsBuffer.empty())
-						{
-							for (const auto& data : TempDeletedNoteAnimationsBuffer)
-							{
-								if (data.Branch != branchForThisRow)
-									continue;
-
-								const Time startTime = context.BeatToTime(data.OriginalNote.BeatTime) + data.OriginalNote.TimeOffset;
-								const Time endTime = startTime;
-								if (endTime < visibleTime.Min || startTime > visibleTime.Max)
-									continue;
-
-								const vec2 localTL = vec2(Camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
-								const vec2 localCenter = localTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-
-								const f32 noteScaleFactor = ConvertRange(0.0f, NoteDeleteAnimationDuration, 1.0f, 0.0f, ClampBot(data.ElapsedTimeSec, 0.0f));
-								DrawTimelineNote(DrawListContent, LocalToScreenSpace(localCenter), noteScaleFactor, data.OriginalNote.Type);
-								// TODO: Also animate duration fading out or "collapsing" some other way (?)
-							}
-						}
-
-						if (!TempSelectionBoxesDrawBuffer.empty())
-						{
-							for (const auto& box : TempSelectionBoxesDrawBuffer)
-							{
-								DrawListContent->AddRectFilled(box.ScreenSpaceRect.TL, box.ScreenSpaceRect.BR, box.FillColor);
-								DrawListContent->AddRect(box.ScreenSpaceRect.TL, box.ScreenSpaceRect.BR, box.BorderColor);
-							}
-							TempSelectionBoxesDrawBuffer.clear();
-						}
-
-						// NOTE: Long note placement preview
-						if (LongNotePlacement.IsActive && context.ChartSelectedBranch == branchForThisRow)
-						{
-							const Beat minBeat = LongNotePlacement.GetMin(), maxBeat = LongNotePlacement.GetMax();
-							const vec2 localTL = vec2(Camera.TimeToLocalSpaceX(context.BeatToTime(minBeat)), rowIt.LocalY);
-							const vec2 localCenter = localTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-							const vec2 localTR = vec2(Camera.TimeToLocalSpaceX(context.BeatToTime(maxBeat)), rowIt.LocalY);
-							const vec2 localCenterEnd = localTR + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-							DrawTimelineNoteDuration(DrawListContent, LocalToScreenSpace(localCenter), LocalToScreenSpace(localCenterEnd), LongNotePlacement.NoteType, 0.7f);
-							DrawTimelineNote(DrawListContent, LocalToScreenSpace(localCenter), 1.0f, LongNotePlacement.NoteType, 0.7f);
-
-							if (IsBalloonNote(LongNotePlacement.NoteType))
-								DrawTimelineNoteBalloonPopCount(DrawListContent, LocalToScreenSpace(localCenter), 1.0f, DefaultBalloonPopCount(maxBeat - minBeat, CurrentGridBarDivision));
-						}
-					} break;
-
-					case TimelineRowType::ScrollSpeed:
-					{
-						for (const auto& scroll : context.ChartSelectedCourse->ScrollChanges)
-						{
-							const Time startTime = context.BeatToTime(scroll.BeatTime);
-							if (startTime < visibleTime.Min || startTime > visibleTime.Max)
-								continue;
-
-							const vec2 localSpaceTL = vec2(Camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
-							const vec2 localSpaceBL = localSpaceTL + vec2(0.0f, rowIt.LocalHeight);
-							const vec2 localSpaceCenter = localSpaceTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-
-							const f32 textHeight = Gui::GetFontSize();
-							const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(3.0f, textHeight * -0.5f));
-
-							Gui::DisableFontPixelSnap(true);
-							char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, "%gx", scroll.ScrollSpeed));
-							const vec2 textSize = Gui::CalcTextSize(text);
-							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
-							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), scroll.IsSelected ? TimelineSelectedItemLineColor : TimelineScrollChangeLineColor);
-							Gui::AddTextWithDropShadow(DrawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
-							Gui::DisableFontPixelSnap(false);
-						}
-					} break;
-
-					case TimelineRowType::BarLineVisibility:
-					{
-						for (const auto& barLine : context.ChartSelectedCourse->BarLineChanges)
-						{
-							const Time startTime = context.BeatToTime(barLine.BeatTime);
-							if (startTime < visibleTime.Min || startTime > visibleTime.Max)
-								continue;
-
-							const vec2 localSpaceTL = vec2(Camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
-							const vec2 localSpaceBL = localSpaceTL + vec2(0.0f, rowIt.LocalHeight);
-							const vec2 localSpaceCenter = localSpaceTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-
-							const f32 textHeight = Gui::GetFontSize();
-							const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(3.0f, textHeight * -0.5f));
-
-							Gui::DisableFontPixelSnap(true);
-							const std::string_view text = barLine.IsVisible ? "On" : "Off";
-							const vec2 textSize = Gui::CalcTextSize(text);
-							DrawListContent->AddRectFilled(vec2(LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
-							DrawListContent->AddLine(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBL), barLine.IsSelected ? TimelineSelectedItemLineColor : TimelineBarLineChangeLineColor);
-							Gui::AddTextWithDropShadow(DrawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
-							Gui::DisableFontPixelSnap(false);
-						}
-					} break;
-
-					case TimelineRowType::GoGoTime:
-					{
-						for (const auto& gogo : context.ChartSelectedCourse->GoGoRanges)
-						{
-							const Time startTime = context.BeatToTime(gogo.GetStart());
-							const Time endTime = context.BeatToTime(gogo.GetEnd());
-							if (endTime < visibleTime.Min || startTime > visibleTime.Max)
-								continue;
-
-							static constexpr f32 margin = 1.0f;
-							const vec2 localTL = vec2(Camera.TimeToLocalSpaceX(startTime), 0.0f) + vec2(0.0f, rowIt.LocalY + margin);
-							const vec2 localBR = vec2(Camera.TimeToLocalSpaceX(endTime), 0.0f) + vec2(0.0f, rowIt.LocalY + rowIt.LocalHeight - (margin * 2.0f));
-							DrawTimelineGoGoTimeBackground(DrawListContent, LocalToScreenSpace(localTL) + vec2(0.0f, 2.0f), LocalToScreenSpace(localBR), gogo.ExpansionAnimationCurrent, gogo.IsSelected);
-						}
-					} break;
-
-					case TimelineRowType::Lyrics:
-					{
-						if (const auto& lyrics = context.ChartSelectedCourse->Lyrics; !lyrics.empty())
-						{
-							const Beat chartBeatDuration = context.TimeToBeat(context.Chart.GetDurationOrDefault());
-
-							Gui::PushFont(FontMain_JP);
-							for (size_t i = 0; i < lyrics.size(); i++)
-							{
-								const auto* prevLyric = IndexOrNull(static_cast<i32>(i) - 1, lyrics);
-								const auto& thisLyric = lyrics[i];
-								const auto* nextLyric = IndexOrNull(i + 1, lyrics);
-								if (thisLyric.Lyric.empty() && prevLyric != nullptr && !prevLyric->Lyric.empty())
-									continue;
-
-								const Beat lastBeat = (thisLyric.BeatTime <= chartBeatDuration) ? chartBeatDuration : Beat::FromTicks(I32Max);
-								const Time startTime = context.BeatToTime(thisLyric.BeatTime);
-								const Time endTime = context.BeatToTime(thisLyric.Lyric.empty() ? thisLyric.BeatTime : (nextLyric != nullptr) ? nextLyric->BeatTime : lastBeat);
-								if (endTime < visibleTime.Min || startTime > visibleTime.Max)
-									continue;
-
-								const vec2 localSpaceTL = vec2(Camera.TimeToLocalSpaceX(startTime), rowIt.LocalY);
-								const vec2 localSpaceBR = vec2(Camera.TimeToLocalSpaceX(endTime), rowIt.LocalY + rowIt.LocalHeight);
-								const vec2 localSpaceCenter = localSpaceTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-
-								const f32 textHeight = Gui::GetFontSize();
-								const vec2 textPosition = LocalToScreenSpace(localSpaceCenter + vec2(4.0f, textHeight * -0.5f));
-
-								Gui::DisableFontPixelSnap(true);
-								{
-									const Rect lyricsBarRect = Rect(LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), LocalToScreenSpace(localSpaceBR));
-
-									DrawTimelineLyricsBackground(DrawListContent, lyricsBarRect.TL, lyricsBarRect.BR, thisLyric.IsSelected);
-
-									// HACK: Try to at least somewhat visalize the tail being selected, for now
-									if (thisLyric.IsSelected || (nextLyric != nullptr && nextLyric->IsSelected))
-									{
-										const vec2 width = vec2(GuiScale(1.0f), 0.0f);
-										DrawListContent->AddRectFilled(lyricsBarRect.GetTR() - width, lyricsBarRect.GetBR() + width, (nextLyric != nullptr && nextLyric->IsSelected) ? TimelineLyricsBackgroundColorBorderSelected : TimelineLyricsBackgroundColorBorder);
-									}
-
-									static constexpr f32 borderLeft = 2.0f, borderRight = 5.0f;
-									const ImVec4 clipRect = { lyricsBarRect.TL.x + borderLeft, lyricsBarRect.TL.y, lyricsBarRect.BR.x - borderRight, lyricsBarRect.BR.y };
-
-									if (Absolute(clipRect.z - clipRect.x) > (borderLeft + borderRight))
-										Gui::AddTextWithDropShadow(DrawListContent, nullptr, 0.0f, textPosition, TimelineLyricsTextColor, thisLyric.Lyric, 0.0f, &clipRect, TimelineLyricsTextColorShadow);
-								}
-								Gui::DisableFontPixelSnap(false);
-							}
-							Gui::PopFont();
-						}
-					} break;
-
-					default: { assert(!"Missing TimelineRowType switch case"); } break;
-					}
+				// NOTE: Row items
+				switch (rowIt.RowType)
+				{
+				case TimelineRowType::Tempo: DrawTimelineContentItemRowT<TempoChange, TimelineRowType::Tempo>(rowParam, rowIt, context.ChartSelectedCourse->TempoMap.Tempo); break;
+				case TimelineRowType::TimeSignature: DrawTimelineContentItemRowT<TimeSignatureChange, TimelineRowType::TimeSignature>(rowParam, rowIt, context.ChartSelectedCourse->TempoMap.Signature); break;
+				case TimelineRowType::Notes_Normal: DrawTimelineContentItemRowT<Note, TimelineRowType::Notes_Normal>(rowParam, rowIt, context.ChartSelectedCourse->Notes_Normal); break;
+				case TimelineRowType::Notes_Expert: DrawTimelineContentItemRowT<Note, TimelineRowType::Notes_Expert>(rowParam, rowIt, context.ChartSelectedCourse->Notes_Expert); break;
+				case TimelineRowType::Notes_Master: DrawTimelineContentItemRowT<Note, TimelineRowType::Notes_Master>(rowParam, rowIt, context.ChartSelectedCourse->Notes_Master); break;
+				case TimelineRowType::ScrollSpeed: DrawTimelineContentItemRowT<ScrollChange, TimelineRowType::ScrollSpeed>(rowParam, rowIt, context.ChartSelectedCourse->ScrollChanges); break;
+				case TimelineRowType::BarLineVisibility: DrawTimelineContentItemRowT<BarLineChange, TimelineRowType::BarLineVisibility>(rowParam, rowIt, context.ChartSelectedCourse->BarLineChanges); break;
+				case TimelineRowType::GoGoTime: DrawTimelineContentItemRowT<GoGoRange, TimelineRowType::GoGoTime>(rowParam, rowIt, context.ChartSelectedCourse->GoGoRanges); break;
+				case TimelineRowType::Lyrics: DrawTimelineContentItemRowT<LyricChange, TimelineRowType::Lyrics>(rowParam, rowIt, context.ChartSelectedCourse->Lyrics); break;
+				default: { assert(!"Missing TimelineRowType switch case"); } break;
 				}
 			});
 			Gui::PopFont();
