@@ -225,7 +225,7 @@ namespace PeepoDrumKit
 		b8 PlaceBalloonBindingDownThisFrame = false, PlaceBalloonBindingDownLastFrame = false;
 		b8 PlaceDrumrollBindingDownThisFrame = false, PlaceDrumrollBindingDownLastFrame = false;
 
-		enum class BoxSelectionAction : u8 { Clear, Add, Remove };
+		enum class BoxSelectionAction : u8 { Clear, Add, Sub, XOR };
 		struct BoxSelectionData
 		{
 			b8 IsActive;

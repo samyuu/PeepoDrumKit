@@ -1987,7 +1987,11 @@ namespace PeepoDrumKit
 
 		// NOTE: Mouse selection box
 		{
-			static constexpr auto getBoxSelectionAction = [](const ImGuiIO& io) { return io.KeyShift ? BoxSelectionAction::Add : io.KeyAlt ? BoxSelectionAction::Remove : BoxSelectionAction::Clear; };
+			static constexpr auto getBoxSelectionAction = [](const ImGuiIO& io)
+			{
+				const b8 shift = io.KeyShift, alt = io.KeyAlt;
+				return (shift && alt) ? BoxSelectionAction::XOR : shift ? BoxSelectionAction::Add : alt ? BoxSelectionAction::Sub : BoxSelectionAction::Clear;
+			};
 
 			if (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_Right))
 			{
@@ -2045,7 +2049,8 @@ namespace PeepoDrumKit
 								{
 								case BoxSelectionAction::Clear: { isSelected.B8 = isInsideSelectionBox; } break;
 								case BoxSelectionAction::Add: { if (isInsideSelectionBox) isSelected.B8 = true; } break;
-								case BoxSelectionAction::Remove: { if (isInsideSelectionBox) isSelected.B8 = false; } break;
+								case BoxSelectionAction::Sub: { if (isInsideSelectionBox) isSelected.B8 = false; } break;
+								case BoxSelectionAction::XOR: { isSelected.B8 ^= isInsideSelectionBox; } break;
 								}
 
 								TrySetGeneric(*context.ChartSelectedCourse, list, i, GenericMember::B8_IsSelected, isSelected);
@@ -2367,18 +2372,31 @@ namespace PeepoDrumKit
 
 			if (BoxSelection.Action != BoxSelectionAction::Clear)
 			{
-				Gui::DisableFontPixelSnap(true);
+				const f32 radius = GuiScale(TimelineBoxSelectionRadius);
+				const f32 linePadding = GuiScale(TimelineBoxSelectionLinePadding);
+				const f32 lineThickness = ClampBot(Round(TimelineBoxSelectionLineThickness * GuiScaleFactor / 2.0f) * 2.0f, TimelineBoxSelectionLineThickness);
+
 				const vec2 center = LocalToScreenSpace(Camera.WorldToLocalSpace(BoxSelection.WorldSpaceRect.TL));
-				DrawListContent->AddCircleFilled(center, TimelineBoxSelectionRadius, TimelineBoxSelectionFillColor);
-				DrawListContent->AddCircle(center, TimelineBoxSelectionRadius, TimelineBoxSelectionBorderColor);
+				DrawListContent->AddCircleFilled(center, radius, TimelineBoxSelectionFillColor);
+				DrawListContent->AddCircle(center, radius, TimelineBoxSelectionBorderColor);
 				{
-					const Rect horizontal = Rect::FromCenterSize(center, vec2((TimelineBoxSelectionRadius - TimelineBoxSelectionLinePadding) * 2.0f, TimelineBoxSelectionLineThickness));
-					const Rect vertical = Rect::FromCenterSize(center, vec2(TimelineBoxSelectionLineThickness, (TimelineBoxSelectionRadius - TimelineBoxSelectionLinePadding) * 2.0f));
-					DrawListContent->AddRectFilled(horizontal.TL, horizontal.BR, TimelineBoxSelectionInnerColor);
+					const Rect horizontal = Rect::FromCenterSize(center, vec2((radius - linePadding) * 2.0f, lineThickness));
+					const Rect vertical = Rect::FromCenterSize(center, vec2(lineThickness, (radius - linePadding) * 2.0f));
+
 					if (BoxSelection.Action == BoxSelectionAction::Add)
+					{
+						DrawListContent->AddRectFilled(horizontal.TL, horizontal.BR, TimelineBoxSelectionInnerColor);
 						DrawListContent->AddRectFilled(vertical.TL, vertical.BR, TimelineBoxSelectionInnerColor);
+					}
+					else if (BoxSelection.Action == BoxSelectionAction::Sub)
+					{
+						DrawListContent->AddRectFilled(horizontal.TL, horizontal.BR, TimelineBoxSelectionInnerColor);
+					}
+					else if (BoxSelection.Action == BoxSelectionAction::XOR)
+					{
+						DrawListContent->AddCircleFilled(center, GuiScale(TimelineBoxSelectionXorDotRadius), TimelineBoxSelectionInnerColor);
+					}
 				}
-				Gui::DisableFontPixelSnap(false);
 			}
 		}
 	}

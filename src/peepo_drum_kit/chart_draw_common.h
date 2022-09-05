@@ -12,6 +12,7 @@ namespace PeepoDrumKit
 	inline f32 TimelineBoxSelectionRadius = 9.0f;
 	inline f32 TimelineBoxSelectionLineThickness = 2.0f;
 	inline f32 TimelineBoxSelectionLinePadding = 4.0f;
+	inline f32 TimelineBoxSelectionXorDotRadius = 3.0f;
 	inline f32 TimelineSongDemoStartMarkerWidth = 9.0f;
 	inline f32 TimelineSongDemoStartMarkerHeight = 9.0f;
 	inline f32 TimelineSelectedNoteHitBoxSizeSmall = (16.0f * 2.0f) + 2.0f;
