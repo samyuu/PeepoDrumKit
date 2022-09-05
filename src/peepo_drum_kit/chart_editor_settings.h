@@ -79,6 +79,7 @@ namespace PeepoDrumKit
 			b8 OSWindow_IsFullscreen = false;
 			b8 OSWindow_IsMaximized = false;
 
+			b8 ShowWindow_TestMenu = false;
 			b8 ShowWindow_Help = true;
 			b8 ShowWindow_Settings = true;
 			b8 ShowWindow_AudioTest = false;

@@ -181,7 +181,7 @@ namespace PeepoDrumKit
 				Gui::EndMenu();
 			}
 
-			if (Gui::BeginMenu("Test Menu"))
+			if ((PEEPO_DEBUG || PersistentApp.LastSession.ShowWindow_TestMenu) && Gui::BeginMenu("Test Menu"))
 			{
 				Gui::MenuItem("Show Audio Test", "(Debug)", &PersistentApp.LastSession.ShowWindow_AudioTest);
 				Gui::MenuItem("Show TJA Import Test", "(Debug)", &PersistentApp.LastSession.ShowWindow_TJAImportTest);

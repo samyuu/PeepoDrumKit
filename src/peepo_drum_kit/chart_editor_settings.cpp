@@ -345,6 +345,7 @@ namespace PeepoDrumKit
 				else if (it.Key == "os_window_region_restore") { if (!RectFromTLSizeString(in, out.LastSession.OSWindow_RegionRestore)) return parser.Error_InvalidRect(); }
 				else if (it.Key == "os_window_is_fullscreen") { if (!BoolFromString(in, out.LastSession.OSWindow_IsFullscreen)) return parser.Error_InvalidBool(); }
 				else if (it.Key == "os_window_is_maximized") { if (!BoolFromString(in, out.LastSession.OSWindow_IsMaximized)) return parser.Error_InvalidBool(); }
+				else if (it.Key == "show_window_test_menu") { if (!BoolFromString(in, out.LastSession.ShowWindow_TestMenu)) return parser.Error_InvalidBool(); }
 				else if (it.Key == "show_window_help") { if (!BoolFromString(in, out.LastSession.ShowWindow_Help)) return parser.Error_InvalidBool(); }
 				else if (it.Key == "show_window_settings") { if (!BoolFromString(in, out.LastSession.ShowWindow_Settings)) return parser.Error_InvalidBool(); }
 				else if (it.Key == "show_window_audio_test") { if (!BoolFromString(in, out.LastSession.ShowWindow_AudioTest)) return parser.Error_InvalidBool(); }
@@ -381,6 +382,7 @@ namespace PeepoDrumKit
 		writer.LineKeyValue_Str("os_window_region_restore", std::string_view(b, RectToTLSizeString(b, sizeof(b), in.LastSession.OSWindow_RegionRestore)));
 		writer.LineKeyValue_Str("os_window_is_fullscreen", BoolToString(in.LastSession.OSWindow_IsFullscreen));
 		writer.LineKeyValue_Str("os_window_is_maximized", BoolToString(in.LastSession.OSWindow_IsMaximized));
+		writer.LineKeyValue_Str("show_window_test_menu", BoolToString(in.LastSession.ShowWindow_TestMenu));
 		writer.LineKeyValue_Str("show_window_help", BoolToString(in.LastSession.ShowWindow_Help));
 		writer.LineKeyValue_Str("show_window_settings", BoolToString(in.LastSession.ShowWindow_Settings));
 		writer.LineKeyValue_Str("show_window_audio_test", BoolToString(in.LastSession.ShowWindow_AudioTest));
