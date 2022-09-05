@@ -170,6 +170,15 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Timeline_Paste = { KeyBinding(ImGuiKey_V, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Timeline_DeleteSelection = { KeyBinding(ImGuiKey_Delete) };
 			WithDefault<MultiInputBinding> Timeline_StartEndRangeSelection = { KeyBinding(ImGuiKey_Tab) };
+			WithDefault<MultiInputBinding> Timeline_SelectAll = {};
+			WithDefault<MultiInputBinding> Timeline_ClearSelection = {};
+			WithDefault<MultiInputBinding> Timeline_InvertSelection = {};
+			WithDefault<MultiInputBinding> Timeline_SelectAllWithinRangeSelection = {};
+			WithDefault<MultiInputBinding> Timeline_ShiftSelectionLeft = { KeyBinding(ImGuiKey_LeftArrow, ImGuiModFlags_Ctrl) };
+			WithDefault<MultiInputBinding> Timeline_ShiftSelectionRight = { KeyBinding(ImGuiKey_RightArrow, ImGuiModFlags_Ctrl) };
+			WithDefault<MultiInputBinding> Timeline_SelectEvery2ndSelectedItem = { KeyBinding(ImGuiKey_2, ImGuiModFlags_Ctrl) };
+			WithDefault<MultiInputBinding> Timeline_SelectEvery3rdSelectedItem = { KeyBinding(ImGuiKey_3, ImGuiModFlags_Ctrl) };
+			WithDefault<MultiInputBinding> Timeline_SelectEvery4thSelectedItem = { KeyBinding(ImGuiKey_4, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Timeline_StepCursorLeft = { KeyBinding(ImGuiKey_LeftArrow) };
 			WithDefault<MultiInputBinding> Timeline_StepCursorRight = { KeyBinding(ImGuiKey_RightArrow) };
 			WithDefault<MultiInputBinding> Timeline_JumpToTimelineStart = { KeyBinding(ImGuiKey_Home) };
@@ -247,7 +256,7 @@ namespace PeepoDrumKit
 		IniVoidPtrTypeFromStringFunc FromStringFunc;
 		IniVoidPtrTypeToStringFunc ToStringFunc;
 	};
-	struct SettingsReflectionMap { SettingsReflectionMember MemberSlots[82]; size_t MemberCount; };
+	struct SettingsReflectionMap { SettingsReflectionMember MemberSlots[98]; size_t MemberCount; };
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap();
 	inline const SettingsReflectionMap AppSettingsReflectionMap = StaticallyInitializeAppSettingsReflectionMap();

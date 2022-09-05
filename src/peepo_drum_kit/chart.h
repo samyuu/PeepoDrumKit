@@ -432,6 +432,16 @@ namespace PeepoDrumKit
 	};
 
 	template <typename Func>
+	void ForEachChartItem(const ChartCourse& course, Func perItemFunc)
+	{
+		for (GenericList list = {}; list < GenericList::Count; IncrementEnum(list))
+		{
+			for (size_t i = 0; i < GetGenericListCount(course, list); i++)
+				perItemFunc(ForEachChartItemData { list, i });
+		}
+	}
+
+	template <typename Func>
 	void ForEachSelectedChartItem(const ChartCourse& course, Func perSelectedItemFunc)
 	{
 #if 0

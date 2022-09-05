@@ -669,7 +669,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 4432, "TODO: Add missing settings entries for newly added UserSettingsData fields");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 5064, "TODO: Add missing settings entries for newly added UserSettingsData fields");
 
 					SettingsGui::SettingsEntry settingsEntriesMain[] =
 					{
@@ -728,7 +728,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsInputData = sizeof(UserSettingsData::InputData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 3920, "TODO: Add missing settings entries for newly added UserSettingsData::InputData bindings");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 4550, "TODO: Add missing settings entries for newly added UserSettingsData::InputData bindings");
 
 					SettingsGui::InputSettingsEntry settingsEntriesInput[] =
 					{
@@ -758,6 +758,15 @@ namespace PeepoDrumKit
 						{ &settings.Input.Timeline_Paste, "Timeline: Paste", },
 						{ &settings.Input.Timeline_DeleteSelection, "Timeline: Delete Selection", },
 						{ &settings.Input.Timeline_StartEndRangeSelection, "Timeline: Start/End Range Selection", },
+						{ &settings.Input.Timeline_SelectAll, "Timeline: Select All", },
+						{ &settings.Input.Timeline_ClearSelection, "Timeline: Clear Selection ", },
+						{ &settings.Input.Timeline_InvertSelection, "Timeline: Invert Selection ", },
+						{ &settings.Input.Timeline_SelectAllWithinRangeSelection, "Timeline: Select All within Range Selection ", },
+						{ &settings.Input.Timeline_ShiftSelectionLeft, "Timeline: Shift selection Left", },
+						{ &settings.Input.Timeline_ShiftSelectionRight, "Timeline: Shift selection Right", },
+						{ &settings.Input.Timeline_SelectEvery2ndSelectedItem, "Timeline: Select every 2nd Item ", },
+						{ &settings.Input.Timeline_SelectEvery3rdSelectedItem, "Timeline: Select every 3rd Item ", },
+						{ &settings.Input.Timeline_SelectEvery4thSelectedItem, "Timeline: Select every 4th Item ", },
 						{ &settings.Input.Timeline_StepCursorLeft, "Timeline: Step Cursor Left", },
 						{ &settings.Input.Timeline_StepCursorRight, "Timeline: Step Cursor Right", },
 						{ &settings.Input.Timeline_JumpToTimelineStart, "Timeline: Jump to Timeline Start", },

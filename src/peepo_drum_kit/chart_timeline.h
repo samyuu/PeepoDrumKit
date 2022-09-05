@@ -170,6 +170,16 @@ namespace PeepoDrumKit
 	//		 so that a line drawn at worldspace position { x = 0.0f } is fully visible
 	static constexpr f32 TimelineCameraBaseScrollX = -32.0f;
 
+	enum class ClipboardAction : u8 { Cut, Copy, Paste, Delete };
+	enum class SelectionAction : u8 { SelectAll, UnselectAll, InvertAll, SelectAllWithinRangeSelection, PerRowShiftSelected, PerRowSelectNth };
+	union SelectionActionParam
+	{
+		struct { i32 ShiftDelta; };
+		struct { i32 NthInterval; };
+		inline SelectionActionParam& SetShiftDelta(i32 v) { ShiftDelta = v; return *this; }
+		inline SelectionActionParam& SetNthInterval(i32 v) { NthInterval = v; return *this; }
+	};
+
 	struct ChartTimeline
 	{
 		TimelineCamera Camera = []() { TimelineCamera out {}; out.PositionCurrent.x = out.PositionTarget.x = TimelineCameraBaseScrollX; return out; }();
@@ -238,6 +248,7 @@ namespace PeepoDrumKit
 			Beat Start, End;
 			b8 HasEnd;
 			b8 IsActive;
+			inline b8 IsActiveAndHasEnd() { return (IsActive && HasEnd); }
 			inline Beat GetMin() const { return ClampBot(Min(Start, End), Beat::Zero()); }
 			inline Beat GetMax() const { return ClampBot(Max(Start, End), Beat::Zero()); }
 		} RangeSelection = {};
@@ -264,8 +275,7 @@ namespace PeepoDrumKit
 		std::vector<TempDrawSelectionBox> TempSelectionBoxesDrawBuffer;
 
 	public:
-		// TODO: Make sure this'll work correctly with popup windows too (context menu, etc.)
-		inline b8 HasKeyboardFocus() const { return IsAnyChildWindowFocused /*IsContentWindowFocused | IsContentHeaderWindowFocused*/; }
+		inline b8 HasKeyboardFocus() const { return IsAnyChildWindowFocused; }
 
 		inline Beat FloorBeatToCurrentGrid(Beat beat) const { return FloorBeatToGrid(beat, GetGridBeatSnap(CurrentGridBarDivision)); }
 		inline Beat RoundBeatToCurrentGrid(Beat beat) const { return RoundBeatToGrid(beat, GetGridBeatSnap(CurrentGridBarDivision)); }
@@ -283,7 +293,6 @@ namespace PeepoDrumKit
 		inline vec2 ScreenToLocalSpace_ScrollbarX(vec2 screenSpace) const { return screenSpace - Regions.ContentScrollbarX.TL; }
 		inline vec2 LocalToScreenSpace_ScrollbarX(vec2 localSpace) const { return localSpace + Regions.ContentScrollbarX.TL; }
 
-		// BUG: Using a Time overdraw param means different behavior at different zoom levels
 		struct MinMaxTime { Time Min, Max; };
 		inline MinMaxTime GetMinMaxVisibleTime(const Time overdraw = Time::Zero()) const
 		{
@@ -294,10 +303,11 @@ namespace PeepoDrumKit
 
 		void DrawGui(ChartContext& context);
 
+		void StartEndRangeSelectionAtCursor(ChartContext& context);
 		void PlayNoteSoundAndHitAnimationsAtBeat(ChartContext& context, Beat cursorBeat);
 
-		enum class ClipboardAction : u8 { Cut, Copy, Paste, Delete };
 		void ExecuteClipboardAction(ChartContext& context, ClipboardAction action);
+		void ExecuteSelectionAction(ChartContext& context, SelectionAction action, const SelectionActionParam& param);
 
 	private:
 		// NOTE: Must update input *before* drawing so that the scroll positions won't change

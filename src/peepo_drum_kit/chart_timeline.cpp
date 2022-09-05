@@ -979,6 +979,25 @@ namespace PeepoDrumKit
 		timelineRegionEnd();
 	}
 
+	void ChartTimeline::StartEndRangeSelectionAtCursor(ChartContext& context)
+	{
+		if (!RangeSelection.IsActive || RangeSelection.HasEnd)
+		{
+			RangeSelection.Start = RangeSelection.End = RoundBeatToCurrentGrid(context.GetCursorBeat());
+			RangeSelection.HasEnd = false;
+			RangeSelection.IsActive = true;
+			RangeSelectionExpansionAnimationTarget = 0.0f;
+		}
+		else
+		{
+			RangeSelection.End = RoundBeatToCurrentGrid(context.GetCursorBeat());
+			RangeSelection.HasEnd = true;
+			RangeSelectionExpansionAnimationTarget = 1.0f;
+			if (RangeSelection.End == RangeSelection.Start)
+				RangeSelection = {};
+		}
+	}
+
 	void ChartTimeline::PlayNoteSoundAndHitAnimationsAtBeat(ChartContext& context, Beat cursorBeat)
 	{
 		b8 soundHasBeenPlayed = false;
@@ -1191,13 +1210,12 @@ namespace PeepoDrumKit
 			return (minBase.Ticks != I32Max) ? minBase : Beat::Zero();
 		};
 
-		ChartCourse& selectedCourse = *context.ChartSelectedCourse;
-
+		ChartCourse& course = *context.ChartSelectedCourse;
 		switch (action)
 		{
 		case ClipboardAction::Cut:
 		{
-			if (auto selectedItems = copyAllSelectedItems(selectedCourse); !selectedItems.empty())
+			if (auto selectedItems = copyAllSelectedItems(course); !selectedItems.empty())
 			{
 				size_t selectedNoteIndex = 0;
 				for (const auto& item : selectedItems)
@@ -1211,12 +1229,12 @@ namespace PeepoDrumKit
 				}
 
 				Gui::SetClipboardText(itemsToClipboardText(selectedItems, findBaseBeat(selectedItems)).c_str());
-				context.Undo.Execute<Commands::RemoveMultipleGenericItems_Cut>(&selectedCourse, std::move(selectedItems));
+				context.Undo.Execute<Commands::RemoveMultipleGenericItems_Cut>(&course, std::move(selectedItems));
 			}
 		} break;
 		case ClipboardAction::Copy:
 		{
-			if (auto selectedItems = copyAllSelectedItems(selectedCourse); !selectedItems.empty())
+			if (auto selectedItems = copyAllSelectedItems(course); !selectedItems.empty())
 			{
 				// TODO: Maybe also animate original notes being copied (?)
 				Gui::SetClipboardText(itemsToClipboardText(selectedItems, findBaseBeat(selectedItems)).c_str());
@@ -1236,15 +1254,15 @@ namespace PeepoDrumKit
 					auto check = [&](auto& list, auto& i) { return (GetBeat(i) < Beat::Zero()) || (list.TryFindOverlappingBeat(GetBeat(i), GetBeat(i) + GetBeatDuration(i), inclusiveBeatCheck) != nullptr); };
 					switch (item.List)
 					{
-					case GenericList::TempoChanges: return check(selectedCourse.TempoMap.Tempo, item.Value.POD.Tempo);
-					case GenericList::SignatureChanges: return check(selectedCourse.TempoMap.Signature, item.Value.POD.Signature);
-					case GenericList::Notes_Normal: return check(selectedCourse.Notes_Normal, item.Value.POD.Note);
-					case GenericList::Notes_Expert: return check(selectedCourse.Notes_Expert, item.Value.POD.Note);
-					case GenericList::Notes_Master: return check(selectedCourse.Notes_Master, item.Value.POD.Note);
-					case GenericList::ScrollChanges: return check(selectedCourse.ScrollChanges, item.Value.POD.Scroll);
-					case GenericList::BarLineChanges: return check(selectedCourse.BarLineChanges, item.Value.POD.BarLine);
-					case GenericList::GoGoRanges: return check(selectedCourse.GoGoRanges, item.Value.POD.GoGo);
-					case GenericList::Lyrics: return check(selectedCourse.Lyrics, item.Value.NonTrivial.Lyric);
+					case GenericList::TempoChanges: return check(course.TempoMap.Tempo, item.Value.POD.Tempo);
+					case GenericList::SignatureChanges: return check(course.TempoMap.Signature, item.Value.POD.Signature);
+					case GenericList::Notes_Normal: return check(course.Notes_Normal, item.Value.POD.Note);
+					case GenericList::Notes_Expert: return check(course.Notes_Expert, item.Value.POD.Note);
+					case GenericList::Notes_Master: return check(course.Notes_Master, item.Value.POD.Note);
+					case GenericList::ScrollChanges: return check(course.ScrollChanges, item.Value.POD.Scroll);
+					case GenericList::BarLineChanges: return check(course.BarLineChanges, item.Value.POD.BarLine);
+					case GenericList::GoGoRanges: return check(course.GoGoRanges, item.Value.POD.GoGo);
+					case GenericList::Lyrics: return check(course.Lyrics, item.Value.NonTrivial.Lyric);
 					default: assert(false); return false;
 					}
 				};
@@ -1258,13 +1276,13 @@ namespace PeepoDrumKit
 					for (const auto& item : clipboardItems)
 						if (isFirstNote && IsNotesList(item.List)) { context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(item.Value.POD.Note.Type)); isFirstNote = false; }
 
-					context.Undo.Execute<Commands::AddMultipleGenericItems_Paste>(&selectedCourse, std::move(clipboardItems));
+					context.Undo.Execute<Commands::AddMultipleGenericItems_Paste>(&course, std::move(clipboardItems));
 				}
 			}
 		} break;
 		case ClipboardAction::Delete:
 		{
-			if (auto selectedItems = copyAllSelectedItems(selectedCourse); !selectedItems.empty())
+			if (auto selectedItems = copyAllSelectedItems(course); !selectedItems.empty())
 			{
 				for (const auto& item : selectedItems)
 				{
@@ -1272,10 +1290,89 @@ namespace PeepoDrumKit
 						TempDeletedNoteAnimationsBuffer.push_back(DeletedNoteAnimation { item.Value.POD.Note, context.ChartSelectedBranch, 0.0f });
 				}
 
-				context.Undo.Execute<Commands::RemoveMultipleGenericItems>(&selectedCourse, std::move(selectedItems));
+				context.Undo.Execute<Commands::RemoveMultipleGenericItems>(&course, std::move(selectedItems));
 			}
 		} break;
 		default: { assert(false); } break;
+		}
+	}
+
+	void ChartTimeline::ExecuteSelectionAction(ChartContext& context, SelectionAction action, const SelectionActionParam& param)
+	{
+		ChartCourse& course = *context.ChartSelectedCourse;
+		switch (action)
+		{
+		default: { assert(false); } break;
+		case SelectionAction::SelectAll: { ForEachChartItem(course, [&](const ForEachChartItemData& it) { it.SetIsSelected(course, true); }); } break;
+		case SelectionAction::UnselectAll: { ForEachChartItem(course, [&](const ForEachChartItemData& it) { it.SetIsSelected(course, false); }); } break;
+		case SelectionAction::InvertAll: { ForEachChartItem(course, [&](const ForEachChartItemData& it) { it.SetIsSelected(course, !it.GetIsSelected(course)); }); } break;
+		case SelectionAction::SelectAllWithinRangeSelection:
+		{
+			if (RangeSelection.IsActiveAndHasEnd())
+			{
+				const Beat rangeSelectionMin = RoundBeatToCurrentGrid(RangeSelection.GetMin());
+				const Beat rangeSelectionMax = RoundBeatToCurrentGrid(RangeSelection.GetMax());
+				ForEachChartItem(course, [&](const ForEachChartItemData& it)
+				{
+					const Beat itStart = it.GetBeat(course);
+					const Beat itEnd = itStart + it.GetBeatDuration(course);
+					if ((itStart <= rangeSelectionMax) && (itEnd >= rangeSelectionMin))
+						it.SetIsSelected(course, true);
+				});
+			}
+		} break;
+		case SelectionAction::PerRowShiftSelected:
+		{
+			struct ItemProxy
+			{
+				ChartCourse& Course; GenericList List; i32 Index;
+				inline b8 Exists() const { return (Index >= 0); }
+				inline b8 IsSelected() const { GenericMemberUnion v {}; TryGetGeneric(Course, List, Index, GenericMember::B8_IsSelected, v); return v.B8; }
+				inline void IsSelected(b8 isSelected) { GenericMemberUnion v {}; v.B8 = isSelected; TrySetGeneric(Course, List, Index, GenericMember::B8_IsSelected, v); }
+				inline static ItemProxy At(ChartCourse& course, GenericList list, i32 listCount, i32 i) { return ItemProxy { course, list, (i >= 0) && (i < listCount) ? i : -1 }; }
+			};
+
+			for (GenericList list = {}; list < GenericList::Count; IncrementEnum(list))
+			{
+				const i32 listCount = static_cast<i32>(GetGenericListCount(course, list));
+				if (param.ShiftDelta > 0)
+				{
+					for (i32 i = listCount - 1; i >= 0; i--)
+					{
+						ItemProxy thisIt = ItemProxy::At(course, list, listCount, i);
+						ItemProxy nextIt = ItemProxy::At(course, list, listCount, i + 1);
+						if (nextIt.Exists() && thisIt.IsSelected())
+							nextIt.IsSelected(true);
+						thisIt.IsSelected(false);
+					}
+				}
+				else if (param.ShiftDelta < 0)
+				{
+					for (i32 i = 0; i < listCount; i++)
+					{
+						ItemProxy thisIt = ItemProxy::At(course, list, listCount, i);
+						ItemProxy prevIt = ItemProxy::At(course, list, listCount, i - 1);
+						if (prevIt.Exists() && thisIt.IsSelected())
+							prevIt.IsSelected(true);
+						thisIt.IsSelected(false);
+					}
+				}
+			}
+		} break;
+		case SelectionAction::PerRowSelectNth:
+		{
+			for (GenericList list = {}; list < GenericList::Count; IncrementEnum(list))
+			{
+				for (size_t i = 0, selectionIndex = 0; i < GetGenericListCount(course, list); i++)
+				{
+					if (const ForEachChartItemData it = { list, i }; it.GetIsSelected(course))
+					{
+						if (selectionIndex++ % param.NthInterval != 0)
+							it.SetIsSelected(course, false);
+					}
+				}
+			}
+		} break;
 		}
 	}
 
@@ -1652,6 +1749,17 @@ namespace PeepoDrumKit
 					if (Gui::IsAnyPressed(*Settings.Input.Timeline_Copy, false)) ExecuteClipboardAction(context, ClipboardAction::Copy);
 					if (Gui::IsAnyPressed(*Settings.Input.Timeline_Paste, false)) ExecuteClipboardAction(context, ClipboardAction::Paste);
 					if (Gui::IsAnyPressed(*Settings.Input.Timeline_DeleteSelection, false)) ExecuteClipboardAction(context, ClipboardAction::Delete);
+
+					SelectionActionParam param {};
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectAll, false)) ExecuteSelectionAction(context, SelectionAction::SelectAll, param);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_ClearSelection, false)) ExecuteSelectionAction(context, SelectionAction::UnselectAll, param);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_InvertSelection, false)) ExecuteSelectionAction(context, SelectionAction::InvertAll, param);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectAllWithinRangeSelection, false)) ExecuteSelectionAction(context, SelectionAction::SelectAllWithinRangeSelection, param);
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_ShiftSelectionLeft, true)) ExecuteSelectionAction(context, SelectionAction::PerRowShiftSelected, param.SetShiftDelta(-1));
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_ShiftSelectionRight, true)) ExecuteSelectionAction(context, SelectionAction::PerRowShiftSelected, param.SetShiftDelta(+1));
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectEvery2ndSelectedItem, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(2));
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectEvery3rdSelectedItem, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(3));
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectEvery4thSelectedItem, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(4));
 				}
 
 				if (const auto& io = Gui::GetIO(); !io.KeyCtrl)
@@ -1693,25 +1801,7 @@ namespace PeepoDrumKit
 
 				if (Gui::IsAnyPressed(*Settings.Input.Timeline_JumpToTimelineStart, false)) ScrollToTimelinePosition(Camera, Regions, context.Chart, 0.0f);
 				if (Gui::IsAnyPressed(*Settings.Input.Timeline_JumpToTimelineEnd, false)) ScrollToTimelinePosition(Camera, Regions, context.Chart, 1.0f);
-
-				if (Gui::IsAnyPressed(*Settings.Input.Timeline_StartEndRangeSelection, false))
-				{
-					if (!RangeSelection.IsActive || RangeSelection.HasEnd)
-					{
-						RangeSelection.Start = RangeSelection.End = RoundBeatToCurrentGrid(context.GetCursorBeat());
-						RangeSelection.HasEnd = false;
-						RangeSelection.IsActive = true;
-						RangeSelectionExpansionAnimationTarget = 0.0f;
-					}
-					else
-					{
-						RangeSelection.End = RoundBeatToCurrentGrid(context.GetCursorBeat());
-						RangeSelection.HasEnd = true;
-						RangeSelectionExpansionAnimationTarget = 1.0f;
-						if (RangeSelection.End == RangeSelection.Start)
-							RangeSelection = {};
-					}
-				}
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_StartEndRangeSelection, false)) StartEndRangeSelectionAtCursor(context);
 			}
 
 			// NOTE: Grid snap controls
@@ -1720,8 +1810,9 @@ namespace PeepoDrumKit
 				i32 currentGridDivisionIndex = 0;
 				for (const i32& it : AllowedGridBarDivisions) if (it == CurrentGridBarDivision) currentGridDivisionIndex = ArrayItToIndexI32(&it, &AllowedGridBarDivisions[0]);
 
-				const b8 increaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X2, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_IncreaseGridDivision, true, InputModifierBehavior::Relaxed));
-				const b8 decreaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X1, true)) || (HasKeyboardFocus() && Gui::IsAnyPressed(*Settings.Input.Timeline_DecreaseGridDivision, true, InputModifierBehavior::Relaxed));
+				const b8 keyboardFocus = HasKeyboardFocus() && !Gui::GetIO().KeyCtrl;
+				const b8 increaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X2, true)) || (keyboardFocus && Gui::IsAnyPressed(*Settings.Input.Timeline_IncreaseGridDivision, true, InputModifierBehavior::Relaxed));
+				const b8 decreaseGrid = (IsContentWindowHovered && Gui::IsMouseClicked(ImGuiMouseButton_X1, true)) || (keyboardFocus && Gui::IsAnyPressed(*Settings.Input.Timeline_DecreaseGridDivision, true, InputModifierBehavior::Relaxed));
 				if (increaseGrid) CurrentGridBarDivision = AllowedGridBarDivisions[Clamp(currentGridDivisionIndex + 1, 0, ArrayCountI32(AllowedGridBarDivisions) - 1)];
 				if (decreaseGrid) CurrentGridBarDivision = AllowedGridBarDivisions[Clamp(currentGridDivisionIndex - 1, 0, ArrayCountI32(AllowedGridBarDivisions) - 1)];
 			}
@@ -1792,7 +1883,7 @@ namespace PeepoDrumKit
 				{
 					SortedNotesList& notes = context.ChartSelectedCourse->GetNotes(context.ChartSelectedBranch);
 
-					if (Gui::GetIO().KeyShift && RangeSelection.IsActive && RangeSelection.HasEnd)
+					if (Gui::GetIO().KeyShift && RangeSelection.IsActiveAndHasEnd())
 					{
 						const Beat startTick = RoundBeatToCurrentGrid(RangeSelection.GetMin());
 						const Beat endTick = RoundBeatToCurrentGrid(RangeSelection.GetMax());

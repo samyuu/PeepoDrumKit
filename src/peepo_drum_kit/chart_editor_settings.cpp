@@ -465,7 +465,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 4432, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 5064, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -550,6 +550,15 @@ namespace PeepoDrumKit
 			X(Input.Timeline_Paste, "timeline_paste");
 			X(Input.Timeline_DeleteSelection, "timeline_delete_selection");
 			X(Input.Timeline_StartEndRangeSelection, "timeline_start_end_range_selection");
+			X(Input.Timeline_SelectAll, "timeline_select_all");
+			X(Input.Timeline_ClearSelection, "timeline_clear_selection");
+			X(Input.Timeline_InvertSelection, "timeline_invert_selection");
+			X(Input.Timeline_SelectAllWithinRangeSelection, "timeline_select_all_within_range_selection");
+			X(Input.Timeline_ShiftSelectionLeft, "timeline_shift_selection_left");
+			X(Input.Timeline_ShiftSelectionRight, "timeline_shift_selection_right");
+			X(Input.Timeline_SelectEvery2ndSelectedItem, "timeline_select_every_2nd_selected_item");
+			X(Input.Timeline_SelectEvery3rdSelectedItem, "timeline_select_every_3rd_selected_item");
+			X(Input.Timeline_SelectEvery4thSelectedItem, "timeline_select_every_4th_selected_item");
 			X(Input.Timeline_StepCursorLeft, "timeline_step_cursor_left");
 			X(Input.Timeline_StepCursorRight, "timeline_step_cursor_right");
 			X(Input.Timeline_JumpToTimelineStart, "timeline_jump_to_timeline_start");

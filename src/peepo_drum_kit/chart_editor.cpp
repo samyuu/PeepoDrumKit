@@ -115,12 +115,53 @@ namespace PeepoDrumKit
 				Gui::EndMenu();
 			}
 
+			size_t selectedItemCount = 0; ForEachSelectedChartItem(*context.ChartSelectedCourse, [&](const ForEachChartItemData&) { selectedItemCount++; });
+			const b8 isAnyItemSelected = (selectedItemCount > 0);
+
 			if (Gui::BeginMenu("Edit"))
 			{
 				if (Gui::MenuItem("Undo", ToShortcutString(*Settings.Input.Editor_Undo).Data, nullptr, context.Undo.CanUndo())) { context.Undo.Undo(); }
 				if (Gui::MenuItem("Redo", ToShortcutString(*Settings.Input.Editor_Redo).Data, nullptr, context.Undo.CanRedo())) { context.Undo.Redo(); }
 				Gui::Separator();
+				if (Gui::MenuItem("Cut", ToShortcutString(*Settings.Input.Timeline_Cut).Data, nullptr, isAnyItemSelected)) { timeline.ExecuteClipboardAction(context, ClipboardAction::Cut); }
+				if (Gui::MenuItem("Copy", ToShortcutString(*Settings.Input.Timeline_Copy).Data, nullptr, isAnyItemSelected)) { timeline.ExecuteClipboardAction(context, ClipboardAction::Copy); }
+				if (Gui::MenuItem("Paste", ToShortcutString(*Settings.Input.Timeline_Paste).Data, nullptr, true)) { timeline.ExecuteClipboardAction(context, ClipboardAction::Paste); }
+				if (Gui::MenuItem("Delete", ToShortcutString(*Settings.Input.Timeline_DeleteSelection).Data, nullptr, isAnyItemSelected)) { timeline.ExecuteClipboardAction(context, ClipboardAction::Delete); }
+				Gui::Separator();
 				if (Gui::MenuItem("Settings", ToShortcutString(*Settings.Input.Editor_OpenSettings).Data)) { PersistentApp.LastSession.ShowWindow_Settings = focusSettingsWindowNextFrame = true; }
+				Gui::EndMenu();
+			}
+
+			if (Gui::BeginMenu("Selection"))
+			{
+				const b8 setRangeSelectionStartNext = (!timeline.RangeSelection.IsActive || timeline.RangeSelection.HasEnd);
+				if (Gui::MenuItem(setRangeSelectionStartNext ? "Start Range Selection" : "End Range Selection", ToShortcutString(*Settings.Input.Timeline_StartEndRangeSelection).Data))
+					timeline.StartEndRangeSelectionAtCursor(context);
+				Gui::Separator();
+
+				SelectionActionParam param {};
+				if (Gui::MenuItem("Select All", ToShortcutString(*Settings.Input.Timeline_SelectAll).Data))
+					timeline.ExecuteSelectionAction(context, SelectionAction::SelectAll, param);
+				if (Gui::MenuItem("Clear Selection", ToShortcutString(*Settings.Input.Timeline_ClearSelection).Data, false, isAnyItemSelected))
+					timeline.ExecuteSelectionAction(context, SelectionAction::UnselectAll, param);
+				if (Gui::MenuItem("Invert Selection", ToShortcutString(*Settings.Input.Timeline_InvertSelection).Data))
+					timeline.ExecuteSelectionAction(context, SelectionAction::InvertAll, param);
+				if (Gui::MenuItem("From Range Selection", ToShortcutString(*Settings.Input.Timeline_SelectAllWithinRangeSelection).Data, nullptr, timeline.RangeSelection.IsActiveAndHasEnd()))
+					timeline.ExecuteSelectionAction(context, SelectionAction::SelectAllWithinRangeSelection, param);
+				if (Gui::BeginMenu("Refine Selection"))
+				{
+					if (Gui::MenuItem("Shift selection Left", ToShortcutString(*Settings.Input.Timeline_ShiftSelectionLeft).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowShiftSelected, param.SetShiftDelta(-1));
+					if (Gui::MenuItem("Shift selection Right", ToShortcutString(*Settings.Input.Timeline_ShiftSelectionRight).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowShiftSelected, param.SetShiftDelta(+1));
+					if (Gui::MenuItem("Select every 2nd Item", ToShortcutString(*Settings.Input.Timeline_SelectEvery2ndSelectedItem).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(2));
+					if (Gui::MenuItem("Select every 3rd Item", ToShortcutString(*Settings.Input.Timeline_SelectEvery3rdSelectedItem).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(3));
+					if (Gui::MenuItem("Select every 4th Item", ToShortcutString(*Settings.Input.Timeline_SelectEvery4thSelectedItem).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(4));
+					Gui::EndMenu();
+				}
 				Gui::EndMenu();
 			}
 
