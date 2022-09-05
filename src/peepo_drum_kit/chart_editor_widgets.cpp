@@ -1,7 +1,7 @@
 #include "chart_editor_widgets.h"
+#include "chart_editor_settings.h"
 #include "chart_undo_commands.h"
 #include "chart_draw_common.h"
-#include "main_settings.h"
 
 // TODO: Populate char[U8Max] lookup table using provided flags and index into instead of using a switch (?)
 enum class EscapeSequenceFlags : u32 { NewLines };

@@ -135,7 +135,7 @@
     <ClCompile Include="src\peepo_drum_kit\chart_sound_effects.cpp" />
     <ClCompile Include="src\peepo_drum_kit\main.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart_timeline.cpp" />
-    <ClCompile Include="src\peepo_drum_kit\main_settings.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_settings.cpp" />
     <ClCompile Include="src\peepo_drum_kit\test_gui_audio.cpp" />
     <ClCompile Include="src\peepo_drum_kit\test_gui_tja.cpp" />
     <ClCompile Include="src\tja_file_format.cpp" />
@@ -175,7 +175,7 @@
     <ClInclude Include="src\peepo_drum_kit\test_gui_audio.h" />
     <ClInclude Include="src\peepo_drum_kit\chart.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor.h" />
-    <ClInclude Include="src\peepo_drum_kit\main_settings.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_settings.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_timeline.h" />
     <ClInclude Include="src\peepo_drum_kit\test_gui_tja.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_undo_commands.h" />

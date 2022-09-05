@@ -1,7 +1,7 @@
 #pragma once
 #include "core_types.h"
 #include "core_beat.h"
-#include "main_settings.h"
+#include "chart_editor_settings.h"
 #include "chart_editor_context.h"
 #include "chart_sound_effects.h"
 #include "imgui/imgui_include.h"

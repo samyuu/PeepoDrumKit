@@ -1,4 +1,4 @@
-#include "main_settings.h"
+#include "chart_editor_settings.h"
 #include "core_string.h"
 #include "core_io.h"
 #include <algorithm>

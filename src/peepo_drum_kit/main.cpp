@@ -1,7 +1,7 @@
 #include "core_types.h"
 #include "core_string.h"
 #include "chart_editor.h"
-#include "main_settings.h"
+#include "chart_editor_settings.h"
 
 namespace PeepoDrumKit
 {
