@@ -4,40 +4,29 @@
 #include "imgui/3rdparty/imgui_internal.h"
 #include <string>
 
-enum class InputBindingType : u8
-{
-	None,
-	Keyboard,
-	Mouse,
-	Count
-};
+enum class InputBindingType : u8 { None, Keyboard, Mouse, Count };
 
 struct InputBinding
 {
 	InputBindingType Type = InputBindingType::None;
-	struct
-	{
-		ImGuiKey Key = ImGuiKey_None;
-		ImGuiModFlags Modifiers = ImGuiModFlags_None;
-	} Keyboard = {};
-	struct
-	{
-		ImGuiMouseButton Button = ImGuiMouseButton_Left;
-	} Mouse = {};
+	u8 KeyModifiers = 0; // NOTE: Keyboard -> ImGuiModFlags | Mouse -> None
+	u16 KeyOrButton = 0; // NOTE: Keyboard -> ImGuiKey		| Mouse -> ImGuiMouseButton
 
 	constexpr InputBinding() = default;
-	explicit constexpr InputBinding(ImGuiKey key, ImGuiModFlags modifiers) : Type(InputBindingType::Keyboard), Keyboard({ key, modifiers }) {}
-	explicit constexpr InputBinding(ImGuiMouseButton mouseButton) : Type(InputBindingType::Mouse), Mouse({ mouseButton }) {}
+	explicit constexpr InputBinding(ImGuiKey key, ImGuiModFlags modifiers) : Type(InputBindingType::Keyboard), KeyModifiers(modifiers), KeyOrButton(key) {}
+	explicit constexpr InputBinding(ImGuiMouseButton mouseButton) : Type(InputBindingType::Mouse), KeyOrButton(mouseButton) {}
 
 	constexpr b8 operator!=(const InputBinding& other) const { return !(*this == other); }
 	constexpr b8 operator==(const InputBinding& other) const
 	{
 		return (Type != other.Type) ? false :
 			(Type == InputBindingType::None) ? true :
-			(Type == InputBindingType::Keyboard) ? (Keyboard.Key == other.Keyboard.Key) && (Keyboard.Modifiers == other.Keyboard.Modifiers) :
-			(Type == InputBindingType::Mouse) ? (Mouse.Button == other.Mouse.Button) : false;
+			(Type == InputBindingType::Keyboard) ? (KeyOrButton == other.KeyOrButton) && (KeyModifiers == other.KeyModifiers) :
+			(Type == InputBindingType::Mouse) ? (KeyOrButton == other.KeyOrButton) : false;
 	}
 };
+
+static_assert(sizeof(InputBinding) == sizeof(u32));
 
 // NOTE: Separate "constructor-functions" beacuse a default ImGuiModFlags can't be used inside the constructor itself due to non "class enum" type ambiguity between ImGuiKey and ImGuiMouseButton
 constexpr InputBinding KeyBinding(ImGuiKey key, ImGuiModFlags modifiers = ImGuiModFlags_None) { return InputBinding(key, modifiers); }
