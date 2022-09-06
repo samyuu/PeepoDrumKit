@@ -235,7 +235,7 @@ namespace ImGui
 			PushID(label);
 			SetNextItemWidth(ImMax(1.0f, CalcItemWidth() - (spin_buttons ? button_size : (button_size + style.ItemInnerSpacing.x) * 2)));
 			if (InputText("", buf, IM_ARRAYSIZE(buf), flags)) // PushId(label) + "" gives us the expected ID from outside point of view
-				result.ValueChanged = DataTypeApplyFromText(buf, data_type, p_data, format);
+				result.ValueChanged = DataTypeApplyFromText(buf, data_type, p_data, format) || WasInputTextStateEditedThisFrame();
 
 			result.IsTextItemActive = IsItemActive();
 			result.TextItemRect[0] = GetItemRect();
@@ -307,7 +307,7 @@ namespace ImGui
 			style.Colors[ImGuiCol_Text] = (ex_data != nullptr) ? ColorConvertU32ToFloat4(ex_data->TextColor) : backup_text_color;
 
 			if (InputText(label, buf, IM_ARRAYSIZE(buf), flags))
-				result.ValueChanged = DataTypeApplyFromText(buf, data_type, p_data, format);
+				result.ValueChanged = DataTypeApplyFromText(buf, data_type, p_data, format) || WasInputTextStateEditedThisFrame();
 			result.IsTextItemActive = IsItemActive();
 			result.TextItemRect[0] = GetItemRect();
 

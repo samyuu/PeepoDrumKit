@@ -83,6 +83,12 @@ namespace ImGui
 
 	// NOTE: As noted in https://github.com/ocornut/imgui/issues/3556
 	inline b8 IsItemBeingEditedAsText() { return ImGui::IsItemActive() && ImGui::TempInputIsActive(ImGui::GetActiveID()); }
+
+	// HACK: Usually InputScalar() and co only return true if the actual numeric value was changed (not just any letter typed)
+	//		 this behavior however directly conflicts with multi object editing ("MixedValues") as the value being compared for this check only belongs to a *single* object.
+	//		 This function therefore allows detecting changes even if the entered value is "the same"
+	inline b8 WasInputTextStateEditedThisFrame() { const auto* state = ImGui::GetInputTextState(ImGui::GetActiveID()); return (state != nullptr && state->Edited); }
+
 	inline void SetDragScalarMouseCursor() { if (!IsItemBeingEditedAsText() && (ImGui::IsItemActive() || ImGui::IsItemHovered())) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW); }
 
 	template <typename EnumType>
