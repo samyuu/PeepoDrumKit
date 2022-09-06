@@ -41,6 +41,19 @@ enum ImGuiMouseButtonEx_ : ImGuiMouseButton
 	// ImGuiMouseButton_COUNT = 5
 };
 
+// HACK: Common combinations just to make definding key bindings a little easier
+enum ImGuiModFlagsEx_
+{
+	// ImGuiModFlags_None = 0,
+	// ImGuiModFlags_Ctrl = 1 << 0,
+	// ImGuiModFlags_Shift = 1 << 1,
+	// ImGuiModFlags_Alt = 1 << 2,
+	// ImGuiModFlags_Super = 1 << 3,
+	ImGuiModFlags_CtrlShift = (1 << 0) | (1 << 1),				 // ImGuiModFlags_Ctrl | ImGuiModFlags_Shift
+	ImGuiModFlags_CtrlShiftAlt = (1 << 0) | (1 << 1) | (1 << 2), // ImGuiModFlags_Ctrl | ImGuiModFlags_Shift | ImGuiModFlags_Alt
+	ImGuiModFlags_ShiftAlt = (1 << 1) | (1 << 2),				 //						 ImGuiModFlags_Shift | ImGuiModFlags_Alt
+};
+
 //---- Define assertion handler. Defaults to calling assert().
 // If your macro uses multiple statements, make sure is enclosed in a 'do { .. } while (0)' block so it can be used as a single statement.
 //#define IM_ASSERT(_EXPR)  MyAssert(_EXPR)
