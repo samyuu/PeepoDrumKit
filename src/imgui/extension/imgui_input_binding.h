@@ -88,4 +88,6 @@ namespace ImGui
 
 	b8 IsAnyDown(const MultiInputBinding& binding, InputModifierBehavior behavior = InputModifierBehavior::Strict);
 	b8 IsAnyPressed(const MultiInputBinding& binding, b8 repeat = true, InputModifierBehavior behavior = InputModifierBehavior::Strict);
+
+	constexpr b8 IsMouseKey(ImGuiKey key) { return (key >= ImGuiKey_MouseLeft && key <= ImGuiKey_MouseWheelY); }
 }

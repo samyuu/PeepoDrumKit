@@ -119,7 +119,7 @@ namespace PeepoDrumKit
 
 			for (ImGuiKey keyCode = ImGuiKey_NamedKey_BEGIN; keyCode < ImGuiKey_NamedKey_END; keyCode++)
 			{
-				if (Gui::IsKeyReleased(keyCode))
+				if (Gui::IsKeyReleased(keyCode) && !Gui::IsMouseKey(keyCode))
 					finishAsignment(true, KeyBinding(keyCode, Gui::GetIO().KeyMods));
 			}
 		}

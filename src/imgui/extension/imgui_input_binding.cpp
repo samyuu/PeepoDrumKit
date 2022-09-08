@@ -146,6 +146,14 @@ static constexpr ImGuiKeyInfo NamedImGuiKeyInfoTable[] =
 	{ ImGuiKey_ModShift, "ModShift", "Shift", },
 	{ ImGuiKey_ModAlt, 	 "ModAlt", "Alt", },
 	{ ImGuiKey_ModSuper, "ModSuper", "Super", },
+
+	{ ImGuiKey_MouseLeft,   "MouseLeft", "Mouse Left", },
+	{ ImGuiKey_MouseRight,  "MouseRight", "Mouse Right", },
+	{ ImGuiKey_MouseMiddle, "MouseMiddle", "Mouse Middle", },
+	{ ImGuiKey_MouseX1,		"MouseX1", "Mouse X1", },
+	{ ImGuiKey_MouseX2,		"MouseX2", "Mouse X2", },
+	{ ImGuiKey_MouseWheelX, "MouseWheelX", "Mouse Wheel X", },
+	{ ImGuiKey_MouseWheelY, "MouseWheelY", "Mouse Wheel Y", },
 };
 
 static constexpr b8 CompileTimeValidateNamedImGuiKeyInfoTable(const ImGuiKeyInfo* namedImGuiKeyInfoTable)
