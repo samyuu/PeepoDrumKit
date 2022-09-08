@@ -871,7 +871,13 @@ namespace PeepoDrumKit
 					Gui::BeginDisabled();
 					const vec2 perButtonSize = vec2(Gui::GetContentRegionAvail()) * vec2(1.0f / 3.0f, 1.0f);
 					{
-						Gui::Button(ClampBot(context.GetCursorTime(), Time::Zero()).ToString().Data, perButtonSize);
+						Time displayTime = {};
+						if (*Settings.General.DisplayTimeInSongSpace)
+							displayTime = ClampBot(context.GetCursorTime() - context.Chart.SongOffset, Min(-context.Chart.SongOffset, Time::Zero()));
+						else
+							displayTime = ClampBot(context.GetCursorTime(), Time::Zero());
+
+						Gui::Button(displayTime.ToString().Data, perButtonSize);
 					}
 					Gui::SameLine(0.0f, 0.0f);
 					{
@@ -2351,6 +2357,9 @@ namespace PeepoDrumKit
 			const vec2 screenSpaceTextOffsetBarIndex = GuiScale(vec2(4.0f, 1.0f));
 			const vec2 screenSpaceTextOffsetBarTime = GuiScale(vec2(4.0f, 13.0f));
 
+			const b8 displayTimeInSongSpace = (*Settings.General.DisplayTimeInSongSpace && Absolute(context.Chart.SongOffset.ToMS()) > 0.5);
+			const Time timeLabelDisplayOffset = displayTimeInSongSpace ? -context.Chart.SongOffset : Time::Zero();
+
 			Gui::PushFont(FontMedium_EN);
 			const Time visibleTimeOverdraw = Camera.TimePerScreenPixel() * (Gui::CalcTextSize("00:00.000").x + Gui::GetFrameHeight());
 			ForEachTimelineVisibleGridLine(*this, context, visibleTimeOverdraw, [&](const ForEachGridLineData& gridIt)
@@ -2375,7 +2384,7 @@ namespace PeepoDrumKit
 						Gui::AddTextWithDropShadow(DrawListContentHeader, headerScreenSpaceTL + screenSpaceTextOffsetBarIndex, Gui::GetColorU32(ImGuiCol_Text),
 							std::string_view(buffer, sprintf_s(buffer, "%d", gridIt.BarIndex)));
 						Gui::AddTextWithDropShadow(DrawListContentHeader, headerScreenSpaceTL + screenSpaceTextOffsetBarTime, Gui::GetColorU32(ImGuiCol_Text, 0.5f),
-							gridIt.Time.ToString().Data);
+							(gridIt.Time + timeLabelDisplayOffset).ToString().Data);
 
 						lastDrawnScreenSpaceTextTL = headerScreenSpaceTL;
 						Gui::DisableFontPixelSnap(false);

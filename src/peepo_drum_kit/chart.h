@@ -249,8 +249,17 @@ namespace PeepoDrumKit
 		std::string BackgroundMovieFileName;
 		Time MovieOffset = {};
 
+		// TODO: Maybe change to GetDurationOr(Time defaultDuration) and always pass in context.SongDuration (?)
 		inline Time GetDurationOrDefault() const { return (ChartDuration.Seconds <= 0.0) ? Time::FromMin(1.0) : ChartDuration; }
 	};
+
+	// NOTE: Chart Space -> Starting at 00:00.000 (as most internal calculations are done in)
+	//		  Song Space -> Starting relative to Song Offset (sometimes useful for displaying to the user)
+	enum class TimeSpace : u8 { Chart, Song };
+	constexpr Time ChartToSongTimeSpace(Time inTime, Time songOffset) { return (inTime - songOffset); }
+	constexpr Time SongToChartTimeSpace(Time inTime, Time songOffset) { return (inTime + songOffset); }
+	constexpr Time ConvertTimeSpace(Time v, TimeSpace in, TimeSpace out, Time songOffset) { v = (in == out) ? v : (in == TimeSpace::Chart) ? (v - songOffset) : (v + songOffset); return (v == Time { -0.0 }) ? Time {} : v; }
+	constexpr Time ConvertTimeSpace(Time v, TimeSpace in, TimeSpace out, const ChartProject& chart) { return ConvertTimeSpace(v, in, out, chart.SongOffset); }
 
 	Beat FindCourseMaxUsedBeat(const ChartCourse& course);
 	b8 CreateChartProjectFromTJA(const TJA::ParsedTJA& inTJA, ChartProject& out);

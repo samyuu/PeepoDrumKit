@@ -117,6 +117,7 @@ namespace PeepoDrumKit
 		{
 			WithDefault<std::string> DefaultCreatorName = {};
 			WithDefault<i32> DrumrollAutoHitBarDivision = 16;
+			WithDefault<b8> DisplayTimeInSongSpace = false;
 			WithDefault<b8> TimelineScrollInvertMouseWheel = false;
 			WithDefault<f32> TimelineScrollDistancePerMouseWheelTick = 100.0f;
 			WithDefault<f32> TimelineScrollDistancePerMouseWheelTickFast = 250.0f;

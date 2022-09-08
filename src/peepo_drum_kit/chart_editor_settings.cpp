@@ -514,6 +514,7 @@ namespace PeepoDrumKit
 			SECTION("general");
 			X(General.DefaultCreatorName, "default_creator_name");
 			X(General.DrumrollAutoHitBarDivision, "drumroll_auto_hit_bar_division");
+			X(General.DisplayTimeInSongSpace, "display_time_in_song_space");
 			X(General.TimelineScrollInvertMouseWheel, "timeline_scroll_invert_mouse_wheel");
 			X(General.TimelineScrollDistancePerMouseWheelTick, "timeline_scroll_distance_per_mouse_wheel_tick");
 			X(General.TimelineScrollDistancePerMouseWheelTickFast, "timeline_scroll_distance_per_mouse_wheel_tick_fast");

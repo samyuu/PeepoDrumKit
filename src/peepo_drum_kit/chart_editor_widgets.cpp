@@ -820,15 +820,18 @@ namespace PeepoDrumKit
 					});
 					Gui::Property::Value([&]()
 					{
-						// TODO: + Beat_Duration (?)
+						const TimeSpace displaySpace = *Settings.General.DisplayTimeInSongSpace ? TimeSpace::Song : TimeSpace::Chart;
+						auto chartToDisplaySpace = [&](Time v) -> Time { return ConvertTimeSpace(v, TimeSpace::Chart, displaySpace, context.Chart); };
+
+						// TODO: Also account for + Beat_Duration (?)
 						Gui::AlignTextToFramePadding();
 						if (SelectedItems.size() == 1)
 							Gui::TextDisabled("%s",
-								context.BeatToTime(mixedValuesMin.BeatStart()).ToString());
+								chartToDisplaySpace(context.BeatToTime(mixedValuesMin.BeatStart())).ToString().Data);
 						else
 							Gui::TextDisabled("(%s ... %s)",
-								context.BeatToTime(mixedValuesMin.BeatStart()).ToString(),
-								context.BeatToTime(mixedValuesMax.BeatStart()).ToString());
+								chartToDisplaySpace(context.BeatToTime(mixedValuesMin.BeatStart())).ToString().Data,
+								chartToDisplaySpace(context.BeatToTime(mixedValuesMax.BeatStart())).ToString().Data);
 					});
 
 					if (commonListType >= GenericList::Count)
@@ -1412,21 +1415,19 @@ namespace PeepoDrumKit
 		{
 			if (Gui::Property::BeginTable(ImGuiTableFlags_BordersInner))
 			{
-				enum class TimeSpace : u8 { Chart, Song };
-				static constexpr auto guiPropertyDragTimeAndSetCursorTimeButtonWidgets = [](ChartContext& context, const TimelineCamera& camera, cstr label, Time* inOutValue, TimeSpace timeSpace) -> b8
+				static constexpr auto guiPropertyDragTimeAndSetCursorTimeButtonWidgets = [](ChartContext& context, const TimelineCamera& camera, cstr label, Time* inOutValue, TimeSpace storageSpace) -> b8
 				{
-					static_assert(sizeof(Time::Seconds) == sizeof(f64));
-					const Time timeSpaceOffset = (timeSpace == TimeSpace::Song) ? context.Chart.SongOffset : Time::Zero();
-					const Time min = timeSpaceOffset, max = Time::FromSec(F64Max);
+					const TimeSpace displaySpace = *Settings.General.DisplayTimeInSongSpace ? TimeSpace::Song : TimeSpace::Chart;
+					const Time min = ConvertTimeSpace(Time::Zero(), storageSpace, displaySpace, context.Chart), max = Time::FromSec(F64Max);
 
-					bool valueChanged = false;
+					b8 valueChanged = false;
 					Gui::Property::Property([&]
 					{
 						Gui::SetNextItemWidth(-1.0f);
-						f32 v = (*inOutValue + timeSpaceOffset).ToSec_F32();
+						f32 v = ConvertTimeSpace(*inOutValue, storageSpace, displaySpace, context.Chart).ToSec_F32();
 						if (GuiDragLabelFloat(label, &v, TimelineDragScalarSpeedAtZoomSec(camera), min.ToSec_F32(), max.ToSec_F32()))
 						{
-							*inOutValue = (Time::FromSec(v) - timeSpaceOffset);
+							*inOutValue = ConvertTimeSpace(Time::FromSec(v), displaySpace, storageSpace, context.Chart);
 							valueChanged = true;
 						}
 					});
@@ -1434,18 +1435,18 @@ namespace PeepoDrumKit
 					{
 						Gui::SetNextItemWidth(-1.0f);
 						Gui::PushID(label);
-						Time v = (*inOutValue + timeSpaceOffset);
+						f32 v = ConvertTimeSpace(*inOutValue, storageSpace, displaySpace, context.Chart).ToSec_F32();
 						Gui::SameLineMultiWidget(2, [&](const Gui::MultiWidgetIt& i)
 						{
-							if (i.Index == 0 && Gui::DragScalar("##DragTime", ImGuiDataType_Double, &v.Seconds, TimelineDragScalarSpeedAtZoomSec(camera), &min.Seconds, &max.Seconds,
-								(*inOutValue <= Time::Zero()) ? "n/a" : v.ToString().Data, ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_NoInput))
+							if (i.Index == 0 && Gui::DragFloat("##DragTime", &v, TimelineDragScalarSpeedAtZoomSec(camera), min.ToSec_F32(), max.ToSec_F32(),
+								(*inOutValue <= Time::Zero()) ? "n/a" : Time::FromSec(v).ToString().Data, ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoRoundToFormat | ImGuiSliderFlags_NoInput))
 							{
-								*inOutValue = (v - timeSpaceOffset);
+								*inOutValue = ConvertTimeSpace(Time::FromSec(v), displaySpace, storageSpace, context.Chart);
 								valueChanged = true;
 							}
 							else if (i.Index == 1 && Gui::Button("Set Cursor##CursorTime", { Gui::CalcItemWidth(), 0.0f }))
 							{
-								*inOutValue = ClampBot(context.GetCursorTime() - timeSpaceOffset, Time::Zero());
+								*inOutValue = ClampBot(ConvertTimeSpace(context.GetCursorTime(), TimeSpace::Chart, storageSpace, context.Chart), Time::Zero());
 								context.Undo.DisallowMergeForLastCommand();
 								valueChanged = true;
 							}
@@ -1660,7 +1661,7 @@ namespace PeepoDrumKit
 				{
 					const GoGoRange* gogoRangeAtCursor = course.GoGoRanges.TryFindOverlappingBeat(cursorBeat, cursorBeat);
 
-					const b8 hasRangeSelection = (timeline.RangeSelection.IsActive && timeline.RangeSelection.HasEnd);
+					const b8 hasRangeSelection = timeline.RangeSelection.IsActiveAndHasEnd();
 					Gui::BeginDisabled(!hasRangeSelection);
 					if (Gui::Button("Set from Range Selection##GoGoAtCursor", vec2(-1.0f, 0.0f)))
 					{

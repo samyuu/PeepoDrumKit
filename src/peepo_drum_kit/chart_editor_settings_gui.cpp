@@ -136,7 +136,7 @@ namespace PeepoDrumKit
 		template <> constexpr DataType TemplateToDataType<f32>() { return DataType::F32; }
 		template <> constexpr DataType TemplateToDataType<std::string>() { return DataType::StdString; }
 
-		enum class WidgetType : u32 { Default, B8_ExclusiveAudioComboBox, I32_BarDivisionComboBox, F32_TimelineScrollSensitivity, F32_ExponentialSpeed, };
+		enum class WidgetType : u32 { Default, B8_ChartSongSpaceComboBox, B8_ExclusiveAudioComboBox, I32_BarDivisionComboBox, F32_TimelineScrollSensitivity, F32_ExponentialSpeed, };
 
 		struct SettingsEntry
 		{
@@ -197,14 +197,12 @@ namespace PeepoDrumKit
 
 				if (inOutB8 != nullptr)
 				{
-					if (in.Widget == WidgetType::B8_ExclusiveAudioComboBox)
-					{
+					if (in.Widget == WidgetType::B8_ChartSongSpaceComboBox)
+						changesWereMade |= GuiBoolCombo("##", inOutB8, { "Song Space", "Chart Space" });
+					else if (in.Widget == WidgetType::B8_ExclusiveAudioComboBox)
 						changesWereMade |= GuiBoolCombo("##", inOutB8, { "True (Exclusive Mode)", "False" });
-					}
 					else
-					{
 						changesWereMade |= GuiBoolCombo("##", inOutB8);
-					}
 				}
 				else if (inOutI32 != nullptr)
 				{
@@ -683,6 +681,12 @@ namespace PeepoDrumKit
 							"General: Drumroll Preview Interval",
 							"The interval at which drumrolls have their hit sounds previewed at.",
 							SettingsGui::WidgetType::I32_BarDivisionComboBox),
+
+						SettingsGui::SettingsEntry(
+							settings.General.DisplayTimeInSongSpace,
+							"General: Time Display Space",
+							"Display time in either Chart Space (normalized starting at 00:00.000) or in Song Space (relative to song offset).",
+							SettingsGui::WidgetType::B8_ChartSongSpaceComboBox),
 
 						SettingsGui::SettingsEntry(
 							settings.General.TimelineScrollInvertMouseWheel,
