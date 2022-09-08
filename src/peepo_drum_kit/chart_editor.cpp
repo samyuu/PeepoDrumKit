@@ -115,8 +115,10 @@ namespace PeepoDrumKit
 				Gui::EndMenu();
 			}
 
-			size_t selectedItemCount = 0; ForEachSelectedChartItem(*context.ChartSelectedCourse, [&](const ForEachChartItemData&) { selectedItemCount++; });
+			size_t selectedItemCount = 0, selectedNoteCount = 0;
+			ForEachSelectedChartItem(*context.ChartSelectedCourse, [&](const ForEachChartItemData& it) { selectedItemCount++; selectedNoteCount += IsNotesList(it.List); });
 			const b8 isAnyItemSelected = (selectedItemCount > 0);
+			const b8 isAnyNoteSelected = (selectedNoteCount > 0);
 
 			if (Gui::BeginMenu("Edit"))
 			{
@@ -148,20 +150,120 @@ namespace PeepoDrumKit
 					timeline.ExecuteSelectionAction(context, SelectionAction::InvertAll, param);
 				if (Gui::MenuItem("From Range Selection", ToShortcutString(*Settings.Input.Timeline_SelectAllWithinRangeSelection).Data, nullptr, timeline.RangeSelection.IsActiveAndHasEnd()))
 					timeline.ExecuteSelectionAction(context, SelectionAction::SelectAllWithinRangeSelection, param);
+				Gui::Separator();
+
 				if (Gui::BeginMenu("Refine Selection"))
 				{
 					if (Gui::MenuItem("Shift selection Left", ToShortcutString(*Settings.Input.Timeline_ShiftSelectionLeft).Data, nullptr, isAnyItemSelected))
 						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowShiftSelected, param.SetShiftDelta(-1));
 					if (Gui::MenuItem("Shift selection Right", ToShortcutString(*Settings.Input.Timeline_ShiftSelectionRight).Data, nullptr, isAnyItemSelected))
 						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowShiftSelected, param.SetShiftDelta(+1));
-					if (Gui::MenuItem("Select every 2nd Item", ToShortcutString(*Settings.Input.Timeline_SelectEvery2ndSelectedItem).Data, nullptr, isAnyItemSelected))
-						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(2));
-					if (Gui::MenuItem("Select every 3rd Item", ToShortcutString(*Settings.Input.Timeline_SelectEvery3rdSelectedItem).Data, nullptr, isAnyItemSelected))
-						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(3));
-					if (Gui::MenuItem("Select every 4th Item", ToShortcutString(*Settings.Input.Timeline_SelectEvery4thSelectedItem).Data, nullptr, isAnyItemSelected))
-						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(4));
+					Gui::Separator();
+
+					if (Gui::MenuItem("Select Item Pattern xo", ToShortcutString(*Settings.Input.Timeline_SelectItemPattern_xo).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern("xo"));
+					if (Gui::MenuItem("Select Item Pattern xoo", ToShortcutString(*Settings.Input.Timeline_SelectItemPattern_xoo).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern("xoo"));
+					if (Gui::MenuItem("Select Item Pattern xooo", ToShortcutString(*Settings.Input.Timeline_SelectItemPattern_xooo).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern("xooo"));
+					if (Gui::MenuItem("Select Item Pattern xxoo", ToShortcutString(*Settings.Input.Timeline_SelectItemPattern_xxoo).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern("xxoo"));
+					Gui::Separator();
+
+					WithDefault<CustomSelectionPatternList>& customPatterns = Settings_Mutable.General.CustomSelectionPatterns;
+					WithDefault<MultiInputBinding>* customBindings[] =
+					{
+						&Settings_Mutable.Input.Timeline_SelectItemPattern_CustomA, &Settings_Mutable.Input.Timeline_SelectItemPattern_CustomB, &Settings_Mutable.Input.Timeline_SelectItemPattern_CustomC,
+						&Settings_Mutable.Input.Timeline_SelectItemPattern_CustomD, &Settings_Mutable.Input.Timeline_SelectItemPattern_CustomE, &Settings_Mutable.Input.Timeline_SelectItemPattern_CustomF,
+					};
+
+					const b8 disableAddNew = (customPatterns->V.size() >= 6);
+					if (Gui::Selectable("Add New Pattern...", false, ImGuiSelectableFlags_DontClosePopups | (disableAddNew ? ImGuiSelectableFlags_Disabled : 0)))
+					{
+						static constexpr std::string_view defaultPattern = "xoooooo";
+						const std::string_view newPattern = defaultPattern.substr(0, ClampTop<size_t>(customPatterns->V.size() + 2, defaultPattern.size()));
+
+						CopyStringViewIntoFixedBuffer(customPatterns->V.emplace_back().Data, newPattern);
+						customPatterns.SetHasValueIfNotDefault();
+						Settings_Mutable.IsDirty = true;
+					}
+
+					for (size_t i = 0; i < customPatterns->V.size(); i++)
+					{
+						char label[64]; sprintf_s(label, "Select Custom Pattern %c", static_cast<char>('A' + i));
+						if (Gui::MenuItem(label, (i < ArrayCount(customBindings)) ? ToShortcutString(**customBindings[i]).Data : "", nullptr, isAnyItemSelected && customPatterns->V[i].Data[0] != '\0'))
+							timeline.ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern(customPatterns->V[i].Data));
+					}
+
+					size_t indexToRemove = customPatterns->V.size();
+					for (size_t i = 0; i < customPatterns->V.size(); i++)
+					{
+						Gui::PushID(&customPatterns->V[i]);
+						Gui::PushStyleVar(ImGuiStyleVar_FramePadding, vec2(Gui::GetStyle().FramePadding.x, 0.0f));
+						{
+							char label[] = { static_cast<char>('A' + i), '\0' };
+							Gui::TextUnformatted(label);
+							Gui::SameLine();
+
+							static constexpr auto textFilterSelectionPattern = [](ImGuiInputTextCallbackData* data) -> int { return (data->EventChar == 'x' || data->EventChar == 'o') ? 0 : 1; };
+							Gui::SetNextItemWidth(Gui::GetContentRegionAvail().x);
+							if (Gui::InputTextWithHint("##", "Delete?", customPatterns->V[i].Data, sizeof(CustomSelectionPattern::Data), ImGuiInputTextFlags_CallbackCharFilter, textFilterSelectionPattern))
+							{
+								customPatterns.SetHasValueIfNotDefault();
+								Settings_Mutable.IsDirty = true;
+							}
+
+							b8* inputActiveLastFrame = Gui::GetCurrentWindow()->StateStorage.GetBoolRef(Gui::GetID("CustomPatternInputActive"), false);
+							if (!Gui::IsItemActive() && *inputActiveLastFrame && customPatterns->V[i].Data[0] == '\0')
+								indexToRemove = i;
+							*inputActiveLastFrame = Gui::IsItemActive();
+						}
+						Gui::PopStyleVar();
+						Gui::PopID();
+					}
+
+					if (indexToRemove < customPatterns->V.size())
+					{
+						customPatterns->V.erase(customPatterns->V.begin() + indexToRemove);
+						customPatterns.SetHasValueIfNotDefault();
+						Settings_Mutable.IsDirty = true;
+					}
+
 					Gui::EndMenu();
 				}
+				Gui::EndMenu();
+			}
+
+			if (Gui::BeginMenu("Transform"))
+			{
+				TransformActionParam param {};
+				if (Gui::MenuItem("Flip Note Types", ToShortcutString(*Settings.Input.Timeline_FlipNoteType).Data, nullptr, isAnyNoteSelected))
+					timeline.ExecuteTransformAction(context, TransformAction::FlipNoteType, param);
+				if (Gui::MenuItem("Toggle Note Sizes", ToShortcutString(*Settings.Input.Timeline_ToggleNoteSize).Data, nullptr, isAnyNoteSelected))
+					timeline.ExecuteTransformAction(context, TransformAction::ToggleNoteSize, param);
+
+				if (Gui::BeginMenu("Expand Items"))
+				{
+					if (Gui::MenuItem("2:1 (8th to 4th)", ToShortcutString(*Settings.Input.Timeline_ExpandItemTime_2To1).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(2, 1));
+					if (Gui::MenuItem("3:2 (12th to 8th)", ToShortcutString(*Settings.Input.Timeline_ExpandItemTime_3To2).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(3, 2));
+					if (Gui::MenuItem("4:3 (16th to 12th)", ToShortcutString(*Settings.Input.Timeline_ExpandItemTime_4To3).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(4, 3));
+					Gui::EndMenu();
+				}
+
+				if (Gui::BeginMenu("Compress Items"))
+				{
+					if (Gui::MenuItem("1:2 (4th to 8th)", ToShortcutString(*Settings.Input.Timeline_CompressItemTime_1To2).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(1, 2));
+					if (Gui::MenuItem("2:3 (8th to 12th)", ToShortcutString(*Settings.Input.Timeline_CompressItemTime_2To3).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(2, 3));
+					if (Gui::MenuItem("3:4 (12th to 16th)", ToShortcutString(*Settings.Input.Timeline_CompressItemTime_3To4).Data, nullptr, isAnyItemSelected))
+						timeline.ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(3, 4));
+					Gui::EndMenu();
+				}
+
 				Gui::EndMenu();
 			}
 

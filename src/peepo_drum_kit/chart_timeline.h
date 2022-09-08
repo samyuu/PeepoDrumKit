@@ -6,11 +6,6 @@
 #include "chart_sound_effects.h"
 #include "imgui/imgui_include.h"
 
-// BUG: TIMELINE PERFORMANCE BUG:
-//		-> zoom in as close as possible
-//		-> zoom out as far as possible
-//		-> performance goes to shit??
-
 namespace PeepoDrumKit
 {
 	// NOTE: Coordinate Systems:
@@ -29,16 +24,11 @@ namespace PeepoDrumKit
 
 		inline void UpdateAnimations()
 		{
+			// NOTE: Smooth zooming only looks correct when the smooth scroll and zoom speeds are the same
 			Gui::AnimateExponential(&PositionCurrent, PositionTarget, *Settings.Animation.TimelineSmoothScrollSpeed);
 			Gui::AnimateExponential(&ZoomCurrent, ZoomTarget, *Settings.Animation.TimelineSmoothScrollSpeed);
-
-			// BUG: Result in weird jittering..?
-			// static constexpr f32 snapThreshold = 0.01f;
-			//if (ApproxmiatelySame(PositionCurrent, PositionTarget, snapThreshold)) PositionCurrent = PositionTarget;
-			//if (ApproxmiatelySame(ZoomCurrent, ZoomTarget, snapThreshold)) ZoomCurrent = ZoomTarget;
 		}
 
-		// NOTE: Only *looks* correct when the smooth scroll and zoom speeds are similar
 		constexpr void SetZoomTargetAroundWorldPivot(vec2 newZoom, vec2 worldSpacePivot)
 		{
 			const vec2 localSpacePrev = WorldToLocalSpace_AtTarget(worldSpacePivot);
@@ -75,7 +65,6 @@ namespace PeepoDrumKit
 	constexpr f32 TimelineDragScalarSpeedAtZoomSec(const TimelineCamera& camera) { return camera.TimePerScreenPixel().ToSec_F32(); }
 	constexpr f32 TimelineDragScalarSpeedAtZoomMS(const TimelineCamera& camera) { return camera.TimePerScreenPixel().ToMS_F32(); }
 
-	// TODO: If branches can only change notes (??) then could have multiple rows of notes for each branch with all but the active branch being grayed out (?)
 	enum class TimelineRowType : u8
 	{
 		Tempo,
@@ -171,13 +160,19 @@ namespace PeepoDrumKit
 	static constexpr f32 TimelineCameraBaseScrollX = -32.0f;
 
 	enum class ClipboardAction : u8 { Cut, Copy, Paste, Delete };
-	enum class SelectionAction : u8 { SelectAll, UnselectAll, InvertAll, SelectAllWithinRangeSelection, PerRowShiftSelected, PerRowSelectNth };
+	enum class SelectionAction : u8 { SelectAll, UnselectAll, InvertAll, SelectAllWithinRangeSelection, PerRowShiftSelected, PerRowSelectPattern };
 	union SelectionActionParam
 	{
 		struct { i32 ShiftDelta; };
-		struct { i32 NthInterval; };
+		struct { cstr Pattern; }; // NOTE: In the format: "xo", "xoo", "xooo", "xxoo", etc.
 		inline SelectionActionParam& SetShiftDelta(i32 v) { ShiftDelta = v; return *this; }
-		inline SelectionActionParam& SetNthInterval(i32 v) { NthInterval = v; return *this; }
+		inline SelectionActionParam& SetPattern(cstr pattern) { Pattern = pattern; return *this; }
+	};
+	enum class TransformAction : u8 { FlipNoteType, ToggleNoteSize, ScaleItemTime };
+	union TransformActionParam
+	{
+		struct { i32 TimeRatio[2]; };
+		inline TransformActionParam& SetTimeRatio(i32 numerator, i32 denominator) { TimeRatio[0] = numerator; TimeRatio[1] = denominator; return *this; }
 	};
 
 	struct ChartTimeline
@@ -201,11 +196,9 @@ namespace PeepoDrumKit
 
 		b8 IsAnyChildWindowFocused = false;
 		b8 IsContentHeaderWindowHovered = false;
-		// b8 IsContentHeaderWindowFocused = false;
 		b8 IsContentWindowHovered = false;
 		b8 IsContentWindowFocused = false;
 		b8 IsSidebarWindowHovered = false;
-		// b8 IsSidebarWindowFocused = false;
 
 		vec2 MousePosThisFrame = {};
 		vec2 MousePosLastFrame = {};
@@ -308,6 +301,7 @@ namespace PeepoDrumKit
 
 		void ExecuteClipboardAction(ChartContext& context, ClipboardAction action);
 		void ExecuteSelectionAction(ChartContext& context, SelectionAction action, const SelectionActionParam& param);
+		void ExecuteTransformAction(ChartContext& context, TransformAction action, const TransformActionParam& param);
 
 	private:
 		// NOTE: Must update input *before* drawing so that the scroll positions won't change

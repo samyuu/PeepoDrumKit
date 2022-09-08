@@ -782,5 +782,34 @@ namespace PeepoDrumKit
 			using ChangeMultipleGenericProperties::ChangeMultipleGenericProperties;
 			Undo::CommandInfo GetInfo() const override { return { "Move Items" }; }
 		};
+
+		struct RemoveThenAddMultipleGenericItems : Undo::Command
+		{
+			RemoveThenAddMultipleGenericItems(ChartCourse* course, std::vector<GenericListStructWithType> removeData, std::vector<GenericListStructWithType> addData)
+				: RemoveCommand(course, std::move(removeData)), AddCommand(course, std::move(addData))
+			{
+			}
+
+			void Undo() override { AddCommand.Undo(); RemoveCommand.Undo(); }
+			void Redo() override { RemoveCommand.Redo(); AddCommand.Redo(); }
+
+			Undo::MergeResult TryMerge(Undo::Command& commandToMerge) override { return Undo::MergeResult::Failed; }
+			Undo::CommandInfo GetInfo() const override { return { "Remove and Add Items" }; }
+
+			RemoveMultipleGenericItems RemoveCommand;
+			AddMultipleGenericItems AddCommand;
+		};
+
+		struct RemoveThenAddMultipleGenericItems_ExpandItems : RemoveThenAddMultipleGenericItems
+		{
+			using RemoveThenAddMultipleGenericItems::RemoveThenAddMultipleGenericItems;
+			Undo::CommandInfo GetInfo() const override { return { "Expand Items" }; }
+		};
+
+		struct RemoveThenAddMultipleGenericItems_CompressItems : RemoveThenAddMultipleGenericItems
+		{
+			using RemoveThenAddMultipleGenericItems::RemoveThenAddMultipleGenericItems;
+			Undo::CommandInfo GetInfo() const override { return { "Compress Items" }; }
+		};
 	}
 }

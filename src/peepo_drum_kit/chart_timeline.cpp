@@ -1359,18 +1359,129 @@ namespace PeepoDrumKit
 				}
 			}
 		} break;
-		case SelectionAction::PerRowSelectNth:
+		case SelectionAction::PerRowSelectPattern:
 		{
+			if (param.Pattern == nullptr || param.Pattern[0] == '\0')
+				break;
+
+			const std::string_view pattern = param.Pattern;
 			for (GenericList list = {}; list < GenericList::Count; IncrementEnum(list))
 			{
-				for (size_t i = 0, selectionIndex = 0; i < GetGenericListCount(course, list); i++)
+				for (size_t i = 0, patternIndex = 0; i < GetGenericListCount(course, list); i++)
 				{
 					if (const ForEachChartItemData it = { list, i }; it.GetIsSelected(course))
 					{
-						if (selectionIndex++ % param.NthInterval != 0)
+						if (pattern[patternIndex] != 'x')
 							it.SetIsSelected(course, false);
+						if (++patternIndex >= pattern.size())
+							patternIndex = 0;
 					}
 				}
+			}
+		} break;
+		}
+	}
+
+	void ChartTimeline::ExecuteTransformAction(ChartContext& context, TransformAction action, const TransformActionParam& param)
+	{
+		ChartCourse& course = *context.ChartSelectedCourse;
+		switch (action)
+		{
+		default: { assert(false); } break;
+		case TransformAction::FlipNoteType:
+		{
+			for (BranchType branch = {}; branch < BranchType::Count; IncrementEnum(branch))
+			{
+				size_t selectedNoteCount = 0;
+				SortedNotesList& notes = context.ChartSelectedCourse->GetNotes(branch);
+				for (const Note& note : notes) { if (note.IsSelected && IsNoteFlippable(note.Type)) selectedNoteCount++; }
+				if (selectedNoteCount <= 0)
+					continue;
+
+				std::vector<Commands::ChangeMultipleNoteTypes::Data> noteTypesToChange;
+				noteTypesToChange.reserve(selectedNoteCount);
+
+				for (Note& note : notes)
+				{
+					if (note.IsSelected && IsNoteFlippable(note.Type))
+					{
+						auto& data = noteTypesToChange.emplace_back();
+						data.Index = ArrayItToIndex(&note, &notes[0]);
+						data.NewType = FlipNote(note.Type);
+						note.ClickAnimationTimeRemaining = note.ClickAnimationTimeDuration = NoteHitAnimationDuration;
+					}
+				}
+
+				context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(noteTypesToChange[0].NewType));
+				context.Undo.Execute<Commands::ChangeMultipleNoteTypes_FlipTypes>(&notes, std::move(noteTypesToChange));
+				context.Undo.DisallowMergeForLastCommand();
+			}
+		} break;
+		case TransformAction::ToggleNoteSize:
+		{
+			for (BranchType branch = {}; branch < BranchType::Count; IncrementEnum(branch))
+			{
+				size_t selectedNoteCount = 0;
+				SortedNotesList& notes = context.ChartSelectedCourse->GetNotes(branch);
+				for (const Note& note : notes) { if (note.IsSelected) selectedNoteCount++; }
+				if (selectedNoteCount <= 0)
+					continue;
+
+				std::vector<Commands::ChangeMultipleNoteTypes::Data> noteTypesToChange;
+				noteTypesToChange.reserve(selectedNoteCount);
+
+				for (Note& note : notes)
+				{
+					if (note.IsSelected)
+					{
+						auto& data = noteTypesToChange.emplace_back();
+						data.Index = ArrayItToIndex(&note, &notes[0]);
+						data.NewType = ToggleNoteSize(note.Type);
+						note.ClickAnimationTimeRemaining = note.ClickAnimationTimeDuration = NoteHitAnimationDuration;
+					}
+				}
+
+				context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(noteTypesToChange[0].NewType));
+				context.Undo.Execute<Commands::ChangeMultipleNoteTypes_ToggleSizes>(&notes, std::move(noteTypesToChange));
+				context.Undo.DisallowMergeForLastCommand();
+			}
+		} break;
+		case TransformAction::ScaleItemTime:
+		{
+			assert(param.TimeRatio[0] > 0 && param.TimeRatio[1] > 0 && param.TimeRatio[0] != param.TimeRatio[1]);
+			size_t selectedItemCount = 0; ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { selectedItemCount++; });
+			if (selectedItemCount <= 0)
+				return;
+
+			b8 isFirst = true; Beat firstBeat = {};
+			std::vector<GenericListStructWithType> itemsToRemove; itemsToRemove.reserve(selectedItemCount);
+			std::vector<GenericListStructWithType> itemsToAdd; itemsToAdd.reserve(selectedItemCount);
+			ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it)
+			{
+				if (isFirst) { firstBeat = it.GetBeat(course); isFirst = false; }
+
+				auto& itemToRemove = itemsToRemove.emplace_back();
+				itemToRemove.List = it.List;
+				TryGetGenericStruct(course, it.List, it.Index, itemToRemove.Value);
+
+				auto& itemToAdd = itemsToAdd.emplace_back(itemToRemove);
+				itemToAdd.SetBeat((((itemToAdd.GetBeat() - firstBeat) / param.TimeRatio[1]) * param.TimeRatio[0]) + firstBeat);
+
+				if (IsNotesList(itemToAdd.List))
+					itemToAdd.Value.POD.Note.ClickAnimationTimeRemaining = itemToAdd.Value.POD.Note.ClickAnimationTimeDuration = NoteHitAnimationDuration;
+			});
+
+			// BUG: Resolve item duration intersections (only *add* notes if they don't interect another non-selected long item (?))
+			// BUG: Overwritten items not correctly restored on undo (?)
+			if (!itemsToRemove.empty() || !itemsToAdd.empty())
+			{
+				for (auto& it : itemsToAdd) if (IsNotesList(it.List)) { context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(it.Value.POD.Note.Type)); break; }
+
+				if (param.TimeRatio[0] < param.TimeRatio[1])
+					context.Undo.Execute<Commands::RemoveThenAddMultipleGenericItems_CompressItems>(&course, std::move(itemsToRemove), std::move(itemsToAdd));
+				else
+					context.Undo.Execute<Commands::RemoveThenAddMultipleGenericItems_ExpandItems>(&course, std::move(itemsToRemove), std::move(itemsToAdd));
+				context.Undo.DisallowMergeForLastCommand();
 			}
 		} break;
 		}
@@ -1757,9 +1868,22 @@ namespace PeepoDrumKit
 					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectAllWithinRangeSelection, false)) ExecuteSelectionAction(context, SelectionAction::SelectAllWithinRangeSelection, param);
 					if (Gui::IsAnyPressed(*Settings.Input.Timeline_ShiftSelectionLeft, true)) ExecuteSelectionAction(context, SelectionAction::PerRowShiftSelected, param.SetShiftDelta(-1));
 					if (Gui::IsAnyPressed(*Settings.Input.Timeline_ShiftSelectionRight, true)) ExecuteSelectionAction(context, SelectionAction::PerRowShiftSelected, param.SetShiftDelta(+1));
-					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectEvery2ndSelectedItem, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(2));
-					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectEvery3rdSelectedItem, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(3));
-					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectEvery4thSelectedItem, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectNth, param.SetNthInterval(4));
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectItemPattern_xo, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern("xo"));
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectItemPattern_xoo, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern("xoo"));
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectItemPattern_xooo, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern("xooo"));
+					if (Gui::IsAnyPressed(*Settings.Input.Timeline_SelectItemPattern_xxoo, false)) ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern("xxoo"));
+
+					const MultiInputBinding* customBindings[] =
+					{
+						&*Settings.Input.Timeline_SelectItemPattern_CustomA, &*Settings.Input.Timeline_SelectItemPattern_CustomB, &*Settings.Input.Timeline_SelectItemPattern_CustomC,
+						&*Settings.Input.Timeline_SelectItemPattern_CustomD, &*Settings.Input.Timeline_SelectItemPattern_CustomE, &*Settings.Input.Timeline_SelectItemPattern_CustomF,
+					};
+
+					for (size_t i = 0; i < ArrayCount(customBindings); i++)
+					{
+						if (i < Settings.General.CustomSelectionPatterns->V.size() && Gui::IsAnyPressed(*customBindings[i], false))
+							ExecuteSelectionAction(context, SelectionAction::PerRowSelectPattern, param.SetPattern(Settings.General.CustomSelectionPatterns->V[i].Data));
+					}
 				}
 
 				if (const auto& io = Gui::GetIO(); !io.KeyCtrl)
@@ -2008,60 +2132,15 @@ namespace PeepoDrumKit
 
 			if (HasKeyboardFocus())
 			{
-				SortedNotesList& notes = context.ChartSelectedCourse->GetNotes(context.ChartSelectedBranch);
-
-				if (Gui::IsAnyPressed(*Settings.Input.Timeline_FlipNoteType, false))
-				{
-					size_t selectedNoteCount = 0;
-					for (const Note& note : notes) { if (note.IsSelected && IsNoteFlippable(note.Type)) selectedNoteCount++; }
-
-					if (selectedNoteCount > 0)
-					{
-						std::vector<Commands::ChangeMultipleNoteTypes::Data> noteTypesToChange;
-						noteTypesToChange.reserve(selectedNoteCount);
-
-						for (Note& note : notes)
-						{
-							if (note.IsSelected && IsNoteFlippable(note.Type))
-							{
-								auto& data = noteTypesToChange.emplace_back();
-								data.Index = ArrayItToIndex(&note, &notes[0]);
-								data.NewType = FlipNote(note.Type);
-								note.ClickAnimationTimeRemaining = note.ClickAnimationTimeDuration = NoteHitAnimationDuration;
-							}
-						}
-
-						context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(noteTypesToChange[0].NewType));
-						context.Undo.Execute<Commands::ChangeMultipleNoteTypes_FlipTypes>(&notes, std::move(noteTypesToChange));
-						context.Undo.DisallowMergeForLastCommand();
-					}
-				}
-				else if (Gui::IsAnyPressed(*Settings.Input.Timeline_ToggleNoteSize, false))
-				{
-					size_t selectedNoteCount = 0;
-					for (const Note& note : notes) { if (note.IsSelected) selectedNoteCount++; }
-
-					if (selectedNoteCount > 0)
-					{
-						std::vector<Commands::ChangeMultipleNoteTypes::Data> noteTypesToChange;
-						noteTypesToChange.reserve(selectedNoteCount);
-
-						for (Note& note : notes)
-						{
-							if (note.IsSelected)
-							{
-								auto& data = noteTypesToChange.emplace_back();
-								data.Index = ArrayItToIndex(&note, &notes[0]);
-								data.NewType = ToggleNoteSize(note.Type);
-								note.ClickAnimationTimeRemaining = note.ClickAnimationTimeDuration = NoteHitAnimationDuration;
-							}
-						}
-
-						context.SfxVoicePool.PlaySound(SoundEffectTypeForNoteType(noteTypesToChange[0].NewType));
-						context.Undo.Execute<Commands::ChangeMultipleNoteTypes_ToggleSizes>(&notes, std::move(noteTypesToChange));
-						context.Undo.DisallowMergeForLastCommand();
-					}
-				}
+				TransformActionParam param {};
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_FlipNoteType, false)) ExecuteTransformAction(context, TransformAction::FlipNoteType, param);
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_ToggleNoteSize, false)) ExecuteTransformAction(context, TransformAction::ToggleNoteSize, param);
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_ExpandItemTime_2To1, false)) ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(2, 1));
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_ExpandItemTime_3To2, false)) ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(3, 2));
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_ExpandItemTime_4To3, false)) ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(4, 3));
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_CompressItemTime_1To2, false)) ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(1, 2));
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_CompressItemTime_2To3, false)) ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(2, 3));
+				if (Gui::IsAnyPressed(*Settings.Input.Timeline_CompressItemTime_3To4, false)) ExecuteTransformAction(context, TransformAction::ScaleItemTime, param.SetTimeRatio(3, 4));
 			}
 		}
 

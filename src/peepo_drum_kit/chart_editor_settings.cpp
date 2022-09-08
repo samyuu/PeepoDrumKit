@@ -1,4 +1,5 @@
 #include "chart_editor_settings.h"
+#include "core_build_info.h"
 #include "core_string.h"
 #include "core_io.h"
 #include <algorithm>
@@ -212,6 +213,26 @@ namespace PeepoDrumKit
 				stringToAppendTo += std::string_view(b, sprintf_s(b, (i > 0) ? ", %g" : "%g", ToPercent(in.V[i])));
 		}
 
+		static IniMemberParseResult FromString(std::string_view stringToParse, CustomSelectionPatternList& out)
+		{
+			b8 hasAnyError = false;
+			size_t expectedCount = 0;
+			ASCII::ForEachInCommaSeparatedList(stringToParse, [&](std::string_view) { expectedCount++; });
+			out.V.clear();
+			out.V.reserve(expectedCount);
+			ASCII::ForEachInCommaSeparatedList(stringToParse, [&](std::string_view commaSeparatedValue)
+			{
+				CopyStringViewIntoFixedBuffer(out.V.emplace_back().Data, ASCII::Trim(commaSeparatedValue));
+			});
+			return hasAnyError ? MemberParseError("Invalid float") : IniMemberParseResult {};
+		}
+
+		static void ToString(const CustomSelectionPatternList& in, std::string& stringToAppendTo)
+		{
+			for (size_t i = 0; i < in.V.size(); i++)
+				stringToAppendTo.append((i > 0) ? ", " : "").append(in.V[i].Data);
+		}
+
 		static IniMemberParseResult FromString(std::string_view stringToParse, MultiInputBinding& out)
 		{
 			return InputBindingFromStorageString(stringToParse, out) ? IniMemberParseResult {} : MemberParseError("Invalid input binding");
@@ -312,7 +333,7 @@ namespace PeepoDrumKit
 			inline void LineKeyValue_F64(std::string_view key, f64 value) { LineKeyValue_Str(key, std::string_view(Buffer, sprintf_s(Buffer, "%g", value))); }
 
 			inline void Comment() { Out += "; "; }
-			inline void LineComment(std::string_view comment) { Comment(); Out += comment; Out += '\n'; }
+			inline void LineComment(std::string_view comment) { Out += "; "; Out += comment; Out += '\n'; }
 		};
 	}
 
@@ -372,6 +393,7 @@ namespace PeepoDrumKit
 		Ini::IniWriter writer { out };
 		char b[512], keyBuffer[64];
 
+		writer.LineComment(std::string_view(b, sprintf_s(b, "PeepoDrumKit %s", BuildInfo::CompilationDateParsed.ToString().Data)));
 		writer.LineKeyValue_Str("file_version", std::string_view(b, sprintf_s(b, "%d.%d.%d", 1, 0, 0)));
 		writer.Line();
 
@@ -441,6 +463,7 @@ namespace PeepoDrumKit
 		char b[512];
 		std::string strBuffer; strBuffer.reserve(256);
 
+		writer.LineComment(std::string_view(b, sprintf_s(b, "PeepoDrumKit %s", BuildInfo::CompilationDateParsed.ToString().Data)));
 		writer.LineKeyValue_Str("file_version", std::string_view(b, sprintf_s(b, "%d.%d.%d", 1, 0, 0)));
 		cstr lastSection = nullptr;
 
@@ -465,7 +488,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 5064, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 6040, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -505,6 +528,7 @@ namespace PeepoDrumKit
 			X(General.DisableTempoWindowWidgetsIfHasSelection, "disable_tempo_window_widgets_if_has_selection");
 			X(General.InsertSelectionScrollChangesUnselectOld, "insert_selection_scroll_changes_unselect_old");
 			X(General.InsertSelectionScrollChangesSelectNew, "insert_selection_scroll_changes_select_new");
+			X(General.CustomSelectionPatterns, "custom_selection_patterns");
 
 			SECTION("audio");
 			X(Audio.OpenDeviceOnStartup, "open_device_on_startup");
@@ -543,8 +567,6 @@ namespace PeepoDrumKit
 			X(Input.Timeline_PlaceNoteKa, "timeline_place_note_ka");
 			X(Input.Timeline_PlaceNoteBalloon, "timeline_place_note_balloon");
 			X(Input.Timeline_PlaceNoteDrumroll, "timeline_place_note_drumroll");
-			X(Input.Timeline_FlipNoteType, "timeline_flip_note_type");
-			X(Input.Timeline_ToggleNoteSize, "timeline_toggle_note_size");
 			X(Input.Timeline_Cut, "timeline_cut");
 			X(Input.Timeline_Copy, "timeline_copy");
 			X(Input.Timeline_Paste, "timeline_paste");
@@ -556,9 +578,24 @@ namespace PeepoDrumKit
 			X(Input.Timeline_SelectAllWithinRangeSelection, "timeline_select_all_within_range_selection");
 			X(Input.Timeline_ShiftSelectionLeft, "timeline_shift_selection_left");
 			X(Input.Timeline_ShiftSelectionRight, "timeline_shift_selection_right");
-			X(Input.Timeline_SelectEvery2ndSelectedItem, "timeline_select_every_2nd_selected_item");
-			X(Input.Timeline_SelectEvery3rdSelectedItem, "timeline_select_every_3rd_selected_item");
-			X(Input.Timeline_SelectEvery4thSelectedItem, "timeline_select_every_4th_selected_item");
+			X(Input.Timeline_SelectItemPattern_xo, "timeline_select_item_pattern_xo");
+			X(Input.Timeline_SelectItemPattern_xoo, "timeline_select_item_pattern_xoo");
+			X(Input.Timeline_SelectItemPattern_xooo, "timeline_select_item_pattern_xooo");
+			X(Input.Timeline_SelectItemPattern_xxoo, "timeline_select_item_pattern_xxoo");
+			X(Input.Timeline_SelectItemPattern_CustomA, "timeline_select_item_pattern_custom_a");
+			X(Input.Timeline_SelectItemPattern_CustomB, "timeline_select_item_pattern_custom_b");
+			X(Input.Timeline_SelectItemPattern_CustomC, "timeline_select_item_pattern_custom_c");
+			X(Input.Timeline_SelectItemPattern_CustomD, "timeline_select_item_pattern_custom_d");
+			X(Input.Timeline_SelectItemPattern_CustomE, "timeline_select_item_pattern_custom_e");
+			X(Input.Timeline_SelectItemPattern_CustomF, "timeline_select_item_pattern_custom_f");
+			X(Input.Timeline_FlipNoteType, "timeline_flip_note_type");
+			X(Input.Timeline_ToggleNoteSize, "timeline_toggle_note_size");
+			X(Input.Timeline_ExpandItemTime_2To1, "timeline_expand_item_time_2_to_1");
+			X(Input.Timeline_ExpandItemTime_3To2, "timeline_expand_item_time_3_to_2");
+			X(Input.Timeline_ExpandItemTime_4To3, "timeline_expand_item_time_4_to_3");
+			X(Input.Timeline_CompressItemTime_1To2, "timeline_compress_item_time_1_to_2");
+			X(Input.Timeline_CompressItemTime_2To3, "timeline_compress_item_time_2_to_3");
+			X(Input.Timeline_CompressItemTime_3To4, "timeline_compress_item_time_3_to_4");
 			X(Input.Timeline_StepCursorLeft, "timeline_step_cursor_left");
 			X(Input.Timeline_StepCursorRight, "timeline_step_cursor_right");
 			X(Input.Timeline_JumpToTimelineStart, "timeline_jump_to_timeline_start");

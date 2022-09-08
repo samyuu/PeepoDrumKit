@@ -669,7 +669,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 5064, "TODO: Add missing settings entries for newly added UserSettingsData fields");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 6040, "TODO: Add missing settings entries for newly added UserSettingsData fields");
 
 					SettingsGui::SettingsEntry settingsEntriesMain[] =
 					{
@@ -728,7 +728,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsInputData = sizeof(UserSettingsData::InputData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 4550, "TODO: Add missing settings entries for newly added UserSettingsData::InputData bindings");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 5460, "TODO: Add missing settings entries for newly added UserSettingsData::InputData bindings");
 
 					SettingsGui::InputSettingsEntry settingsEntriesInput[] =
 					{
@@ -751,8 +751,6 @@ namespace PeepoDrumKit
 						{ &settings.Input.Timeline_PlaceNoteKa, "Timeline: Place Note Ka", },
 						{ &settings.Input.Timeline_PlaceNoteBalloon, "Timeline: Place Note Balloon", },
 						{ &settings.Input.Timeline_PlaceNoteDrumroll, "Timeline: Place Note Drumroll", },
-						{ &settings.Input.Timeline_FlipNoteType, "Timeline: Flip Note Type", },
-						{ &settings.Input.Timeline_ToggleNoteSize, "Timeline: Toggle Note Size", },
 						{ &settings.Input.Timeline_Cut, "Timeline: Cut", },
 						{ &settings.Input.Timeline_Copy, "Timeline: Copy", },
 						{ &settings.Input.Timeline_Paste, "Timeline: Paste", },
@@ -764,9 +762,24 @@ namespace PeepoDrumKit
 						{ &settings.Input.Timeline_SelectAllWithinRangeSelection, "Timeline: Select All within Range Selection ", },
 						{ &settings.Input.Timeline_ShiftSelectionLeft, "Timeline: Shift selection Left", },
 						{ &settings.Input.Timeline_ShiftSelectionRight, "Timeline: Shift selection Right", },
-						{ &settings.Input.Timeline_SelectEvery2ndSelectedItem, "Timeline: Select every 2nd Item ", },
-						{ &settings.Input.Timeline_SelectEvery3rdSelectedItem, "Timeline: Select every 3rd Item ", },
-						{ &settings.Input.Timeline_SelectEvery4thSelectedItem, "Timeline: Select every 4th Item ", },
+						{ &settings.Input.Timeline_SelectItemPattern_xo, "Timeline: Select Item Pattern xo", },
+						{ &settings.Input.Timeline_SelectItemPattern_xoo, "Timeline: Select Item Pattern xoo ", },
+						{ &settings.Input.Timeline_SelectItemPattern_xooo, "Timeline: Select Item Pattern xooo", },
+						{ &settings.Input.Timeline_SelectItemPattern_xxoo, "Timeline: Select Item Pattern xxoo", },
+						{ &settings.Input.Timeline_SelectItemPattern_CustomA, "Timeline: Select Item Pattern Custom A", },
+						{ &settings.Input.Timeline_SelectItemPattern_CustomB, "Timeline: Select Item Pattern Custom B", },
+						{ &settings.Input.Timeline_SelectItemPattern_CustomC, "Timeline: Select Item Pattern Custom C", },
+						{ &settings.Input.Timeline_SelectItemPattern_CustomD, "Timeline: Select Item Pattern Custom D", },
+						{ &settings.Input.Timeline_SelectItemPattern_CustomE, "Timeline: Select Item Pattern Custom E", },
+						{ &settings.Input.Timeline_SelectItemPattern_CustomF, "Timeline: Select Item Pattern Custom F", },
+						{ &settings.Input.Timeline_FlipNoteType, "Timeline: Flip Note Type", },
+						{ &settings.Input.Timeline_ToggleNoteSize, "Timeline: Toggle Note Size", },
+						{ &settings.Input.Timeline_ExpandItemTime_2To1, "Timeline: Expand Item Time 2:1", },
+						{ &settings.Input.Timeline_ExpandItemTime_3To2, "Timeline: Expand Item Time 3:2", },
+						{ &settings.Input.Timeline_ExpandItemTime_4To3, "Timeline: Expand Item Time 4:3", },
+						{ &settings.Input.Timeline_CompressItemTime_1To2, "Timeline: Compress Item Time 1:2", },
+						{ &settings.Input.Timeline_CompressItemTime_2To3, "Timeline: Compress Item Time 2:3", },
+						{ &settings.Input.Timeline_CompressItemTime_3To4, "Timeline: Compress Item Time 3:4", },
 						{ &settings.Input.Timeline_StepCursorLeft, "Timeline: Step Cursor Left", },
 						{ &settings.Input.Timeline_StepCursorRight, "Timeline: Step Cursor Right", },
 						{ &settings.Input.Timeline_JumpToTimelineStart, "Timeline: Jump to Timeline Start", },

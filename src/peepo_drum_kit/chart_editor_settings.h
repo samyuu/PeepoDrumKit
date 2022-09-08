@@ -1,10 +1,15 @@
 #pragma once
 #include "core_types.h"
 #include "core_beat.h"
+#include "core_string.h"
 #include "imgui/imgui_include.h"
 
 namespace PeepoDrumKit
 {
+	constexpr std::string_view PeepoDrumKitApplicationTitle = PEEPO_DEBUG ? "Peepo Drum Kit (Debug)" : "Peepo Drum Kit";
+
+	void GuiStyleColorPeepoDrumKit(ImGuiStyle* destination = nullptr);
+
 	struct RecentFilesList
 	{
 		// NOTE: Default 9 to match the keyboard number row key count
@@ -17,9 +22,18 @@ namespace PeepoDrumKit
 		void Remove(std::string filePathToRemove);
 	};
 
-	constexpr std::string_view PeepoDrumKitApplicationTitle = PEEPO_DEBUG ? "Peepo Drum Kit (Debug)" : PEEPO_RELEASE ? "Peepo Drum Kit (Release)" : "Peepo Drum Kit (Unknown)";
-
-	void GuiStyleColorPeepoDrumKit(ImGuiStyle* destination = nullptr);
+	struct CustomSelectionPattern
+	{
+		char Data[32];
+		inline b8 operator==(const CustomSelectionPattern& o) const { return FixedBufferStringView(Data) == FixedBufferStringView(o.Data); }
+		inline b8 operator!=(const CustomSelectionPattern& o) const { return !(*this == o); }
+	};
+	struct CustomSelectionPatternList
+	{
+		std::vector<CustomSelectionPattern> V;
+		inline b8 operator==(const CustomSelectionPatternList& o) const { if (V.size() != o.V.size()) return false; for (size_t i = 0; i < o.V.size(); i++) { if (V[i] != o.V[i]) return false; } return true; }
+		inline b8 operator!=(const CustomSelectionPatternList& o) const { return !(*this == o); }
+	};
 
 	// NOTE: Expected to be stored in sorted decending order: "{ 1.0f, 0.75f, 0.5f, 0.25f }" etc.
 	struct PlaybackSpeedStepList
@@ -117,6 +131,7 @@ namespace PeepoDrumKit
 			WithDefault<b8> DisableTempoWindowWidgetsIfHasSelection = true;
 			WithDefault<b8> InsertSelectionScrollChangesUnselectOld = false;
 			WithDefault<b8> InsertSelectionScrollChangesSelectNew = true;
+			WithDefault<CustomSelectionPatternList> CustomSelectionPatterns = {};
 		} General;
 
 		struct AudioData
@@ -163,8 +178,6 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Timeline_PlaceNoteKa = { KeyBinding(ImGuiKey_D), KeyBinding(ImGuiKey_K) };
 			WithDefault<MultiInputBinding> Timeline_PlaceNoteBalloon = { KeyBinding(ImGuiKey_E), KeyBinding(ImGuiKey_I) };
 			WithDefault<MultiInputBinding> Timeline_PlaceNoteDrumroll = { KeyBinding(ImGuiKey_R), KeyBinding(ImGuiKey_U) };
-			WithDefault<MultiInputBinding> Timeline_FlipNoteType = { KeyBinding(ImGuiKey_H) };
-			WithDefault<MultiInputBinding> Timeline_ToggleNoteSize = { KeyBinding(ImGuiKey_B) };
 			WithDefault<MultiInputBinding> Timeline_Cut = { KeyBinding(ImGuiKey_X, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Timeline_Copy = { KeyBinding(ImGuiKey_C, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Timeline_Paste = { KeyBinding(ImGuiKey_V, ImGuiModFlags_Ctrl) };
@@ -176,9 +189,24 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Timeline_SelectAllWithinRangeSelection = {};
 			WithDefault<MultiInputBinding> Timeline_ShiftSelectionLeft = { KeyBinding(ImGuiKey_LeftArrow, ImGuiModFlags_Ctrl) };
 			WithDefault<MultiInputBinding> Timeline_ShiftSelectionRight = { KeyBinding(ImGuiKey_RightArrow, ImGuiModFlags_Ctrl) };
-			WithDefault<MultiInputBinding> Timeline_SelectEvery2ndSelectedItem = { KeyBinding(ImGuiKey_2, ImGuiModFlags_Ctrl) };
-			WithDefault<MultiInputBinding> Timeline_SelectEvery3rdSelectedItem = { KeyBinding(ImGuiKey_3, ImGuiModFlags_Ctrl) };
-			WithDefault<MultiInputBinding> Timeline_SelectEvery4thSelectedItem = { KeyBinding(ImGuiKey_4, ImGuiModFlags_Ctrl) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_xo = { KeyBinding(ImGuiKey_2, ImGuiModFlags_Shift) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_xoo = { KeyBinding(ImGuiKey_3, ImGuiModFlags_Shift) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_xooo = { KeyBinding(ImGuiKey_4, ImGuiModFlags_Shift) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_xxoo = { KeyBinding(ImGuiKey_5, ImGuiModFlags_Shift) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_CustomA = { KeyBinding(ImGuiKey_1, ImGuiModFlags_CtrlShift) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_CustomB = { KeyBinding(ImGuiKey_2, ImGuiModFlags_CtrlShift) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_CustomC = { KeyBinding(ImGuiKey_3, ImGuiModFlags_CtrlShift) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_CustomD = { KeyBinding(ImGuiKey_4, ImGuiModFlags_CtrlShift) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_CustomE = { KeyBinding(ImGuiKey_5, ImGuiModFlags_CtrlShift) };
+			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_CustomF = { KeyBinding(ImGuiKey_6, ImGuiModFlags_CtrlShift) };
+			WithDefault<MultiInputBinding> Timeline_FlipNoteType = { KeyBinding(ImGuiKey_W) };
+			WithDefault<MultiInputBinding> Timeline_ToggleNoteSize = { KeyBinding(ImGuiKey_Q) };
+			WithDefault<MultiInputBinding> Timeline_ExpandItemTime_2To1 = {};
+			WithDefault<MultiInputBinding> Timeline_ExpandItemTime_3To2 = {};
+			WithDefault<MultiInputBinding> Timeline_ExpandItemTime_4To3 = {};
+			WithDefault<MultiInputBinding> Timeline_CompressItemTime_1To2 = {};
+			WithDefault<MultiInputBinding> Timeline_CompressItemTime_2To3 = {};
+			WithDefault<MultiInputBinding> Timeline_CompressItemTime_3To4 = {};
 			WithDefault<MultiInputBinding> Timeline_StepCursorLeft = { KeyBinding(ImGuiKey_LeftArrow) };
 			WithDefault<MultiInputBinding> Timeline_StepCursorRight = { KeyBinding(ImGuiKey_RightArrow) };
 			WithDefault<MultiInputBinding> Timeline_JumpToTimelineStart = { KeyBinding(ImGuiKey_Home) };
@@ -256,7 +284,7 @@ namespace PeepoDrumKit
 		IniVoidPtrTypeFromStringFunc FromStringFunc;
 		IniVoidPtrTypeToStringFunc ToStringFunc;
 	};
-	struct SettingsReflectionMap { SettingsReflectionMember MemberSlots[98]; size_t MemberCount; };
+	struct SettingsReflectionMap { SettingsReflectionMember MemberSlots[128]; size_t MemberCount; };
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap();
 	inline const SettingsReflectionMap AppSettingsReflectionMap = StaticallyInitializeAppSettingsReflectionMap();
