@@ -376,6 +376,26 @@ constexpr T ConvertRangeClampInput(T oldStart, T oldEnd, T newStart, T newEnd, T
 template <typename T>
 constexpr T ConvertRangeClampOutput(T oldStart, T oldEnd, T newStart, T newEnd, T value) { return Clamp<T>(ConvertRange<T>(oldStart, oldEnd, newStart, newEnd, value), newStart, newEnd); }
 
+constexpr void AnimateExponentialF32(f32* inOutCurrent, f32 target, f32 animationSpeed, f32 deltaTime)
+{
+	// NOTE: If no time elapsed then no animation should take place
+	if (deltaTime <= 0.0f) { return; }
+	// NOTE: If the animation speed is "disabled" however it should always snap to its target immediately
+	if (animationSpeed <= 0.0f) { *inOutCurrent = target; return; }
+
+	const b8 targetIsLess = (target <= *inOutCurrent);
+	*inOutCurrent += (target - *inOutCurrent) * animationSpeed * deltaTime;
+
+	// NOTE Prevent overshooting the target resulting in unstable 'jittering' for high speed values
+	*inOutCurrent = targetIsLess ? ClampBot(*inOutCurrent, target) : ClampTop(*inOutCurrent, target);
+}
+
+constexpr void AnimateExponentialVec2(vec2* inOutCurrent, vec2 target, f32 animationSpeed, f32 deltaTime)
+{
+	AnimateExponentialF32(&inOutCurrent->x, target.x, animationSpeed, deltaTime);
+	AnimateExponentialF32(&inOutCurrent->y, target.y, animationSpeed, deltaTime);
+}
+
 #if 0 // TODO: Do all this fun stuff
 inline vec2 Normalize(vec2 value) { ...; }
 inline f32 Dot(vec2 a, vec2 b) { ... }
