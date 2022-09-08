@@ -49,6 +49,8 @@ namespace PeepoDrumKit
 				{ "Timeline Item Text", &TimelineItemTextColor },
 				{ "Timeline Item Text (Shadow)", &TimelineItemTextColorShadow },
 				{ "Timeline Item Text (Warning)", &TimelineItemTextColorWarning },
+				{ "Timeline Item Text Underline", &TimelineItemTextUnderlineColor },
+				{ "Timeline Item Text Underline (Shadow)", &TimelineItemTextUnderlineColorShadow },
 				NamedColorU32Pointer {},
 				{ "Timeline GoGo Background Border", &TimelineGoGoBackgroundColorBorder },
 				{ "Timeline GoGo Background Border (Selected)", &TimelineGoGoBackgroundColorBorderSelected },
@@ -628,10 +630,12 @@ namespace PeepoDrumKit
 					drawListContent->AddLine(timeline.LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), timeline.LocalToScreenSpace(localSpaceBL), it.IsSelected ? TimelineSelectedItemLineColor : lineColor);
 					Gui::AddTextWithDropShadow(drawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
 
-#if 1 // TODO: Is this a good idea (?)
-					if (static constexpr f32 lineOffsetY = 0.0f; it.IsSelected)
-						drawListContent->AddLine(textPosition + vec2(0.0f, textSize.y + lineOffsetY), textPosition + vec2(textSize.x, textSize.y + lineOffsetY), Gui::ColorU32WithAlpha(TimelineItemTextColor, 0.8f));
-#endif
+					if (it.IsSelected)
+					{
+						const vec2 lineStartEnd[2] = { textPosition + vec2(0.0f, textSize.y), textPosition + textSize };
+						drawListContent->AddLine(lineStartEnd[0] + vec2(1.0f), lineStartEnd[1] + vec2(1.0f), TimelineItemTextUnderlineColorShadow);
+						drawListContent->AddLine(lineStartEnd[0], lineStartEnd[1], TimelineItemTextUnderlineColor);
+					}
 				}
 				Gui::DisableFontPixelSnap(false);
 			}

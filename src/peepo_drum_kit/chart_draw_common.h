@@ -51,6 +51,8 @@ namespace PeepoDrumKit
 	inline u32 TimelineItemTextColor = 0xFFF0F0F0;
 	inline u32 TimelineItemTextColorShadow = 0xFF000000;
 	inline u32 TimelineItemTextColorWarning = 0xFF4C4CFF;
+	inline u32 TimelineItemTextUnderlineColor = 0xFFF0F0F0;
+	inline u32 TimelineItemTextUnderlineColorShadow = 0xFF000000;
 
 	inline u32 TimelineGoGoBackgroundColorBorder = 0xFF1E1E1E;
 	inline u32 TimelineGoGoBackgroundColorBorderSelected = 0xFF979797;
