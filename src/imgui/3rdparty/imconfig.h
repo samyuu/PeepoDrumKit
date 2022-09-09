@@ -29,6 +29,9 @@ namespace ImGui
 #define IMGUI_HACKS_DELINEARIZE_FONTS 1
 inline f32 IMGUI_HACKS_DELINEARIZE_FONTS_GAMMA = 1.3f; // 1.4f; // 1.8f; // 2.2f;
 
+// HACK: Temporary workaround for a potential infinite loop in ImGui::ShrinkWidths() when using unrounded font sizes (https://github.com/ocornut/imgui/issues/5652)
+#define IMGUI_HACKS_SHRINK_WIDTHS_LOOP_SAFETY_LIMIT 10'000
+
 // HACK: Because the X buttons aren't defined by default :/
 typedef int ImGuiMouseButton;
 enum ImGuiMouseButtonEx_ : ImGuiMouseButton

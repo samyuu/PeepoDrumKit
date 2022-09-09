@@ -1583,6 +1583,17 @@ void ImGui::ShrinkWidths(ImGuiShrinkWidthItem* items, int count, float width_exc
         width_excess += items[n].Width - width_rounded;
         items[n].Width = width_rounded;
     }
+#ifdef IMGUI_HACKS_SHRINK_WIDTHS_LOOP_SAFETY_LIMIT
+	int SAFETY_COUNTER = 0;
+    while (width_excess >= 1.0f && SAFETY_COUNTER++ < IMGUI_HACKS_SHRINK_WIDTHS_LOOP_SAFETY_LIMIT)
+        for (int n = 0; n < count && width_excess >= 1.0f; n++)
+            if (items[n].Width + 1.0f <= items[n].InitialWidth)
+            {
+                items[n].Width += 1.0f;
+                width_excess -= 1.0f;
+            }
+
+#else // HACK: -> https://github.com/ocornut/imgui/issues/5652
     while (width_excess >= 1.0f)
         for (int n = 0; n < count && width_excess >= 1.0f; n++)
             if (items[n].Width + 1.0f <= items[n].InitialWidth)
@@ -1590,6 +1601,7 @@ void ImGui::ShrinkWidths(ImGuiShrinkWidthItem* items, int count, float width_exc
                 items[n].Width += 1.0f;
                 width_excess -= 1.0f;
             }
+#endif
 }
 
 //-------------------------------------------------------------------------
