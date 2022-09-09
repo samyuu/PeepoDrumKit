@@ -429,7 +429,7 @@ namespace PeepoDrumKit
 
 				Gui::PushStyleColor(ImGuiCol_Text, colors.GreenBright);
 				Gui::PushFont(FontMedium_EN);
-				Gui::TextWrapped("Things are still very much WIP and subject to change with many features still missing " UTF8_FeelsOkayMan);
+				Gui::TextWrapped("Things are still very much WIP and subject to change with some features still missing " UTF8_FeelsOkayMan);
 				Gui::Separator();
 				Gui::TextUnformatted("");
 				Gui::PopFont();
@@ -456,7 +456,7 @@ namespace PeepoDrumKit
 					static constexpr auto rowSeparator = []() { row([] { Gui::Text(""); }, [] {}); };
 
 					row([] { Gui::Text("Move cursor"); }, [] { Gui::Text("Mouse Left"); });
-					row([] { Gui::Text("Select notes"); }, [] { Gui::Text("Mouse Right"); });
+					row([] { Gui::Text("Select items"); }, [] { Gui::Text("Mouse Right"); });
 					row([] { Gui::Text("Scroll"); }, [] { Gui::Text("Mouse Wheel"); });
 					row([] { Gui::Text("Scroll panning"); }, [] { Gui::Text("Mouse Middle"); });
 					row([] { Gui::Text("Zoom"); }, [] { Gui::Text("Alt + Mouse Wheel"); });
@@ -482,11 +482,11 @@ namespace PeepoDrumKit
 					row([] { Gui::Text("Grid division"); }, [] { Gui::Text("Mouse [X1/X2] / [%s/%s]", ToShortcutString(*Settings.Input.Timeline_IncreaseGridDivision).Data, ToShortcutString(*Settings.Input.Timeline_DecreaseGridDivision).Data); });
 					row([] { Gui::Text("Step cursor"); }, [] { Gui::Text("%s / %s", ToShortcutString(*Settings.Input.Timeline_StepCursorLeft).Data, ToShortcutString(*Settings.Input.Timeline_StepCursorRight).Data); });
 					rowSeparator();
-					row([] { Gui::Text("Move selected notes"); }, [] { Gui::Text("Mouse Left (Hover)"); });
-					row([] { Gui::Text("Cut selected notes"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_Cut).Data); });
-					row([] { Gui::Text("Copy selected notes"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_Copy).Data); });
-					row([] { Gui::Text("Paste selected notes"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_Paste).Data); });
-					row([] { Gui::Text("Delete selected notes"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_DeleteSelection).Data); });
+					row([] { Gui::Text("Move selected items"); }, [] { Gui::Text("Mouse Left (Hover)"); });
+					row([] { Gui::Text("Cut selected items"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_Cut).Data); });
+					row([] { Gui::Text("Copy selected items"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_Copy).Data); });
+					row([] { Gui::Text("Paste selected items"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_Paste).Data); });
+					row([] { Gui::Text("Delete selected items"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_DeleteSelection).Data); });
 					rowSeparator();
 					row([] { Gui::Text("Playback speed"); }, [] { Gui::Text("%s / %s", ToShortcutString(*Settings.Input.Timeline_DecreasePlaybackSpeed).Data, ToShortcutString(*Settings.Input.Timeline_IncreasePlaybackSpeed).Data); });
 					row([] { Gui::Text("Toggle metronome"); }, [] { Gui::Text(ToShortcutString(*Settings.Input.Timeline_ToggleMetronome).Data); });
