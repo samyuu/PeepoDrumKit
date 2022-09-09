@@ -548,6 +548,7 @@ namespace PeepoDrumKit
 			Audio::Engine.SetBackend(*Settings.Audio.RequestExclusiveDeviceAccess ? Audio::Backend::WASAPI_Exclusive : Audio::Backend::WASAPI_Shared);
 			GlobalLastSetRequestExclusiveDeviceAccessAudioSetting = *Settings.Audio.RequestExclusiveDeviceAccess;
 		}
+		EnableGuiScaleAnimation = *Settings.Animation.EnableGuiScaleAnimation;
 
 		// NOTE: Window focus audio engine response
 		{

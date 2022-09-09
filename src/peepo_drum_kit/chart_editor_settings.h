@@ -144,6 +144,7 @@ namespace PeepoDrumKit
 
 		struct AnimationData
 		{
+			WithDefault<b8> EnableGuiScaleAnimation = true;
 			WithDefault<f32> TimelineSmoothScrollSpeed = 20.0f;
 			WithDefault<f32> TimelineWaveformFadeSpeed = 20.0f;
 			WithDefault<f32> TimelineRangeSelectionExpansionSpeed = 20.0f;

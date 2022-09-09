@@ -488,7 +488,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 6040, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 6048, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -537,6 +537,7 @@ namespace PeepoDrumKit
 			X(Audio.RequestExclusiveDeviceAccess, "request_exclusive_device_access");
 
 			SECTION("animation");
+			X(Animation.EnableGuiScaleAnimation, "enable_gui_scale_animation");
 			X(Animation.TimelineSmoothScrollSpeed, "timeline_smooth_scroll_speed");
 			X(Animation.TimelineWaveformFadeSpeed, "timeline_waveform_fade_speed");
 			X(Animation.TimelineRangeSelectionExpansionSpeed, "timeline_range_selection_expansion_speed");
