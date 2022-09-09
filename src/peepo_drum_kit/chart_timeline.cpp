@@ -2557,7 +2557,7 @@ namespace PeepoDrumKit
 			{
 				const f32 radius = GuiScale(TimelineBoxSelectionRadius);
 				const f32 linePadding = GuiScale(TimelineBoxSelectionLinePadding);
-				const f32 lineThickness = ClampBot(Round(TimelineBoxSelectionLineThickness * GuiScaleFactor / 2.0f) * 2.0f, TimelineBoxSelectionLineThickness);
+				const f32 lineThickness = ClampBot(Round(TimelineBoxSelectionLineThickness * GuiScaleFactorCurrent / 2.0f) * 2.0f, TimelineBoxSelectionLineThickness);
 
 				const vec2 center = LocalToScreenSpace(Camera.WorldToLocalSpace(BoxSelection.WorldSpaceRect.TL));
 				DrawListContent->AddCircleFilled(center, radius, TimelineBoxSelectionFillColor);

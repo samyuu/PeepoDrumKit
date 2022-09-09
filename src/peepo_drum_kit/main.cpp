@@ -131,7 +131,7 @@ namespace PeepoDrumKit
 		ApplicationHost::StartupParam startupParam = {};
 		ApplicationHost::UserCallbacks callbacks = {};
 
-		GuiScaleFactor = ClampRoundGuiScaleFactor(PersistentApp.LastSession.GuiScale);
+		GuiScaleFactorTarget = ClampRoundGuiScaleFactor(PersistentApp.LastSession.GuiScale);
 		ApplicationHost::GlobalState.SwapInterval = PersistentApp.LastSession.OSWindow_SwapInterval;
 		startupParam.WindowTitle = PeepoDrumKitApplicationTitle;
 		// TODO: ...
@@ -152,7 +152,7 @@ namespace PeepoDrumKit
 			app = nullptr;
 			Audio::Engine.ApplicationShutdown();
 
-			PersistentApp.LastSession.GuiScale = GuiScaleFactor;
+			PersistentApp.LastSession.GuiScale = GuiScaleFactorTarget;
 			PersistentApp.LastSession.OSWindow_SwapInterval = ApplicationHost::GlobalState.SwapInterval;
 			PersistentApp.LastSession.OSWindow_Region = Rect::FromTLSize(vec2(ApplicationHost::GlobalState.WindowPosition), vec2(ApplicationHost::GlobalState.WindowSize));
 			// TODO: PersistentApp.LastSession.OSWindow_RegionRestore = ...;

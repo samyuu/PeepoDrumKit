@@ -21,15 +21,25 @@ inline ImFont* FontLarge_EN = nullptr;
 enum class BuiltInFont : u8 { FontMain_JP, FontMedium_EN, FontLarge_EN, Count };
 inline ImFont* GetBuiltInFont(BuiltInFont font) { return (font == BuiltInFont::FontMain_JP) ? FontMain_JP : (font == BuiltInFont::FontMedium_EN) ? FontMedium_EN : FontLarge_EN; }
 
-inline f32 GuiScaleFactor = 1.0f;
-inline f32 GuiScaleFactorToSetNextFrame = GuiScaleFactor;
-inline f32 GuiScale(f32 value) { return Floor(value * GuiScaleFactor); }
-inline vec2 GuiScale(vec2 value) { return Floor(value * GuiScaleFactor); }
-inline i32 GuiScaleI32(i32 value) { return static_cast<i32>(Floor(static_cast<f32>(value) * GuiScaleFactor)); }
+inline f32 GuiScaleFactorCurrent = 1.0f;
+inline f32 GuiScaleFactorTarget = GuiScaleFactorCurrent;
+inline f32 GuiScaleFactorToSetNextFrame = GuiScaleFactorCurrent;
+inline f32 GuiScale(f32 value) { return Floor(value * GuiScaleFactorCurrent); }
+inline f32 GuiScale_AtTarget(f32 value) { return Floor(value * GuiScaleFactorTarget); }
+inline vec2 GuiScale(vec2 value) { return Floor(value * GuiScaleFactorCurrent); }
+inline vec2 GuiScale_AtTarget(vec2 value) { return Floor(value * GuiScaleFactorTarget); }
+inline i32 GuiScaleI32(i32 value) { return static_cast<i32>(Floor(static_cast<f32>(value) * GuiScaleFactorCurrent)); }
+inline i32 GuiScaleI32_AtTarget(i32 value) { return static_cast<i32>(Floor(static_cast<f32>(value) * GuiScaleFactorTarget)); }
 
 constexpr f32 GuiScaleFactorMin = FromPercent(50.0f);
 constexpr f32 GuiScaleFactorMax = FromPercent(300.0f);
 constexpr f32 ClampRoundGuiScaleFactor(f32 scaleFactor) { return Clamp(FromPercent(Round(ToPercent(scaleFactor))), GuiScaleFactorMin, GuiScaleFactorMax); }
+
+inline b8 EnableGuiScaleAnimation = true;
+inline b8 IsGuiScaleCurrentlyAnimating = false;
+inline f32 GuiScaleFactorLastAnimationStart = 1.0f;
+inline f32 GuiScaleAnimationElapsed = 0.0f;
+inline f32 GuiScaleAnimationDuration = 0.25f;
 
 namespace ApplicationHost
 {

@@ -17,11 +17,11 @@ namespace PeepoDrumKit
 		return ClampRoundGuiScaleFactor(PresetGuiScaleFactors[Clamp(closest + direction, 0, ArrayCountI32(PresetGuiScaleFactors) - 1)]);
 	}
 
-	static b8 CanZoomInGuiScale() { return (GuiScaleFactor < PresetGuiScaleFactorMax); }
-	static b8 CanZoomOutGuiScale() { return (GuiScaleFactor > PresetGuiScaleFactorMin); }
-	static b8 CanZoomResetGuiScale() { return (GuiScaleFactor != 1.0f); }
-	static void ZoomInGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactor, +1); }
-	static void ZoomOutGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactor, -1); }
+	static b8 CanZoomInGuiScale() { return (GuiScaleFactorTarget < PresetGuiScaleFactorMax); }
+	static b8 CanZoomOutGuiScale() { return (GuiScaleFactorTarget > PresetGuiScaleFactorMin); }
+	static b8 CanZoomResetGuiScale() { return (GuiScaleFactorTarget != 1.0f); }
+	static void ZoomInGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactorTarget, +1); }
+	static void ZoomOutGuiScale() { GuiScaleFactorToSetNextFrame = NextPresetGuiScaleFactor(GuiScaleFactorTarget, -1); }
 	static void ZoomResetGuiScale() { GuiScaleFactorToSetNextFrame = 1.0f; }
 
 	static b8 CanOpenChartDirectoryInFileExplorer(const ChartContext& context)
@@ -315,7 +315,7 @@ namespace PeepoDrumKit
 					if (guiScaleFactorToSetNextFrame != GuiScaleFactorToSetNextFrame) { if (!zoomPopup.IsOpen) zoomPopup.Open(); zoomPopup.OnChange(); }
 
 					Gui::Separator();
-					char labelBuffer[32]; sprintf_s(labelBuffer, "Current Scale: %g%%", ToPercent(GuiScaleFactor));
+					char labelBuffer[32]; sprintf_s(labelBuffer, "Current Scale: %g%%", ToPercent(GuiScaleFactorTarget));
 					Gui::MenuItem(labelBuffer, nullptr, nullptr, false);
 
 					Gui::EndMenu();
@@ -798,7 +798,7 @@ namespace PeepoDrumKit
 			{
 				isWindowHovered = Gui::IsWindowHovered();
 				Gui::AlignTextToFramePadding();
-				Gui::Text("%g%% ", ToPercent(GuiScaleFactor));
+				Gui::Text("%g%% ", ToPercent(GuiScaleFactorTarget));
 
 				Gui::BeginDisabled(!CanZoomOutGuiScale());
 				Gui::SameLine(0.0f, 0.0f);

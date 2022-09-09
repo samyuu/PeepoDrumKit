@@ -116,8 +116,8 @@ namespace ApplicationHost
 		{
 			for (i32 f = 0; f < EnumCountI32<BuiltInFont>; f++)
 			{
-				it.RectSizes[f] = ivec2(GuiScaleI32(FontBaseSizes[f] + 2) + (iconBorder * 2));
-				it.RectIDs[f] = io.Fonts->AddCustomRectFontGlyph(GetBuiltInFont(static_cast<BuiltInFont>(f)), it.Icon->Codepoint, it.RectSizes[f].x, it.RectSizes[f].y, GuiScale(FontBaseSizes[f] + 3.0f), vec2(2 - iconBorder, -iconBorder));
+				it.RectSizes[f] = ivec2(GuiScaleI32_AtTarget(FontBaseSizes[f] + 2) + (iconBorder * 2));
+				it.RectIDs[f] = io.Fonts->AddCustomRectFontGlyph(GetBuiltInFont(static_cast<BuiltInFont>(f)), it.Icon->Codepoint, it.RectSizes[f].x, it.RectSizes[f].y, GuiScale_AtTarget(FontBaseSizes[f] + 3.0f), vec2(2 - iconBorder, -iconBorder));
 			}
 		}
 
@@ -184,7 +184,11 @@ namespace ApplicationHost
 			//		 Creating a font atlas that big upfront however absolutely kills startup times so the only sane solution is to use dynamic glyph rasterization
 			//		 which will hopefully be fully implemented in the not too distant future :Copium: (https://github.com/ocornut/imgui/pull/3471)
 			globalRangesBuilderJP.AddText(additionalGlyphs, additionalGlyphs + (ArrayCount(additionalGlyphs) - sizeof('\0')));
+#if PEEPO_DEBUG && 1 // HACK: To compensate for even slower resizing during debug builds
+			globalRangesBuilderJP.AddRanges(io.Fonts->GetGlyphRangesDefault());
+#else
 			globalRangesBuilderJP.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+#endif
 			globalRangesBuilderJP.BuildRanges(&globalRangesJP);
 
 			// GlobalGlyphRanges.JP = io.Fonts->GetGlyphRangesJapanese();
@@ -220,9 +224,9 @@ namespace ApplicationHost
 		io.FontDefault = nullptr;
 
 		// NOTE: Unfortunately Dear ImGui does not allow avoiding these copies at the moment as far as I can tell (except for maybe some super hacky "inject nullptrs before shutdown")
-		FontMain_JP = addFont(GuiScaleI32(FontBaseSizes[0]), GlobalGlyphRanges.JP, Ownership::Copy);
-		FontMedium_EN = addFont(GuiScaleI32(FontBaseSizes[1]), GlobalGlyphRanges.EN, Ownership::Copy);
-		FontLarge_EN = addFont(GuiScaleI32(FontBaseSizes[2]), GlobalGlyphRanges.EN, Ownership::Copy);
+		FontMain_JP = addFont(GuiScaleI32_AtTarget(FontBaseSizes[0]), GlobalGlyphRanges.JP, Ownership::Copy);
+		FontMedium_EN = addFont(GuiScaleI32_AtTarget(FontBaseSizes[1]), GlobalGlyphRanges.EN, Ownership::Copy);
+		FontLarge_EN = addFont(GuiScaleI32_AtTarget(FontBaseSizes[2]), GlobalGlyphRanges.EN, Ownership::Copy);
 
 #if HAS_EMBEDDED_ICONS
 		ImGuiAddEmeddedIconsToFontAtlas();
@@ -242,15 +246,23 @@ namespace ApplicationHost
 		if (!GlobalIsWindowMinimized && GlobalSwapChainWaitableObject != NULL)
 			::WaitForSingleObjectEx(GlobalSwapChainWaitableObject, 1000, true);
 
-		if (!ApproxmiatelySame(GuiScaleFactor, GuiScaleFactorToSetNextFrame))
+		if (!ApproxmiatelySame(GuiScaleFactorTarget, GuiScaleFactorToSetNextFrame))
 		{
-			GuiScaleFactor = ClampRoundGuiScaleFactor(GuiScaleFactorToSetNextFrame);
-			GuiScaleFactorToSetNextFrame = GuiScaleFactor;
+			GuiScaleFactorLastAnimationStart = GuiScaleFactorCurrent;
+
+			GuiScaleFactorTarget = ClampRoundGuiScaleFactor(GuiScaleFactorToSetNextFrame);
+			GuiScaleFactorToSetNextFrame = GuiScaleFactorTarget;
 			ImGuiUpdateBuildFonts();
 
 			ImGui::GetStyle() = GlobalOriginalScaleStyle;
-			if (!ApproxmiatelySame(GuiScaleFactor, 1.0f))
-				ImGui::GetStyle().ScaleAllSizes(GuiScaleFactor);
+			if (!ApproxmiatelySame(GuiScaleFactorTarget, 1.0f))
+				ImGui::GetStyle().ScaleAllSizes(GuiScaleFactorTarget);
+
+			GuiScaleAnimationElapsed = 0.0f;
+			if (EnableGuiScaleAnimation)
+				IsGuiScaleCurrentlyAnimating = true;
+			else
+				GuiScaleFactorCurrent = GuiScaleFactorTarget;
 		}
 #if IMGUI_HACKS_DELINEARIZE_FONTS
 		else if (!ApproxmiatelySame(GlobalLastUsedDelinearizedFontGamma, IMGUI_HACKS_DELINEARIZE_FONTS_GAMMA))
@@ -258,6 +270,25 @@ namespace ApplicationHost
 			ImGuiUpdateBuildFonts();
 		}
 #endif
+
+		if (IsGuiScaleCurrentlyAnimating)
+		{
+			GuiScaleAnimationElapsed += ClampBot(GImGui->IO.DeltaTime, (1.0f / 30.0f));
+			if (GuiScaleAnimationElapsed >= GuiScaleAnimationDuration)
+			{
+				IsGuiScaleCurrentlyAnimating = false;
+				GImGui->IO.FontGlobalScale = 1.0f;
+				GuiScaleFactorCurrent = GuiScaleFactorTarget;
+			}
+			else
+			{
+				const f32 t = (GuiScaleAnimationElapsed / GuiScaleAnimationDuration);
+				const f32 fontSizeCurrent = static_cast<f32>(GuiScaleI32(FontBaseSizes[0]));
+				const f32 fontSizeTarget = static_cast<f32>(GuiScaleI32_AtTarget(FontBaseSizes[0]));
+				GImGui->IO.FontGlobalScale = Lerp(fontSizeCurrent, fontSizeTarget, t) / fontSizeTarget;
+				GuiScaleFactorCurrent = Lerp(GuiScaleFactorLastAnimationStart, GuiScaleFactorTarget, t);
+			}
+		}
 
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -389,12 +420,12 @@ namespace ApplicationHost
 			}
 		}
 
-		ImGuiUpdateBuildFonts();
-
-		GuiScaleFactorToSetNextFrame = GuiScaleFactor;
+		GuiScaleFactorToSetNextFrame = GuiScaleFactorCurrent = GuiScaleFactorTarget;
 		GlobalOriginalScaleStyle = ImGui::GetStyle();
-		if (!ApproxmiatelySame(GuiScaleFactor, 1.0f))
-			ImGui::GetStyle().ScaleAllSizes(GuiScaleFactor);
+		if (!ApproxmiatelySame(GuiScaleFactorTarget, 1.0f))
+			ImGui::GetStyle().ScaleAllSizes(GuiScaleFactorTarget);
+
+		ImGuiUpdateBuildFonts();
 
 		b8 done = false;
 		while (!done)
