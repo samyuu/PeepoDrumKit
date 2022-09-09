@@ -867,6 +867,7 @@ namespace PeepoDrumKit
 						});
 					}
 
+					b8 disableChangePropertiesCommandMerge = false;
 					GenericMemberFlags outModifiedMembers = GenericMemberFlags_None;
 					for (const GenericMember member : { GenericMember::NoteType_V, GenericMember::I16_BalloonPopCount, GenericMember::Time_Offset,
 						GenericMember::Tempo_V, GenericMember::TimeSignature_V, GenericMember::F32_ScrollSpeed, GenericMember::B8_BarLineVisible })
@@ -893,11 +894,16 @@ namespace PeepoDrumKit
 										isVisible = (v == VisibilityType::Visible) ? true : (v == VisibilityType::Hidden) ? false : isVisible;
 									}
 									valueWasChanged = true;
+									disableChangePropertiesCommandMerge = true;
 								}
 							});
 						} break;
 						case GenericMember::I16_BalloonPopCount:
 						{
+							b8 isAnyBalloonNoteSelected = false;
+							for (const auto& selectedItem : SelectedItems)
+								isAnyBalloonNoteSelected |= IsBalloonNote(selectedItem.MemberValues.NoteType());
+
 							MultiEditWidgetParam widgetIn = {};
 							widgetIn.DataType = ImGuiDataType_S16;
 							widgetIn.Value.I16 = sharedValues.BalloonPopCount();
@@ -911,7 +917,9 @@ namespace PeepoDrumKit
 							widgetIn.FormatString = "%d";
 							widgetIn.EnableDragLabel = true;
 							widgetIn.DragLabelSpeed = 0.05f;
+							Gui::BeginDisabled(!isAnyBalloonNoteSelected);
 							const MultiEditWidgetResult widgetOut = GuiPropertyMultiSelectionEditWidget("Balloon Pop Count", widgetIn);
+							Gui::EndDisabled();
 
 							if (widgetOut.HasValueExact)
 							{
@@ -1168,6 +1176,7 @@ namespace PeepoDrumKit
 													inOutNoteType = i;
 											}
 											valueWasChanged = true;
+											disableChangePropertiesCommandMerge = true;
 										}
 
 										if (isSelected)
@@ -1191,6 +1200,7 @@ namespace PeepoDrumKit
 										inOutNoteType = (v == NoteSizeType::Big) ? ToBigNote(inOutNoteType) : (v == NoteSizeType::Small) ? ToSmallNote(inOutNoteType) : inOutNoteType;
 									}
 									valueWasChanged = true;
+									disableChangePropertiesCommandMerge = true;
 								}
 							});
 						} break;
@@ -1296,6 +1306,8 @@ namespace PeepoDrumKit
 							}
 						}
 
+						if (disableChangePropertiesCommandMerge)
+							context.Undo.DisallowMergeForLastCommand();
 						context.Undo.Execute<Commands::ChangeMultipleGenericProperties>(&course, std::move(propertiesToChange));
 					}
 
