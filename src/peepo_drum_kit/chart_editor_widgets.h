@@ -87,6 +87,9 @@ namespace PeepoDrumKit
 	struct ChartLyricsWindow
 	{
 		std::string LyricInputBuffer;
+		std::string AllLyricsBuffer, AllLyricsCopyOnMadeActive;
+		b8 IsLyricInputActiveThisFrame, IsLyricInputActiveLastFrame;
+		b8 IsAllLyricsInputActiveThisFrame, IsAllLyricsInputActiveLastFrame;
 
 		void DrawGui(ChartContext& context, ChartTimeline& timeline);
 	};

@@ -386,6 +386,29 @@ namespace PeepoDrumKit
 			SortedLyricsList* Lyrics;
 			LyricChange NewValue, OldValue;
 		};
+
+		struct ReplaceAllLyricChanges : Undo::Command
+		{
+			ReplaceAllLyricChanges(SortedLyricsList* lyrics, SortedLyricsList newValue) : Lyrics(lyrics), NewValue(std::move(newValue)), OldValue(*lyrics) {}
+
+			void Undo() override { *Lyrics = OldValue; }
+			void Redo() override { *Lyrics = NewValue; }
+
+			Undo::MergeResult TryMerge(Command& commandToMerge) override
+			{
+				auto* other = static_cast<decltype(this)>(&commandToMerge);
+				if (other->Lyrics != Lyrics)
+					return Undo::MergeResult::Failed;
+
+				NewValue = other->NewValue;
+				return Undo::MergeResult::ValueUpdated;
+			}
+
+			Undo::CommandInfo GetInfo() const override { return { "Update All Lyrics" }; }
+
+			SortedLyricsList* Lyrics;
+			SortedLyricsList NewValue, OldValue;
+		};
 	}
 
 	// NOTE: Note commands

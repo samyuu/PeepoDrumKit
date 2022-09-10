@@ -1722,57 +1722,145 @@ namespace PeepoDrumKit
 		}
 	}
 
+	static void ConvertAllLyricsToString(TimeSpace timeSpace, Time songOffset, const SortedTempoMap& tempoMap, const SortedLyricsList& in, std::string& out)
+	{
+		// TODO: Maybe format as some existing subtitle format and visually show syntax errors somehow (?)
+		for (const auto& lyricChange : in.Sorted)
+		{
+			out += ConvertTimeSpace(tempoMap.BeatToTime(lyricChange.BeatTime), TimeSpace::Chart, timeSpace, songOffset).ToString().Data;
+			out += " > ";
+			ConvertToEscapeSequences(lyricChange.Lyric, out, EscapeSequenceFlags::NewLines);
+			out += "\n";
+		}
+	};
+
+	static void ConvertAllLyricsFromString(TimeSpace timeSpace, Time songOffset, const SortedTempoMap& tempoMap, std::string_view in, SortedLyricsList& out)
+	{
+		ASCII::ForEachLineInMultiLineString(in, false, [&](std::string_view line)
+		{
+			if (line.size() < ArrayCount("00:00.000"))
+				return;
+
+			const size_t timeLyricSplitIndex = in.find_first_of('>');
+			if (timeLyricSplitIndex == std::string_view::npos || timeLyricSplitIndex + 1 >= line.size())
+				return;
+
+			const std::string_view timeSubStr = ASCII::Trim(line.substr(0, timeLyricSplitIndex));
+			const std::string_view lyricSubStr = ASCII::TrimSuffix(ASCII::Trim(line.substr(timeLyricSplitIndex + 1)), "\n");
+
+			// BUG: Time round-trip conversion not lossless
+			Time::FormatBuffer zeroTerminatedTimeBuffer; CopyStringViewIntoFixedBuffer(zeroTerminatedTimeBuffer.Data, timeSubStr);
+			const Time parsedTime = ConvertTimeSpace(Time::FromString(zeroTerminatedTimeBuffer.Data), timeSpace, TimeSpace::Chart, songOffset);
+			const Beat parsedBeat = tempoMap.TimeToBeat(parsedTime);
+
+			b8 isOnlyWhitespace = true;
+			for (const char c : lyricSubStr)
+				isOnlyWhitespace &= ASCII::IsWhitespace(c);
+
+			// TODO: Handle inside the tja format code instead (?)
+			std::string parsedLyrc;
+			if (!isOnlyWhitespace)
+				ResolveEscapeSequences(lyricSubStr, parsedLyrc, EscapeSequenceFlags::NewLines);
+
+			out.InsertOrUpdate(LyricChange { parsedBeat, std::move(parsedLyrc) });
+		});
+	};
+
 	void ChartLyricsWindow::DrawGui(ChartContext& context, ChartTimeline& timeline)
 	{
+		Gui::UpdateSmoothScrollWindow();
+
 		assert(context.ChartSelectedCourse != nullptr);
 		auto& chart = context.Chart;
 		auto& course = *context.ChartSelectedCourse;
+		const TimeSpace timeSpace = *Settings.General.DisplayTimeInSongSpace ? TimeSpace::Song : TimeSpace::Chart;
 
-		// TODO: Separate lyrics tab with options to write/import lyrics text in some standard format (?)
-		const Beat cursorBeat = FloorBeatToGrid(context.GetCursorBeat(), GetGridBeatSnap(timeline.CurrentGridBarDivision));
-		const LyricChange* lyricChangeAtCursor = context.ChartSelectedCourse->Lyrics.TryFindLastAtBeat(cursorBeat);
-		Gui::BeginDisabled(cursorBeat.Ticks < 0);
-
-		static constexpr auto guiDoubleButton = [](cstr labelA, cstr labelB) -> i32
+		if (Gui::CollapsingHeader("Lyrics Overview", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			return Gui::SameLineMultiWidget(2, [&](const Gui::MultiWidgetIt& i) { return Gui::Button((i.Index == 0) ? labelA : labelB, { Gui::CalcItemWidth(), 0.0f }); }).ChangedIndex;
-		};
+			if (!IsAllLyricsInputActiveThisFrame)
+			{
+				AllLyricsBuffer.clear();
+				ConvertAllLyricsToString(timeSpace, chart.SongOffset, context.ChartSelectedCourse->TempoMap, context.ChartSelectedCourse->Lyrics, AllLyricsBuffer);
+			}
 
-		// TODO: Handle inside the tja format code instead (?)
-		LyricInputBuffer.clear();
-		if (lyricChangeAtCursor != nullptr)
-			ResolveEscapeSequences(lyricChangeAtCursor->Lyric, LyricInputBuffer, EscapeSequenceFlags::NewLines);
+			// BUG: Made ImGuiInputTextFlags_ReadOnly for now to avoid round-trip time conversion error
+			Gui::SetNextItemWidth(-1.0f);
+			if (Gui::InputTextMultilineWithHint("##AllLyrics", "(No Lyrics)", &AllLyricsBuffer, { -1.0f, Gui::GetContentRegionAvail().y * 0.65f }, ImGuiInputTextFlags_ReadOnly))
+			{
+				SortedLyricsList newLyrics;
+				ConvertAllLyricsFromString(timeSpace, chart.SongOffset, context.ChartSelectedCourse->TempoMap, AllLyricsBuffer, newLyrics);
+				// HACK: Full conversion every time a letter is typed, not great but seeing as lyrics is relatively rare and typically small in size this might be fine
+				context.Undo.Execute<Commands::ReplaceAllLyricChanges>(&context.ChartSelectedCourse->Lyrics, std::move(newLyrics));
+			}
 
-		const f32 textInputHeight = ClampBot(Gui::GetContentRegionAvail().y - Gui::GetFrameHeightWithSpacing(), Gui::GetFrameHeightWithSpacing());
-		Gui::SetNextItemWidth(-1.0f);
-		if (Gui::InputTextMultilineWithHint("##LyricAtCursor", "n/a", &LyricInputBuffer, { -1.0f, textInputHeight }, ImGuiInputTextFlags_None))
-		{
-			std::string newLyricLine;
-			ConvertToEscapeSequences(LyricInputBuffer, newLyricLine, EscapeSequenceFlags::NewLines);
+			IsAllLyricsInputActiveLastFrame = IsAllLyricsInputActiveThisFrame;
+			IsAllLyricsInputActiveThisFrame = Gui::IsItemActive();
 
-			if (lyricChangeAtCursor == nullptr || lyricChangeAtCursor->BeatTime != cursorBeat)
-				context.Undo.Execute<Commands::AddLyricChange>(&course.Lyrics, LyricChange { cursorBeat, std::move(newLyricLine) });
-			else
-				context.Undo.Execute<Commands::UpdateLyricChange>(&course.Lyrics, LyricChange { cursorBeat, std::move(newLyricLine) });
+			if (IsAllLyricsInputActiveThisFrame) context.Undo.ResetMergeTimeThresholdStopwatch();
+			if (!IsAllLyricsInputActiveThisFrame && IsAllLyricsInputActiveLastFrame) context.Undo.DisallowMergeForLastCommand();
+			if (IsAllLyricsInputActiveThisFrame && !IsAllLyricsInputActiveLastFrame) AllLyricsCopyOnMadeActive = AllLyricsBuffer;
 		}
 
-		Gui::SetNextItemWidth(-1.0f);
-		if (i32 clicked = guiDoubleButton("Clear##LyricAtCursor", "Remove##LyricAtCursor"); clicked > -1)
+		if (Gui::CollapsingHeader("Edit Line", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			if (clicked == 0)
+			const Beat cursorBeat = FloorBeatToGrid(context.GetCursorBeat(), GetGridBeatSnap(timeline.CurrentGridBarDivision));
+			const LyricChange* lyricChangeAtCursor = context.ChartSelectedCourse->Lyrics.TryFindLastAtBeat(cursorBeat);
+			Gui::BeginDisabled(cursorBeat.Ticks < 0);
+
+			static constexpr auto guiDoubleButton = [](cstr labelA, cstr labelB) -> i32
 			{
+				return Gui::SameLineMultiWidget(2, [&](const Gui::MultiWidgetIt& i) { return Gui::Button((i.Index == 0) ? labelA : labelB, { Gui::CalcItemWidth(), 0.0f }); }).ChangedIndex;
+			};
+
+			if (!IsLyricInputActiveThisFrame)
+			{
+				// TODO: Handle inside the tja format code instead (?)
+				LyricInputBuffer.clear();
+				if (lyricChangeAtCursor != nullptr)
+					ResolveEscapeSequences(lyricChangeAtCursor->Lyric, LyricInputBuffer, EscapeSequenceFlags::NewLines);
+			}
+
+			const f32 textInputHeight = ClampBot(Gui::GetContentRegionAvail().y - Gui::GetFrameHeightWithSpacing(), Gui::GetFrameHeightWithSpacing());
+			Gui::SetNextItemWidth(-1.0f);
+			if (Gui::InputTextMultilineWithHint("##LyricAtCursor", "n/a", &LyricInputBuffer, { -1.0f, textInputHeight }, ImGuiInputTextFlags_AutoSelectAll))
+			{
+				std::string newLyricLine;
+				ConvertToEscapeSequences(LyricInputBuffer, newLyricLine, EscapeSequenceFlags::NewLines);
+
 				if (lyricChangeAtCursor == nullptr || lyricChangeAtCursor->BeatTime != cursorBeat)
-					context.Undo.Execute<Commands::AddLyricChange>(&course.Lyrics, LyricChange { cursorBeat, "" });
+					context.Undo.Execute<Commands::AddLyricChange>(&course.Lyrics, LyricChange { cursorBeat, std::move(newLyricLine) });
 				else
-					context.Undo.Execute<Commands::UpdateLyricChange>(&course.Lyrics, LyricChange { cursorBeat, "" });
+					context.Undo.Execute<Commands::UpdateLyricChange>(&course.Lyrics, LyricChange { cursorBeat, std::move(newLyricLine) });
 			}
-			else if (clicked == 1)
-			{
-				if (lyricChangeAtCursor != nullptr && lyricChangeAtCursor->BeatTime == cursorBeat)
-					context.Undo.Execute<Commands::RemoveLyricChange>(&course.Lyrics, cursorBeat);
-			}
-		}
 
-		Gui::EndDisabled();
+			// HACK: Workaround for ImGuiInputTextFlags_AutoSelectAll being ignored for multiline text inputs
+			if (auto* inputTextState = Gui::IsItemActivated() ? Gui::GetInputTextState(Gui::GetActiveID()) : nullptr; inputTextState != nullptr)
+				inputTextState->SelectAll();
+
+			IsLyricInputActiveLastFrame = IsLyricInputActiveThisFrame;
+			IsLyricInputActiveThisFrame = Gui::IsItemActive();
+
+			if (IsLyricInputActiveThisFrame) context.Undo.ResetMergeTimeThresholdStopwatch();
+			if (!IsLyricInputActiveThisFrame && IsLyricInputActiveLastFrame) context.Undo.DisallowMergeForLastCommand();
+
+			Gui::SetNextItemWidth(-1.0f);
+			if (i32 clicked = guiDoubleButton("Clear##LyricAtCursor", "Remove##LyricAtCursor"); clicked > -1)
+			{
+				if (clicked == 0)
+				{
+					if (lyricChangeAtCursor == nullptr || lyricChangeAtCursor->BeatTime != cursorBeat)
+						context.Undo.Execute<Commands::AddLyricChange>(&course.Lyrics, LyricChange { cursorBeat, "" });
+					else
+						context.Undo.Execute<Commands::UpdateLyricChange>(&course.Lyrics, LyricChange { cursorBeat, "" });
+				}
+				else if (clicked == 1)
+				{
+					if (lyricChangeAtCursor != nullptr && lyricChangeAtCursor->BeatTime == cursorBeat)
+						context.Undo.Execute<Commands::RemoveLyricChange>(&course.Lyrics, cursorBeat);
+				}
+			}
+
+			Gui::EndDisabled();
+		}
 	}
 }
