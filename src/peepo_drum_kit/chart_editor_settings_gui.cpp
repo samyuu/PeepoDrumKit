@@ -667,7 +667,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 6048, "TODO: Add missing settings entries for newly added UserSettingsData fields");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 6120, "TODO: Add missing settings entries for newly added UserSettingsData fields");
 
 					SettingsGui::SettingsEntry settingsEntriesMain[] =
 					{
@@ -736,7 +736,7 @@ namespace PeepoDrumKit
 				Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding);
 				{
 					constexpr size_t SizeOfUserSettingsInputData = sizeof(UserSettingsData::InputData);
-					static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 5460, "TODO: Add missing settings entries for newly added UserSettingsData::InputData bindings");
+					static_assert(PEEPO_RELEASE || SizeOfUserSettingsInputData == 5530, "TODO: Add missing settings entries for newly added UserSettingsData::InputData bindings");
 
 					SettingsGui::InputSettingsEntry settingsEntriesInput[] =
 					{
@@ -765,13 +765,13 @@ namespace PeepoDrumKit
 						{ &settings.Input.Timeline_DeleteSelection, "Timeline: Delete Selection", },
 						{ &settings.Input.Timeline_StartEndRangeSelection, "Timeline: Start/End Range Selection", },
 						{ &settings.Input.Timeline_SelectAll, "Timeline: Select All", },
-						{ &settings.Input.Timeline_ClearSelection, "Timeline: Clear Selection ", },
-						{ &settings.Input.Timeline_InvertSelection, "Timeline: Invert Selection ", },
-						{ &settings.Input.Timeline_SelectAllWithinRangeSelection, "Timeline: Select All within Range Selection ", },
+						{ &settings.Input.Timeline_ClearSelection, "Timeline: Clear Selection", },
+						{ &settings.Input.Timeline_InvertSelection, "Timeline: Invert Selection", },
+						{ &settings.Input.Timeline_SelectAllWithinRangeSelection, "Timeline: Select All within Range Selection", },
 						{ &settings.Input.Timeline_ShiftSelectionLeft, "Timeline: Shift selection Left", },
 						{ &settings.Input.Timeline_ShiftSelectionRight, "Timeline: Shift selection Right", },
 						{ &settings.Input.Timeline_SelectItemPattern_xo, "Timeline: Select Item Pattern xo", },
-						{ &settings.Input.Timeline_SelectItemPattern_xoo, "Timeline: Select Item Pattern xoo ", },
+						{ &settings.Input.Timeline_SelectItemPattern_xoo, "Timeline: Select Item Pattern xoo", },
 						{ &settings.Input.Timeline_SelectItemPattern_xooo, "Timeline: Select Item Pattern xooo", },
 						{ &settings.Input.Timeline_SelectItemPattern_xxoo, "Timeline: Select Item Pattern xxoo", },
 						{ &settings.Input.Timeline_SelectItemPattern_CustomA, "Timeline: Select Item Pattern Custom A", },
@@ -780,6 +780,7 @@ namespace PeepoDrumKit
 						{ &settings.Input.Timeline_SelectItemPattern_CustomD, "Timeline: Select Item Pattern Custom D", },
 						{ &settings.Input.Timeline_SelectItemPattern_CustomE, "Timeline: Select Item Pattern Custom E", },
 						{ &settings.Input.Timeline_SelectItemPattern_CustomF, "Timeline: Select Item Pattern Custom F", },
+						{ &settings.Input.Timeline_ConvertSelectionToScrollChanges, "Timeline: Convert Selection to Scroll Changes", },
 						{ &settings.Input.Timeline_FlipNoteType, "Timeline: Flip Note Type", },
 						{ &settings.Input.Timeline_ToggleNoteSize, "Timeline: Toggle Note Size", },
 						{ &settings.Input.Timeline_ExpandItemTime_2To1, "Timeline: Expand Item Time 2:1", },

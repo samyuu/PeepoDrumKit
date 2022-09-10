@@ -302,6 +302,7 @@ namespace PeepoDrumKit
 		void ExecuteClipboardAction(ChartContext& context, ClipboardAction action);
 		void ExecuteSelectionAction(ChartContext& context, SelectionAction action, const SelectionActionParam& param);
 		void ExecuteTransformAction(ChartContext& context, TransformAction action, const TransformActionParam& param);
+		void ExecuteConvertSelectionToScrollChanges(ChartContext& context);
 
 	private:
 		// NOTE: Must update input *before* drawing so that the scroll positions won't change

@@ -350,17 +350,24 @@ namespace PeepoDrumKit
 	static constexpr f32 MaxVolumeSoftLimit = 1.0f;
 	static constexpr f32 MaxVolumeHardLimit = 4.0f;
 
-	// TODO: Maybe this should be a user setting (?)
-	static constexpr f32 MinBPM = 30.0f;
-	static constexpr f32 MaxBPM = 960.0f;
 	static constexpr i32 MinTimeSignatureValue = 1;
 	static constexpr i32 MaxTimeSignatureValue = Beat::TicksPerBeat * 4;
-	static constexpr f32 MinScrollSpeed = -100.0f;
-	static constexpr f32 MaxScrollSpeed = +100.0f;
-	static constexpr Time MinNoteTimeOffset = Time::FromMS(-25.0);
-	static constexpr Time MaxNoteTimeOffset = Time::FromMS(+25.0);
 	static constexpr i16 MinBalloonCount = 0;
 	static constexpr i16 MaxBalloonCount = 999;
+
+	// TODO: Turn these into user settings
+	// "allowed_tempo_bpm_range_min" = 30
+	// "allowed_tempo_bpm_range_max" = 960
+	// "allowed_scroll_speed_range_min" = -100
+	// "allowed_scroll_speed_range_max" = +100
+	// "allowed_note_time_offset_range_min" = -35
+	// "allowed_note_time_offset_range_max" = +35
+	static constexpr f32 MinBPM = 30.0f;
+	static constexpr f32 MaxBPM = 960.0f;
+	static constexpr f32 MinScrollSpeed = -100.0f;
+	static constexpr f32 MaxScrollSpeed = +100.0f;
+	static constexpr Time MinNoteTimeOffset = Time::FromMS(-35.0);
+	static constexpr Time MaxNoteTimeOffset = Time::FromMS(+35.0);
 
 	cstr LoadingTextAnimation::UpdateFrameAndGetText(b8 isLoadingThisFrame, f32 deltaTimeSec)
 	{
@@ -1496,6 +1503,14 @@ namespace PeepoDrumKit
 
 		if (Gui::CollapsingHeader("Tempo", ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			b8 isAnyItemOtherThanNotesSelected = false;
+			b8 isAnyItemOtherThanScrollChangesSelected = false;
+			ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it)
+			{
+				if (!IsNotesList(it.List)) isAnyItemOtherThanNotesSelected = true;
+				if (it.List != GenericList::ScrollChanges) isAnyItemOtherThanScrollChangesSelected = true;
+			});
+
 			if (Gui::Property::BeginTable(ImGuiTableFlags_BordersInner))
 			{
 				// NOTE: This might seem like a strange design decision at first (hence it at least being optional)
@@ -1504,12 +1519,8 @@ namespace PeepoDrumKit
 				//		 since there then are multiple edit widgets shown to the user with similar labels yet that differ in functionality.
 				//		 To make it clear that selected items can only be edited via the properties window, these regular widgets here will therefore be disabled.
 				b8 disableWidgetsBeacuseOfSelection = false;
-				if (*Settings.General.DisableTempoWindowWidgetsIfHasSelection)
-				{
-					b8 isAnyItemOtherThanNotesSelected = false;
-					ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { if (!IsNotesList(it.List)) { isAnyItemOtherThanNotesSelected = true; } });
-					disableWidgetsBeacuseOfSelection = isAnyItemOtherThanNotesSelected;
-				}
+				if (*Settings.General.DisableTempoWindowWidgetsIfHasSelection && isAnyItemOtherThanNotesSelected)
+					disableWidgetsBeacuseOfSelection = true;
 
 				const Beat cursorBeat = FloorBeatToGrid(context.GetCursorBeat(), GetGridBeatSnap(timeline.CurrentGridBarDivision));
 				// NOTE: Specifically to prevent ugly "flashing" between add/remove labels during playback
@@ -1704,41 +1715,9 @@ namespace PeepoDrumKit
 				Gui::Property::EndTable();
 			}
 
-			size_t nonScrollChangeSelectedItemCount = 0;
-			ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { nonScrollChangeSelectedItemCount += (it.List != GenericList::ScrollChanges); });
-
-			Gui::BeginDisabled(nonScrollChangeSelectedItemCount <= 0);
-			if (Gui::Button("Insert Scroll Changes (Selection)", vec2(-1.0f, 0.0f)))
-			{
-				std::vector<ScrollChange*> scrollChangesThatAlreadyExist; scrollChangesThatAlreadyExist.reserve(nonScrollChangeSelectedItemCount);
-				std::vector<ScrollChange> scrollChangesToAdd; scrollChangesToAdd.reserve(nonScrollChangeSelectedItemCount);
-				ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it)
-				{
-					if (it.List != GenericList::ScrollChanges)
-					{
-						const Beat itBeat = it.GetBeat(course);
-						if (ScrollChange* lastScrollChange = course.ScrollChanges.TryFindLastAtBeat(itBeat); lastScrollChange != nullptr && lastScrollChange->BeatTime == itBeat)
-							scrollChangesThatAlreadyExist.push_back(lastScrollChange);
-						else
-							scrollChangesToAdd.push_back(ScrollChange { itBeat, (lastScrollChange != nullptr) ? lastScrollChange->ScrollSpeed : 1.0f });
-					}
-				});
-
-				if (!scrollChangesThatAlreadyExist.empty() || !scrollChangesToAdd.empty())
-				{
-					if (*Settings.General.InsertSelectionScrollChangesUnselectOld)
-						ForEachSelectedChartItem(course, [&](const ForEachChartItemData& it) { it.SetIsSelected(course, false); });
-
-					if (*Settings.General.InsertSelectionScrollChangesSelectNew)
-					{
-						for (auto* it : scrollChangesThatAlreadyExist) { it->IsSelected = true; }
-						for (auto& it : scrollChangesToAdd) { it.IsSelected = true; }
-					}
-
-					if (!scrollChangesToAdd.empty())
-						context.Undo.Execute<Commands::AddMultipleScrollChanges>(&course.ScrollChanges, std::move(scrollChangesToAdd));
-				}
-			}
+			Gui::BeginDisabled(!isAnyItemOtherThanScrollChangesSelected);
+			if (Gui::Button("Selection to Scroll Changes", vec2(-1.0f, 0.0f)))
+				timeline.ExecuteConvertSelectionToScrollChanges(context);
 			Gui::EndDisabled();
 		}
 	}

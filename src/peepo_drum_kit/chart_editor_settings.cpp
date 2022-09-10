@@ -488,7 +488,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfUserSettingsData = sizeof(UserSettingsData);
-	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 6048, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
+	static_assert(PEEPO_RELEASE || SizeOfUserSettingsData == 6120, "TODO: Add missing reflection entries for newly added UserSettingsData fields");
 
 	SettingsReflectionMap StaticallyInitializeAppSettingsReflectionMap()
 	{
@@ -527,8 +527,8 @@ namespace PeepoDrumKit
 			X(General.PlaybackSpeedStepsRough, "playback_speed_steps_rough");
 			X(General.PlaybackSpeedStepsPrecise, "playback_speed_steps_precise");
 			X(General.DisableTempoWindowWidgetsIfHasSelection, "disable_tempo_window_widgets_if_has_selection");
-			X(General.InsertSelectionScrollChangesUnselectOld, "insert_selection_scroll_changes_unselect_old");
-			X(General.InsertSelectionScrollChangesSelectNew, "insert_selection_scroll_changes_select_new");
+			X(General.ConvertSelectionToScrollChanges_UnselectOld, "convert_selection_to_scroll_changes_unselect_old");
+			X(General.ConvertSelectionToScrollChanges_SelectNew, "convert_selection_to_scroll_changes_select_new");
 			X(General.CustomSelectionPatterns, "custom_selection_patterns");
 
 			SECTION("audio");
@@ -590,6 +590,7 @@ namespace PeepoDrumKit
 			X(Input.Timeline_SelectItemPattern_CustomD, "timeline_select_item_pattern_custom_d");
 			X(Input.Timeline_SelectItemPattern_CustomE, "timeline_select_item_pattern_custom_e");
 			X(Input.Timeline_SelectItemPattern_CustomF, "timeline_select_item_pattern_custom_f");
+			X(Input.Timeline_ConvertSelectionToScrollChanges, "timeline_convert_selection_to_scroll_changes");
 			X(Input.Timeline_FlipNoteType, "timeline_flip_note_type");
 			X(Input.Timeline_ToggleNoteSize, "timeline_toggle_note_size");
 			X(Input.Timeline_ExpandItemTime_2To1, "timeline_expand_item_time_2_to_1");

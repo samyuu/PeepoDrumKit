@@ -130,8 +130,8 @@ namespace PeepoDrumKit
 			WithDefault<PlaybackSpeedStepList> PlaybackSpeedStepsRough = PlaybackSpeedStepList { 1.0f, 0.75f, 0.5f, 0.25f };
 			WithDefault<PlaybackSpeedStepList> PlaybackSpeedStepsPrecise = PlaybackSpeedStepList { 1.0f, 0.95f, 0.9f, 0.85f, 0.8f, 0.75f, 0.7f, 0.65f, 0.6f, 0.55f, 0.5f, 0.45f, 0.4f, 0.35f, 0.3f, 0.25f, 0.2f };
 			WithDefault<b8> DisableTempoWindowWidgetsIfHasSelection = true;
-			WithDefault<b8> InsertSelectionScrollChangesUnselectOld = false;
-			WithDefault<b8> InsertSelectionScrollChangesSelectNew = true;
+			WithDefault<b8> ConvertSelectionToScrollChanges_UnselectOld = false;
+			WithDefault<b8> ConvertSelectionToScrollChanges_SelectNew = true;
 			WithDefault<CustomSelectionPatternList> CustomSelectionPatterns = {};
 		} General;
 
@@ -201,6 +201,7 @@ namespace PeepoDrumKit
 			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_CustomD = { KeyBinding(ImGuiKey_4, ImGuiModFlags_CtrlShift) };
 			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_CustomE = { KeyBinding(ImGuiKey_5, ImGuiModFlags_CtrlShift) };
 			WithDefault<MultiInputBinding> Timeline_SelectItemPattern_CustomF = { KeyBinding(ImGuiKey_6, ImGuiModFlags_CtrlShift) };
+			WithDefault<MultiInputBinding> Timeline_ConvertSelectionToScrollChanges = { KeyBinding(ImGuiKey_GraveAccent, ImGuiModFlags_Shift) };
 			WithDefault<MultiInputBinding> Timeline_FlipNoteType = { KeyBinding(ImGuiKey_W) };
 			WithDefault<MultiInputBinding> Timeline_ToggleNoteSize = { KeyBinding(ImGuiKey_Q) };
 			WithDefault<MultiInputBinding> Timeline_ExpandItemTime_2To1 = {};
