@@ -2,7 +2,7 @@
 #include "core_types.h"
 #include "core_undo.h"
 #include "chart.h"
-#include "chart_sound_effects.h"
+#include "chart_editor_sound.h"
 #include "audio/audio_engine.h"
 #include "audio/audio_waveform.h"
 

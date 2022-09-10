@@ -3,7 +3,7 @@
 #include "core_beat.h"
 #include "chart_editor_settings.h"
 #include "chart_editor_context.h"
-#include "chart_sound_effects.h"
+#include "chart_editor_sound.h"
 #include "imgui/imgui_include.h"
 
 namespace PeepoDrumKit

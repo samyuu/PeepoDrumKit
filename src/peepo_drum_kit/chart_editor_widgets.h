@@ -2,8 +2,9 @@
 #include "core_types.h"
 #include "core_string.h"
 #include "chart.h"
-#include "chart_timeline.h"
+#include "chart_editor_timeline.h"
 #include "chart_editor_context.h"
+#include "chart_editor_common.h"
 #include "imgui/imgui_include.h"
 
 namespace PeepoDrumKit
@@ -88,5 +89,15 @@ namespace PeepoDrumKit
 		std::string LyricInputBuffer;
 
 		void DrawGui(ChartContext& context, ChartTimeline& timeline);
+	};
+
+	struct ChartGamePreview
+	{
+		GameCamera Camera = {};
+
+		struct DeferredNoteDrawData { f32 RefLaneHeadX, RefLaneTailX; const Note* OriginalNote; Time NoteTime; };
+		std::vector<DeferredNoteDrawData> ReverseNoteDrawBuffer;
+
+		void DrawGui(ChartContext& context, Time animatedCursorTime);
 	};
 }

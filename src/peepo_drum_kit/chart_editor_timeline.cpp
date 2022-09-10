@@ -1,6 +1,6 @@
-#include "chart_timeline.h"
-#include "chart_undo_commands.h"
-#include "chart_draw_common.h"
+#include "chart_editor_timeline.h"
+#include "chart_editor_undo.h"
+#include "chart_editor_common.h"
 
 namespace PeepoDrumKit
 {

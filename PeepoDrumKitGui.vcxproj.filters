@@ -42,9 +42,6 @@
     <ClCompile Include="src\imgui\extension\imgui_common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\peepo_drum_kit\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\core_io.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -72,9 +69,6 @@
     <ClCompile Include="src\audio\audio_engine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\peepo_drum_kit\chart_timeline.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\peepo_drum_kit\test_gui_tja.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -82,9 +76,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\peepo_drum_kit\chart.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\peepo_drum_kit\chart_sound_effects.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\tja_file_format.cpp">
@@ -97,9 +88,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\imgui\extension\imgui_input_binding.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\peepo_drum_kit\chart_game_preview.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\peepo_drum_kit\chart_editor_widgets.cpp">
@@ -115,6 +103,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\peepo_drum_kit\chart_editor_settings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_timeline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_widgets_game.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_sound.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -188,9 +188,6 @@
     <ClInclude Include="src\audio\audio_engine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\peepo_drum_kit\chart_timeline.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\peepo_drum_kit\test_gui_audio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -203,9 +200,6 @@
     <ClInclude Include="src\audio\audio_waveform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\peepo_drum_kit\chart_sound_effects.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\peepo_drum_kit\chart_editor_context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -215,16 +209,7 @@
     <ClInclude Include="src\fumen_file_format.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\peepo_drum_kit\chart_draw_common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\peepo_drum_kit\chart_undo_commands.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\core_build_info.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\peepo_drum_kit\chart_game_preview.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\peepo_drum_kit\chart_editor_widgets.h">
@@ -237,6 +222,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\peepo_drum_kit\chart_editor_settings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_timeline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_sound.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_undo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

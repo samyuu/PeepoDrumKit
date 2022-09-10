@@ -1,5 +1,6 @@
 #pragma once
 #include "core_types.h"
+#include "chart.h"
 #include "imgui/imgui_include.h"
 
 namespace PeepoDrumKit

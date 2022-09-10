@@ -131,10 +131,10 @@
     <ClCompile Include="src\peepo_drum_kit\chart_editor.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart_editor_settings_gui.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart_editor_widgets.cpp" />
-    <ClCompile Include="src\peepo_drum_kit\chart_game_preview.cpp" />
-    <ClCompile Include="src\peepo_drum_kit\chart_sound_effects.cpp" />
-    <ClCompile Include="src\peepo_drum_kit\main.cpp" />
-    <ClCompile Include="src\peepo_drum_kit\chart_timeline.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_widgets_game.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_sound.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_main.cpp" />
+    <ClCompile Include="src\peepo_drum_kit\chart_editor_timeline.cpp" />
     <ClCompile Include="src\peepo_drum_kit\chart_editor_settings.cpp" />
     <ClCompile Include="src\peepo_drum_kit\test_gui_audio.cpp" />
     <ClCompile Include="src\peepo_drum_kit\test_gui_tja.cpp" />
@@ -168,17 +168,16 @@
     <ClInclude Include="src\imgui\extension\imgui_common.h" />
     <ClInclude Include="src\imgui\extension\imgui_input_binding.h" />
     <ClInclude Include="src\imgui\imgui_include.h" />
-    <ClInclude Include="src\peepo_drum_kit\chart_draw_common.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_common.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_context.h" />
-    <ClInclude Include="src\peepo_drum_kit\chart_game_preview.h" />
-    <ClInclude Include="src\peepo_drum_kit\chart_sound_effects.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_sound.h" />
     <ClInclude Include="src\peepo_drum_kit\test_gui_audio.h" />
     <ClInclude Include="src\peepo_drum_kit\chart.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_settings.h" />
-    <ClInclude Include="src\peepo_drum_kit\chart_timeline.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_timeline.h" />
     <ClInclude Include="src\peepo_drum_kit\test_gui_tja.h" />
-    <ClInclude Include="src\peepo_drum_kit\chart_undo_commands.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_undo.h" />
     <ClInclude Include="src\core_undo.h" />
     <ClInclude Include="src\tja_file_format.h" />
   </ItemGroup>

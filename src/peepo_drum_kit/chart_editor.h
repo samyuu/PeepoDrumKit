@@ -5,8 +5,7 @@
 #include "chart_editor_context.h"
 #include "chart_editor_widgets.h"
 #include "chart_editor_settings_gui.h"
-#include "chart_timeline.h"
-#include "chart_game_preview.h"
+#include "chart_editor_timeline.h"
 #include "imgui/imgui_include.h"
 #include "audio/audio_engine.h"
 

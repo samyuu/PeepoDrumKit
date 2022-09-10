@@ -1,4 +1,4 @@
-#include "chart_sound_effects.h"
+#include "chart_editor_sound.h"
 #include "core_io.h"
 #include "audio/audio_file_formats.h"
 

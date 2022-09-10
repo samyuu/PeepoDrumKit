@@ -1,4 +1,4 @@
-#include "chart_game_preview.h"
+#include "chart_editor_widgets.h"
 
 namespace PeepoDrumKit
 {
