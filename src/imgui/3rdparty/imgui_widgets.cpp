@@ -1583,24 +1583,29 @@ void ImGui::ShrinkWidths(ImGuiShrinkWidthItem* items, int count, float width_exc
         width_excess += items[n].Width - width_rounded;
         items[n].Width = width_rounded;
     }
-#ifdef IMGUI_HACKS_SHRINK_WIDTHS_LOOP_SAFETY_LIMIT
-	int SAFETY_COUNTER = 0;
-    while (width_excess >= 1.0f && SAFETY_COUNTER++ < IMGUI_HACKS_SHRINK_WIDTHS_LOOP_SAFETY_LIMIT)
-        for (int n = 0; n < count && width_excess >= 1.0f; n++)
-            if (items[n].Width + 1.0f <= items[n].InitialWidth)
-            {
-                items[n].Width += 1.0f;
-                width_excess -= 1.0f;
-            }
 
-#else // HACK: -> https://github.com/ocornut/imgui/issues/5652
-    while (width_excess >= 1.0f)
-        for (int n = 0; n < count && width_excess >= 1.0f; n++)
-            if (items[n].Width + 1.0f <= items[n].InitialWidth)
-            {
-                items[n].Width += 1.0f;
-                width_excess -= 1.0f;
-            }
+#ifdef IMGUI_HACKS_SHRINK_WIDTHS_LOOP_SAFETY_LIMIT // HACK: -> https://github.com/ocornut/imgui/issues/5652
+	int SAFETY_COUNTER = 0;
+	while (width_excess > 0.0f && SAFETY_COUNTER++ < IMGUI_HACKS_SHRINK_WIDTHS_LOOP_SAFETY_LIMIT)
+        for (int n = 0; n < count && width_excess > 0.0f; n++)
+        {
+            float width_to_add = ImMin(items[n].InitialWidth - items[n].Width, 1.0f);
+            items[n].Width += width_to_add;
+            width_excess -= width_to_add;
+        }
+
+#if PEEPO_DEBUG
+	IM_ASSERT(SAFETY_COUNTER < IMGUI_HACKS_SHRINK_WIDTHS_LOOP_SAFETY_LIMIT);
+#endif
+
+#else
+    while (width_excess > 0.0f)
+        for (int n = 0; n < count && width_excess > 0.0f; n++)
+        {
+            float width_to_add = ImMin(items[n].InitialWidth - items[n].Width, 1.0f);
+            items[n].Width += width_to_add;
+            width_excess -= width_to_add;
+        }
 #endif
 }
 
@@ -7642,6 +7647,7 @@ static void ImGui::TabBarLayout(ImGuiTabBar* tab_bar)
             if (shrinked_width < 0.0f)
                 continue;
 
+            shrinked_width = ImMax(1.0f, shrinked_width);
             int section_n = TabItemGetSectionIdx(tab);
             sections[section_n].Width -= (tab->Width - shrinked_width);
             tab->Width = shrinked_width;
