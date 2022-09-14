@@ -167,8 +167,8 @@ namespace ApplicationHost
 		if (GlobalGlyphRanges.JP == nullptr)
 		{
 			// NOTE: Using the glyph ranges builder here takes around ~0.15ms in release and ~2ms in debug builds
-			static ImVector<ImWchar>		globalRangesJP;
-			static ImFontGlyphRangesBuilder globalRangesBuilderJP;
+			static ImVector<ImWchar>		globalRangesJP, globalRangesEN;
+			static ImFontGlyphRangesBuilder globalRangesBuilderJP, globalRangesBuilderEN;
 
 			// HACK: Somewhat arbitrary non-exhaustive list of glyphs sometimes seen in song names etc.
 			static constexpr const char additionalGlyphs[] =
@@ -184,16 +184,17 @@ namespace ApplicationHost
 			//		 Creating a font atlas that big upfront however absolutely kills startup times so the only sane solution is to use dynamic glyph rasterization
 			//		 which will hopefully be fully implemented in the not too distant future :Copium: (https://github.com/ocornut/imgui/pull/3471)
 			globalRangesBuilderJP.AddText(additionalGlyphs, additionalGlyphs + (ArrayCount(additionalGlyphs) - sizeof('\0')));
-#if PEEPO_DEBUG && 1 // HACK: To compensate for even slower resizing during debug builds
-			globalRangesBuilderJP.AddRanges(io.Fonts->GetGlyphRangesDefault());
-#else
-			globalRangesBuilderJP.AddRanges(io.Fonts->GetGlyphRangesJapanese());
-#endif
+			globalRangesBuilderJP.AddText(ExternalGlobalFontGlyphs.data(), ExternalGlobalFontGlyphs.data() + ExternalGlobalFontGlyphs.size());
+			// HACK: Only load default ranges for debug builds to compensate for slow font (re)building
+			globalRangesBuilderJP.AddRanges(PEEPO_DEBUG ? io.Fonts->GetGlyphRangesDefault() : io.Fonts->GetGlyphRangesJapanese());
 			globalRangesBuilderJP.BuildRanges(&globalRangesJP);
 
-			// GlobalGlyphRanges.JP = io.Fonts->GetGlyphRangesJapanese();
+			globalRangesBuilderEN.AddRanges(io.Fonts->GetGlyphRangesDefault());
+			globalRangesBuilderEN.AddText(ExternalGlobalFontGlyphs.data(), ExternalGlobalFontGlyphs.data() + ExternalGlobalFontGlyphs.size());
+			globalRangesBuilderEN.BuildRanges(&globalRangesEN);
+
 			GlobalGlyphRanges.JP = globalRangesJP.Data;
-			GlobalGlyphRanges.EN = io.Fonts->GetGlyphRangesDefault();
+			GlobalGlyphRanges.EN = globalRangesEN.Data;
 		}
 
 		const std::string_view fontFileName = Path::GetFileName(FontFilePath);

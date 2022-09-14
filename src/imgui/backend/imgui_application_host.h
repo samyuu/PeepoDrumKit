@@ -20,6 +20,7 @@ inline ImFont* FontMedium_EN = nullptr;
 inline ImFont* FontLarge_EN = nullptr;
 enum class BuiltInFont : u8 { FontMain_JP, FontMedium_EN, FontLarge_EN, Count };
 inline ImFont* GetBuiltInFont(BuiltInFont font) { return (font == BuiltInFont::FontMain_JP) ? FontMain_JP : (font == BuiltInFont::FontMedium_EN) ? FontMedium_EN : FontLarge_EN; }
+inline std::string_view ExternalGlobalFontGlyphs = "";
 
 inline f32 GuiScaleFactorCurrent = 1.0f;
 inline f32 GuiScaleFactorTarget = GuiScaleFactorCurrent;
