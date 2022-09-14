@@ -87,6 +87,8 @@ namespace PeepoDrumKit
 		struct LastSessionData
 		{
 			f32 GuiScale = 1.0f;
+			std::string GuiLanguage = "";
+
 			i32 OSWindow_SwapInterval = 1;
 			Rect OSWindow_Region = {};
 			Rect OSWindow_RegionRestore = {};

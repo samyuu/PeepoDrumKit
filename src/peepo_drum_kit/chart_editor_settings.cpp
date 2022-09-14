@@ -338,7 +338,7 @@ namespace PeepoDrumKit
 	}
 
 	constexpr size_t SizeOfPersistentAppData = sizeof(PersistentAppData);
-	static_assert(PEEPO_RELEASE || SizeOfPersistentAppData == 96, "TODO: Add missing ini file handling for newly added PersistentAppData fields");
+	static_assert(PEEPO_RELEASE || SizeOfPersistentAppData == 136, "TODO: Add missing ini file handling for newly added PersistentAppData fields");
 
 	SettingsParseResult ParseSettingsIni(std::string_view fileContent, PersistentAppData& out)
 	{
@@ -361,6 +361,7 @@ namespace PeepoDrumKit
 					}
 				}
 				else if (it.Key == "gui_scale") { if (f32 v = out.LastSession.GuiScale; ASCII::TryParseF32(in, v)) out.LastSession.GuiScale = FromPercent(v); else return parser.Error_InvalidFloat(); }
+				else if (it.Key == "gui_language") { out.LastSession.GuiLanguage = in; }
 				else if (it.Key == "os_window_swap_interval") { if (!ASCII::TryParseI32(in, out.LastSession.OSWindow_SwapInterval)) return parser.Error_InvalidInt(); }
 				else if (it.Key == "os_window_region") { if (!RectFromTLSizeString(in, out.LastSession.OSWindow_Region)) return parser.Error_InvalidRect(); }
 				else if (it.Key == "os_window_region_restore") { if (!RectFromTLSizeString(in, out.LastSession.OSWindow_RegionRestore)) return parser.Error_InvalidRect(); }
@@ -399,6 +400,7 @@ namespace PeepoDrumKit
 
 		writer.LineSection("last_session");
 		writer.LineKeyValue_F32("gui_scale", ToPercent(in.LastSession.GuiScale));
+		writer.LineKeyValue_Str("gui_language", in.LastSession.GuiLanguage);
 		writer.LineKeyValue_I32("os_window_swap_interval", in.LastSession.OSWindow_SwapInterval);
 		writer.LineKeyValue_Str("os_window_region", std::string_view(b, RectToTLSizeString(b, sizeof(b), in.LastSession.OSWindow_Region)));
 		writer.LineKeyValue_Str("os_window_region_restore", std::string_view(b, RectToTLSizeString(b, sizeof(b), in.LastSession.OSWindow_RegionRestore)));
