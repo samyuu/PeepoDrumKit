@@ -7,7 +7,6 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <map>
-#include <regex>
 #include "imgui/3rdparty/imgui.h"
 
 class TextEditor
@@ -150,8 +149,10 @@ public:
 
 	struct LanguageDefinition
 	{
+#if 0
 		typedef std::pair<std::string, PaletteIndex> TokenRegexString;
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
+#endif
 		typedef bool(*TokenizeCallback)(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex);
 
 		std::string mName;
@@ -163,9 +164,9 @@ public:
 		bool mAutoIndentation;
 
 		TokenizeCallback mTokenize;
-
+#if 0
 		TokenRegexStrings mTokenRegexStrings;
-
+#endif
 		bool mCaseSensitive;
 
 		LanguageDefinition()
@@ -174,12 +175,14 @@ public:
 		}
 
 		static const LanguageDefinition& CPlusPlus();
+#if 0
 		static const LanguageDefinition& HLSL();
 		static const LanguageDefinition& GLSL();
 		static const LanguageDefinition& C();
 		static const LanguageDefinition& SQL();
 		static const LanguageDefinition& AngelScript();
 		static const LanguageDefinition& Lua();
+#endif
 	};
 
 	TextEditor();
@@ -267,7 +270,9 @@ public:
 	static const Palette& GetRetroBluePalette();
 
 private:
+#if 0
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
+#endif
 
 	struct EditorState
 	{
@@ -375,7 +380,9 @@ private:
 	Palette mPaletteBase;
 	Palette mPalette;
 	LanguageDefinition mLanguageDefinition;
+#if 0
 	RegexList mRegexList;
+#endif
 
 	bool mCheckComments;
 	Breakpoints mBreakpoints;

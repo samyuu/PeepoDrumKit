@@ -1,7 +1,9 @@
 #include <algorithm>
 #include <chrono>
 #include <string>
+#if 0
 #include <regex>
+#endif
 #include <cmath>
 
 #include "TextEditor.h"
@@ -51,7 +53,11 @@ TextEditor::TextEditor()
 	, mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 {
 	SetPalette(GetDarkPalette());
+#if 0
 	SetLanguageDefinition(LanguageDefinition::HLSL());
+#else
+	SetLanguageDefinition(LanguageDefinition::CPlusPlus());
+#endif
 	mLines.push_back(Line());
 }
 
@@ -62,11 +68,12 @@ TextEditor::~TextEditor()
 void TextEditor::SetLanguageDefinition(const LanguageDefinition & aLanguageDef)
 {
 	mLanguageDefinition = aLanguageDef;
+#if 0
 	mRegexList.clear();
 
 	for (auto& r : mLanguageDefinition.mTokenRegexStrings)
 		mRegexList.push_back(std::make_pair(std::regex(r.first, std::regex_constants::optimize), r.second));
-
+#endif
 	Colorize();
 }
 
@@ -2187,7 +2194,9 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 		return;
 
 	std::string buffer;
+#if 0
 	std::cmatch results;
+#endif
 	std::string id;
 
 	int endLine = std::max(0, std::min((int)mLines.size(), aToLine));
@@ -2229,7 +2238,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 			{
 				// todo : remove
 				//printf("using regex for %.*s\n", first + 10 < last ? 10 : int(last - first), first);
-
+#if 0
 				for (auto& p : mRegexList)
 				{
 					if (std::regex_search(first, last, results, p.first, std::regex_constants::match_continuous))
@@ -2243,6 +2252,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 						break;
 					}
 				}
+#endif
 			}
 
 			if (hasTokenizeResult == false)
@@ -2843,7 +2853,7 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::CPlusPlus(
 	}
 	return langDef;
 }
-
+#if 0
 const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::HLSL()
 {
 	static bool inited = false;
@@ -3198,3 +3208,4 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::Lua()
 	}
 	return langDef;
 }
+#endif
