@@ -6,12 +6,10 @@ namespace PeepoDrumKit
 {
 	struct AudioTestWindow
 	{
-	public:
 		AudioTestWindow() = default;
 		~AudioTestWindow() { RemoveSourcePreviewVoice(); }
 
-	public:
-		void DrawGui(b8* isOpen);
+		void DrawGui();
 
 	private:
 		void AudioEngineTabContent();
@@ -23,7 +21,6 @@ namespace PeepoDrumKit
 
 		void RemoveSourcePreviewVoice();
 
-	private:
 		b8 sourcePreviewVoiceHasBeenAdded = false;
 		Audio::Voice sourcePreviewVoice = Audio::VoiceHandle::Invalid;
 		std::string voiceFlagsBuffer;

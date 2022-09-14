@@ -68,7 +68,7 @@ namespace PeepoDrumKit
 		b8 WasTJAEditedThisFrame = false;
 
 	public:
-		void DrawGui(b8* isOpen);
+		void DrawGui();
 
 	private:
 		void DrawGuiFileContentTabContent();

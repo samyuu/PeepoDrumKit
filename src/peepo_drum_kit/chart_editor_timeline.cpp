@@ -1,6 +1,7 @@
 #include "chart_editor_timeline.h"
 #include "chart_editor_undo.h"
 #include "chart_editor_common.h"
+#include "chart_editor_i18n.h"
 
 namespace PeepoDrumKit
 {
@@ -253,7 +254,7 @@ namespace PeepoDrumKit
 
 			const f32 localHeight = GuiScale(isNotesRow ? TimelineRowHeightNotes : TimelineRowHeight);
 
-			perRowFunc(ForEachRowData { rowType, localY, localHeight, TimelineRowTypeNames[EnumToIndex(rowType)] });
+			perRowFunc(ForEachRowData { rowType, localY, localHeight, UI_StrRuntime(TimelineRowTypeNames[EnumToIndex(rowType)]) });
 			localY += localHeight;
 		}
 	}
@@ -823,7 +824,7 @@ namespace PeepoDrumKit
 		UpdateAllAnimationsAfterUserInput(context);
 
 #if PEEPO_DEBUG // DEBUG: Submit empty window first for more natural tab order sorting
-		if (Gui::Begin("Chart Timeline - Debug")) { DrawTimelineDebugWindowContent(*this, context); } Gui::End();
+		if (Gui::Begin(UI_WindowName("Chart Timeline - Debug"))) { DrawTimelineDebugWindowContent(*this, context); } Gui::End();
 #endif
 
 		const auto& style = Gui::GetStyle();

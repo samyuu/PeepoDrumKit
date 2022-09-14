@@ -141,6 +141,7 @@
     <ClCompile Include="src\tja_file_format.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_i18n.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_settings_gui.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_widgets.h" />
     <ClInclude Include="src_res\resource.h" />

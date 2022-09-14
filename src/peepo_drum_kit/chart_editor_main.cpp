@@ -2,6 +2,7 @@
 #include "core_string.h"
 #include "chart_editor.h"
 #include "chart_editor_settings.h"
+#include "chart_editor_i18n.h"
 
 namespace PeepoDrumKit
 {
@@ -125,6 +126,22 @@ namespace PeepoDrumKit
 			if (response == LoadSettingsResponse::ErrorRetry) { continue; }
 			if (response == LoadSettingsResponse::ErrorIgnore) { break; }
 			assert(!"Unreachable"); break;
+		}
+
+		std::unique_ptr<char[]> fontGlyphsBuffer = nullptr;
+		{
+			size_t fontGlyphBufferSize = 0;
+#define X(en, ja) fontGlyphBufferSize += (ArrayCount(ja) - 1);
+			PEEPODRUMKIT_UI_STRINGS_X_MACRO_LIST;
+#undef X
+			fontGlyphsBuffer = std::unique_ptr<char[]>(new char[fontGlyphBufferSize + 1]);
+			fontGlyphsBuffer[fontGlyphBufferSize] = '\0';
+			char* writeHead = fontGlyphsBuffer.get();
+#define X(en, ja) { memcpy(writeHead, ja, ArrayCount(ja) - 1); writeHead += (ArrayCount(ja) - 1); }
+			PEEPODRUMKIT_UI_STRINGS_X_MACRO_LIST;
+#undef X
+
+			ExternalGlobalFontGlyphs = std::string_view(fontGlyphsBuffer.get(), fontGlyphBufferSize);
 		}
 
 		static std::unique_ptr<ImGuiApplication> app;

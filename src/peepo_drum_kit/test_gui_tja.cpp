@@ -110,7 +110,7 @@ namespace PeepoDrumKit
 		outTextEditor.SetErrorMarkers(errorMarkers);
 	}
 
-	void TJATestWindow::DrawGui(b8* isOpen)
+	void TJATestWindow::DrawGui()
 	{
 		WasTJAEditedThisFrame = false;
 
@@ -139,27 +139,24 @@ namespace PeepoDrumKit
 		}
 #endif
 
-		if (Gui::Begin("TJA Import Test", isOpen, ImGuiWindowFlags_None))
+		const ImVec2 originalFramePadding = Gui::GetStyle().FramePadding;
+		Gui::PushStyleVar(ImGuiStyleVar_FramePadding, GuiScale(vec2(10.0f, 5.0f)));
+		Gui::PushStyleColor(ImGuiCol_TabHovered, Gui::GetStyleColorVec4(ImGuiCol_HeaderActive));
+		Gui::PushStyleColor(ImGuiCol_TabActive, Gui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
+		if (Gui::BeginTabBar("TJATestTabs", ImGuiTabBarFlags_None))
 		{
-			const ImVec2 originalFramePadding = Gui::GetStyle().FramePadding;
-			Gui::PushStyleVar(ImGuiStyleVar_FramePadding, GuiScale(vec2(10.0f, 5.0f)));
-			Gui::PushStyleColor(ImGuiCol_TabHovered, Gui::GetStyleColorVec4(ImGuiCol_HeaderActive));
-			Gui::PushStyleColor(ImGuiCol_TabActive, Gui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
-			if (Gui::BeginTabBar("TJATestTabs", ImGuiTabBarFlags_None))
+			auto beginEndTabItem = [&](cstr label, auto func)
 			{
-				auto beginEndTabItem = [&](cstr label, auto func)
-				{
-					if (Gui::BeginTabItem(label)) { Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding); func(); Gui::PopStyleVar(); Gui::EndTabItem(); }
-				};
-				beginEndTabItem("Parsed", [this] { DrawGuiParsedTabContent(); });
-				beginEndTabItem("Tokens", [this] { DrawGuiTokensTabContent(); });
-				beginEndTabItem("File Content", [this] { DrawGuiFileContentTabContent(); });
-				Gui::EndTabBar();
-			}
-			Gui::PopStyleColor(2);
-			Gui::PopStyleVar();
+				if (Gui::BeginTabItem(label)) { Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding); func(); Gui::PopStyleVar(); Gui::EndTabItem(); }
+			};
+			beginEndTabItem("Parsed", [this] { DrawGuiParsedTabContent(); });
+			beginEndTabItem("Tokens", [this] { DrawGuiTokensTabContent(); });
+			beginEndTabItem("File Content", [this] { DrawGuiFileContentTabContent(); });
+			Gui::EndTabBar();
 		}
-		Gui::End();
+		Gui::PopStyleColor(2);
+		Gui::PopStyleVar();
+
 	}
 
 	void TJATestWindow::DrawGuiFileContentTabContent()

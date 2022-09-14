@@ -236,6 +236,9 @@
     <ClInclude Include="src\peepo_drum_kit\chart_editor_undo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_i18n.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src_res\Resource.rc">
