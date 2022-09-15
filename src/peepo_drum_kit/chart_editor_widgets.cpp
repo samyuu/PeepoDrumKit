@@ -70,7 +70,7 @@ namespace PeepoDrumKit
 		return GuiDragLabelScalar(label, ImGuiDataType_Float, inOutValue, speed, &min, &max, flags);
 	}
 
-	static b8 GuiInputFraction(cstr label, ivec2* inOutValue, std::optional<ivec2> valueRange, i32 step = 0, i32 stepFast = 0)
+	static b8 GuiInputFraction(cstr label, ivec2* inOutValue, std::optional<ivec2> valueRange, i32 step = 0, i32 stepFast = 0, const u32* textColorOverwrite = nullptr)
 	{
 		static constexpr i32 components = 2;
 		static constexpr std::string_view divisionText = " / ";
@@ -84,7 +84,10 @@ namespace PeepoDrumKit
 
 			const b8 isLastComponent = ((component + 1) == components);
 			Gui::SetNextItemWidth(isLastComponent ? (Gui::GetContentRegionAvail().x - 1.0f) : perComponentInputFloatWidth);
-			if (Gui::SpinInt("##Component", &(*inOutValue)[component], step, stepFast, ImGuiInputTextFlags_None))
+
+			Gui::InputScalarWithButtonsExData exData {}; exData.TextColor = (textColorOverwrite != nullptr) ? *textColorOverwrite : Gui::GetColorU32(ImGuiCol_Text); exData.SpinButtons = true;
+			Gui::InputScalarWithButtonsResult result = Gui::InputScalarN_WithExtraStuff("##Component", ImGuiDataType_S32, &(*inOutValue)[component], 1, &step, &stepFast, nullptr, ImGuiInputTextFlags_None, &exData);
+			if (result.ValueChanged)
 			{
 				if (valueRange.has_value()) (*inOutValue)[component] = Clamp((*inOutValue)[component], valueRange->x, valueRange->y);
 				anyValueChanged = true;
@@ -180,6 +183,7 @@ namespace PeepoDrumKit
 		MultiEditDataUnion ButtonStepFast = {};
 		f32 DragLabelSpeed = 1.0f;
 		cstr FormatString = nullptr;
+		u32* TextColorOverwrite = nullptr;
 	};
 
 	static MultiEditWidgetResult GuiPropertyMultiSelectionEditWidget(std::string_view label, const MultiEditWidgetParam& in)
@@ -223,7 +227,7 @@ namespace PeepoDrumKit
 
 			Gui::SetNextItemWidth(-1.0f);
 			MultiEditDataUnion v = in.Value;
-			Gui::InputScalarWithButtonsExData exData {}; exData.TextColor = Gui::GetColorU32(ImGuiCol_Text, showMixedValues ? 0.0f : 1.0f); exData.SpinButtons = in.UseSpinButtonsInstead;
+			Gui::InputScalarWithButtonsExData exData {}; exData.TextColor = showMixedValues ? 0 : (in.TextColorOverwrite != nullptr) ? *in.TextColorOverwrite : Gui::GetColorU32(ImGuiCol_Text); exData.SpinButtons = in.UseSpinButtonsInstead;
 			Gui::InputScalarWithButtonsResult result = Gui::InputScalarN_WithExtraStuff("##Input", in.DataType, &v, in.Components, in.EnableStepButtons ? &in.ButtonStep : nullptr, in.EnableStepButtons ? &in.ButtonStepFast : nullptr, formatString, ImGuiInputTextFlags_None, &exData);
 			if (result.ValueChanged)
 			{
@@ -258,6 +262,7 @@ namespace PeepoDrumKit
 
 			if (showMixedValues)
 			{
+				if (in.TextColorOverwrite != nullptr) Gui::PushStyleColor(ImGuiCol_Text, *in.TextColorOverwrite);
 				for (i32 c = 0; c < in.Components; c++)
 				{
 					if (in.HasMixedValues & (1 << c))
@@ -289,6 +294,7 @@ namespace PeepoDrumKit
 						Gui::RenderTextClipped(result.TextItemRect[c].TL + vec2(style.FramePadding.x, 0.0f), result.TextItemRect[c].BR, preview, nullptr, nullptr, { 0.0f, 0.5f });
 					}
 				}
+				if (in.TextColorOverwrite != nullptr) Gui::PopStyleColor();
 			}
 		});
 		Gui::PopID();
@@ -1249,6 +1255,10 @@ namespace PeepoDrumKit
 						{
 							static constexpr i32 components = 2;
 
+							b8 isAnyTimeSignatureInvalid = false;
+							for (const auto& selectedItem : SelectedItems)
+								isAnyTimeSignatureInvalid |= !IsTimeSignatureSupported(selectedItem.MemberValues.TimeSignature());
+
 							MultiEditWidgetParam widgetIn = {};
 							widgetIn.DataType = ImGuiDataType_S32;
 							widgetIn.Components = components;
@@ -1268,6 +1278,7 @@ namespace PeepoDrumKit
 							}
 							widgetIn.EnableDragLabel = false;
 							widgetIn.FormatString = "%d";
+							widgetIn.TextColorOverwrite = isAnyTimeSignatureInvalid ? &InputTextWarningTextColor : nullptr;
 							const MultiEditWidgetResult widgetOut = GuiPropertyMultiSelectionEditWidget(UI_Str("Time Signature"), widgetIn);
 
 							if (widgetOut.HasValueExact || widgetOut.HasValueIncrement)
@@ -1585,7 +1596,7 @@ namespace PeepoDrumKit
 
 					Gui::SetNextItemWidth(-1.0f);
 					if (ivec2 v = { signatureAtCursor.Numerator, signatureAtCursor.Denominator };
-						GuiInputFraction("##SignatureAtCursor", &v, ivec2(MinTimeSignatureValue, MaxTimeSignatureValue), 1, 4))
+						GuiInputFraction("##SignatureAtCursor", &v, ivec2(MinTimeSignatureValue, MaxTimeSignatureValue), 1, 4, !IsTimeSignatureSupported(signatureAtCursor) ? &InputTextWarningTextColor : nullptr))
 						insertOrUpdateCursorSignatureChange(TimeSignature(v[0], v[1]));
 
 					Gui::PushID(&course.TempoMap.Signature);

@@ -43,6 +43,7 @@ namespace PeepoDrumKit
 	// TODO: Define somewhese else... maybe even in "imgui_common.h" (?)
 	inline u32 DragTextHoveredColor = 0xFFBCDDDB;
 	inline u32 DragTextActiveColor = 0xFFC3F5F2;
+	inline u32 InputTextWarningTextColor = 0xFF4C4CFF;
 
 	inline u32 TimelineBackgroundColor = 0xFF282828;
 	inline u32 TimelineOutOfBoundsDimColor = 0x731F1F1F;

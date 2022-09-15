@@ -109,6 +109,7 @@ namespace PeepoDrumKit
 				NamedColorU32Pointer {},
 				{ "Drag Text (Hovered)", &DragTextHoveredColor },
 				{ "Drag Text (Active)", &DragTextActiveColor },
+				{ "Input Text Warning Text", &InputTextWarningTextColor },
 			};
 
 			if (static b8 firstFrame = true; firstFrame) { for (auto& e : namedColors) { e.Default = (e.ColorPtr != nullptr) ? *e.ColorPtr : 0xFFFF00FF; } firstFrame = false; }
@@ -629,7 +630,7 @@ namespace PeepoDrumKit
 					const vec2 textSize = Gui::CalcTextSize(text);
 					drawListContent->AddRectFilled(vec2(timeline.LocalToScreenSpace(localSpaceTL).x, textPosition.y), textPosition + textSize, TimelineBackgroundColor);
 					drawListContent->AddLine(timeline.LocalToScreenSpace(localSpaceTL + vec2(0.0f, 1.0f)), timeline.LocalToScreenSpace(localSpaceBL), it.IsSelected ? TimelineSelectedItemLineColor : lineColor);
-					Gui::AddTextWithDropShadow(drawListContent, textPosition, TimelineItemTextColor, text, TimelineItemTextColorShadow);
+					Gui::AddTextWithDropShadow(drawListContent, textPosition, textColor, text, TimelineItemTextColorShadow);
 
 					if (it.IsSelected)
 					{
