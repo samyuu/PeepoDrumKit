@@ -164,14 +164,6 @@ namespace TJA
 						for (size_t i = EnumToIndex(Key::HashCommand_First); i <= EnumToIndex(Key::HashCommand_Last); i++)
 							if (newToken.KeyString == KeyStrings[i]) { newToken.Key = static_cast<Key>(i); break; }
 
-#if 0
-						{
-							if (newToken.KeyString == "SCROLL3") newToken.Key = Key::Chart_SCROLL;		// HACK: For またさいたま2000.tja
-							if (newToken.KeyString == "SCROL") newToken.Key = Key::Chart_SCROLL;		// HACK: シンフォニック ドルアーガ.tja
-							if (newToken.KeyString == "BPCMAHNEG") newToken.Key = Key::Chart_BPMCHANGE; // HACK: 太鼓ラブ！.tja
-						}
-#endif
-
 						if (newToken.Key == Key::Chart_START)
 							currentlyBetweenChartStartAndEnd = true;
 						else if (newToken.Key == Key::Chart_END)
@@ -1037,18 +1029,22 @@ namespace TJA
 
 			if (!tempBuffer.empty())
 			{
-				// TODO: Find smallest bar division to fit in all the commands then add into temp
+				const Beat measureBarDuration = lastSignature.GetDurationPerBar();
+
+				// NOTE: Find smallest bar division to fit in all the commands then add into temp
 				static constexpr i32 supportedBarDivisions[] = { 1, 4, 8, 12, 16, 24, 32, 48, 64, 96, 192 };
 				i32 smallestBarDivision = 192;
 				for (const i32 itDivision : supportedBarDivisions)
 				{
 					const Beat itBeatDivision = Beat::FromBars(1) / itDivision;
+					if ((measureBarDuration.Ticks % itBeatDivision.Ticks) != 0)
+						continue;
+
 					if (std::all_of(tempBuffer.begin(), tempBuffer.end(), [&](const TempCommand& c) { return (c.TimeWithinMeasure.Ticks % itBeatDivision.Ticks) == 0; }))
 						smallestBarDivision = Min(smallestBarDivision, itDivision);
 				}
 
 				const Beat beatPerNoteInThisMeasure = Beat::FromBars(1) / smallestBarDivision;
-				const Beat measureBarDuration = lastSignature.GetDurationPerBar();
 				const i32 noteCommandsInThisMeasure = (beatPerNoteInThisMeasure == Beat::Zero()) ? 0 : (measureBarDuration.Ticks / beatPerNoteInThisMeasure.Ticks);
 
 				// NOTE: Insert empty notes based on smallestBarDivision
@@ -1077,14 +1073,14 @@ namespace TJA
 					for (const TempCommand& tempCommand : tempBuffer)
 						if (tempCommand.ParsedCommand.Type == ParsedChartCommandType::MeasureNotes)
 							actualNotesInThisMeasure++;
+
 					if (actualNotesInThisMeasure != noteCommandsInThisMeasure)
 					{
-						// BUG: Loss of precision due to integer division...
+						// BUG: Loss of precision due to integer division or overlapping notes (?)
 						// assert(false);
 					}
 				}
 
-				// TODO: Check if this works correctly (TimeWithinMeasure biggest priorirty, but note commands should come last)
 				std::stable_sort(tempBuffer.begin(), tempBuffer.end(), [](const TempCommand& a, const TempCommand& b) { return (a.TimeWithinMeasure < b.TimeWithinMeasure); });
 
 				// NOTE: Merge adjacent single-note MeasureNotes commands
