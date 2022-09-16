@@ -1,190 +1,190 @@
-#pragma once
+ï»¿#pragma once
 #include "core_types.h"
 #include "imgui/imgui_include.h"
 
 #define PEEPODRUMKIT_UI_STRINGS_X_MACRO_LIST \
-X("Game Preview",						u8"ƒQ[ƒ€ƒvƒŒƒrƒ…[") \
-X("Chart Timeline",						u8"ƒ^ƒCƒ€ƒ‰ƒCƒ“") \
-X("Chart Timeline - Debug",				u8"ƒ^ƒCƒ€ƒ‰ƒCƒ“ - ƒfƒoƒbƒO") \
-X("Chart Properties",					u8"•ˆ–ÊƒvƒƒpƒeƒB") \
-X("Chart Tempo",						u8"•ˆ–ÊƒŠƒYƒ€") \
-X("Chart Lyrics",						u8"•ˆ–Ê‰ÌŒ") \
-X("Tempo Calculator",					u8"ƒeƒ“ƒ|ŒvZ‹@") \
-X("Undo History",						u8"ƒqƒXƒgƒŠ[") \
-X("Chart Inspector",					u8"ƒCƒ“ƒXƒyƒNƒ^[") \
-X("Settings",							u8"ŠÂ‹«İ’è") \
-X("Usage Guide",						u8"g‚¢•û‚É‚Â‚¢‚Ä") \
-X("TJA Export Debug View",				u8"TJAƒGƒNƒXƒ|[ƒgƒeƒXƒg") \
-X("TJA Import Test",					u8"TJAƒCƒ“ƒ|[ƒgƒeƒXƒg") \
-X("Audio Test",							u8"ƒI[ƒfƒBƒIƒeƒXƒg") \
-X("File",								u8"ƒtƒ@ƒCƒ‹") \
-X("Edit",								u8"•ÒW") \
-X("Selection",							u8"‘I‘ğ") \
-X("Transform",							u8"•ÏŠ·") \
-X("Window",								u8"ƒEƒBƒ“ƒhƒE") \
-X("Language",							u8"Œ¾Œê") \
-X("English",							u8"‰pŒê") \
-X("Japanese",							u8"“ú–{Œê") \
-X("%s (%s)",							u8"%si%sj") \
-X("Help",								u8"ƒwƒ‹ƒv") \
-X("Copy",								u8"ƒRƒs[") \
-X("Delete",								u8"íœ") \
-X("Save",								u8"•Û‘¶") \
-X("Undo",								u8"Œ³‚É–ß‚·") \
-X("Redo",								u8"‚â‚è’¼‚µ") \
-X("Cut",								u8"Ø‚èæ‚è") \
-X("Paste",								u8"“\‚è•t‚¯") \
-X("Open Recent",						u8"Å‹ßg—p‚µ‚½€–Ú‚ğŠJ‚­") \
-X("Exit",								u8"I—¹") \
-X("New Chart",							u8"V‹Kƒtƒ@ƒCƒ‹") \
-X("Open...",							u8"ƒtƒ@ƒCƒ‹‚ğŠJ‚­...") \
-X("Clear Items",						u8"Å‹ßg‚Á‚½‚à‚Ì‚ğƒNƒŠƒA") \
-X("Open Chart Directory...",			u8"ƒGƒNƒXƒvƒ[ƒ‰[‚Å•\¦‚·‚é...") \
-X("Save As...",							u8"–¼‘O‚ğ•t‚¯‚Ä•Û‘¶...") \
-X("Refine Selection",					u8"‘I‘ğ‚ği‚è‚İ") \
-X("Select All",							u8"‚·‚×‚Ä‘I‘ğ") \
-X("Clear Selection",					u8"‘I‘ğ‚ğ‰ğœ") \
-X("Invert Selection",					u8"‘I‘ğ‚ğ”½“]") \
-X("Start Range Selection",				u8"”ÍˆÍ‘I‘ğ‚ğŠJn") \
-X("End Range Selection",				u8"”ÍˆÍ‘I‘ğ‚ğI—¹") \
-X("From Range Selection",				u8"”ÍˆÍ‘I‘ğˆÈ“à€–Ú‚ğ‘I‘ğ") \
-X("Shift selection Left",				u8"‘I‘ğ‚ğ¶‚ÉˆÚ“®") \
-X("Shift selection Right",				u8"‘I‘ğ‚ğ‰E‚ÉˆÚ“®") \
-X("Select Item Pattern xo",				u8"ƒpƒ^[ƒ“‘I‘ğ xo") \
-X("Select Item Pattern xoo",			u8"ƒpƒ^[ƒ“‘I‘ğ xoo") \
-X("Select Item Pattern xooo",			u8"ƒpƒ^[ƒ“‘I‘ğ xooo") \
-X("Select Item Pattern xxoo",			u8"ƒpƒ^[ƒ“‘I‘ğ xxoo") \
-X("Add New Pattern...",					u8"V‹Kƒpƒ^[ƒ“‚ğ’Ç‰Á...") \
-X("Select Custom Pattern",				u8"ƒJƒXƒ^ƒ€ƒpƒ^[ƒ“") \
-X("Delete?",							u8"íœH") \
-X("Flip Note Types",					u8"‰¹•„‚Ìí—Ş‚ğ•Ï‰»") \
-X("Toggle Note Sizes",					u8"‰¹•„‚Ì‘å¬‚ğ•Ï‰»") \
-X("Expand Items",						u8"‘I‘ğ‚µ‚½€–Ú‚ğL‚°") \
-X("Compress Items",						u8"‘I‘ğ‚µ‚½€–Ú‚ğk‚ß") \
-X("2:1 (8th to 4th)",					u8"2:1 (8•ª ¨ 4•ª)") \
-X("3:2 (12th to 8th)",					u8"3:2 (12•ª ¨ 8•ª)") \
-X("4:3 (16th to 12th)",					u8"4:3 (16•ª ¨ 12•ª)") \
-X("1:2 (4th to 8th)",					u8"1:2 (4•ª ¨ 8•ª)") \
-X("2:3 (8th to 12th)",					u8"2:3 (8•ª ¨ 12•ª)") \
-X("3:4 (12th to 16th)",					u8"3:4 (12•ª ¨ 16•ª)") \
-X("Toggle VSync",						u8"‚’¼“¯Šú") \
-X("Toggle Fullscreen",					u8"‘S‰æ–Ê•\¦") \
-X("Window Size",						u8"ƒEƒBƒ“ƒhƒEƒTƒCƒY") \
-X("Resize to",							u8"ƒŠƒTƒCƒY") \
-X("Current Size",						u8"Œ»İ‚ÌƒTƒCƒY") \
-X("DPI Scale",							u8"‰ğ‘œ“xƒXƒP[ƒ‹") \
-X("Zoom In",							u8"Šg‘å") \
-X("Zoom Out",							u8"k¬") \
-X("Reset Zoom",							u8"ƒY[ƒ€‚ğƒŠƒZƒbƒg") \
-X(" Reset ",							u8" ƒŠƒZƒbƒg ") \
-X("Current Scale",						u8"Œ»İ‚ÌƒXƒP[ƒ‹") \
-X("Test Menu",							u8"ƒeƒXƒg") \
-X("Show Audio Test",					u8"ƒI[ƒfƒBƒIƒeƒXƒg•\¦") \
-X("Show TJA Import Test",				u8"TJAƒCƒ“ƒ|[ƒgƒeƒXƒg•\¦") \
-X("Show TJA Export View",				u8"TJAƒGƒNƒXƒ|[ƒgƒeƒXƒg•\¦") \
-X("Show ImGui Demo",					u8"ImGui Demo•\¦") \
-X("Show ImGui Style Editor",			u8"ImGui Style Editor•\¦") \
-X("Reset Style Colors",					u8"Style Colors‚ğƒŠƒZƒbƒg") \
+X("Game Preview",						u8"ã‚²ãƒ¼ãƒ ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼") \
+X("Chart Timeline",						u8"ã‚¿ã‚¤ãƒ ãƒ©ã‚¤ãƒ³") \
+X("Chart Timeline - Debug",				u8"ã‚¿ã‚¤ãƒ ãƒ©ã‚¤ãƒ³ - ãƒ‡ãƒãƒƒã‚°") \
+X("Chart Properties",					u8"è­œé¢ãƒ—ãƒ­ãƒ‘ãƒ†ã‚£") \
+X("Chart Tempo",						u8"è­œé¢ãƒªã‚ºãƒ ") \
+X("Chart Lyrics",						u8"è­œé¢æ­Œè©") \
+X("Tempo Calculator",					u8"ãƒ†ãƒ³ãƒè¨ˆç®—æ©Ÿ") \
+X("Undo History",						u8"ãƒ’ã‚¹ãƒˆãƒªãƒ¼") \
+X("Chart Inspector",					u8"ã‚¤ãƒ³ã‚¹ãƒšã‚¯ã‚¿ãƒ¼") \
+X("Settings",							u8"ç’°å¢ƒè¨­å®š") \
+X("Usage Guide",						u8"ä½¿ã„æ–¹ã«ã¤ã„ã¦") \
+X("TJA Export Debug View",				u8"TJAã‚¨ã‚¯ã‚¹ãƒãƒ¼ãƒˆãƒ†ã‚¹ãƒˆ") \
+X("TJA Import Test",					u8"TJAã‚¤ãƒ³ãƒãƒ¼ãƒˆãƒ†ã‚¹ãƒˆ") \
+X("Audio Test",							u8"ã‚ªãƒ¼ãƒ‡ã‚£ã‚ªãƒ†ã‚¹ãƒˆ") \
+X("File",								u8"ãƒ•ã‚¡ã‚¤ãƒ«") \
+X("Edit",								u8"ç·¨é›†") \
+X("Selection",							u8"é¸æŠ") \
+X("Transform",							u8"å¤‰æ›") \
+X("Window",								u8"ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦") \
+X("Language",							u8"è¨€èª") \
+X("English",							u8"è‹±èª") \
+X("Japanese",							u8"æ—¥æœ¬èª") \
+X("%s (%s)",							u8"%sï¼ˆ%sï¼‰") \
+X("Help",								u8"ãƒ˜ãƒ«ãƒ—") \
+X("Copy",								u8"ã‚³ãƒ”ãƒ¼") \
+X("Delete",								u8"å‰Šé™¤") \
+X("Save",								u8"ä¿å­˜") \
+X("Undo",								u8"å…ƒã«æˆ»ã™") \
+X("Redo",								u8"ã‚„ã‚Šç›´ã—") \
+X("Cut",								u8"åˆ‡ã‚Šå–ã‚Š") \
+X("Paste",								u8"è²¼ã‚Šä»˜ã‘") \
+X("Open Recent",						u8"æœ€è¿‘ä½¿ç”¨ã—ãŸé …ç›®ã‚’é–‹ã") \
+X("Exit",								u8"çµ‚äº†") \
+X("New Chart",							u8"æ–°è¦ãƒ•ã‚¡ã‚¤ãƒ«") \
+X("Open...",							u8"ãƒ•ã‚¡ã‚¤ãƒ«ã‚’é–‹ã...") \
+X("Clear Items",						u8"æœ€è¿‘ä½¿ã£ãŸã‚‚ã®ã‚’ã‚¯ãƒªã‚¢") \
+X("Open Chart Directory...",			u8"ã‚¨ã‚¯ã‚¹ãƒ—ãƒ­ãƒ¼ãƒ©ãƒ¼ã§è¡¨ç¤ºã™ã‚‹...") \
+X("Save As...",							u8"åå‰ã‚’ä»˜ã‘ã¦ä¿å­˜...") \
+X("Refine Selection",					u8"é¸æŠã‚’çµã‚Šè¾¼ã¿") \
+X("Select All",							u8"ã™ã¹ã¦é¸æŠ") \
+X("Clear Selection",					u8"é¸æŠã‚’è§£é™¤") \
+X("Invert Selection",					u8"é¸æŠã‚’åè»¢") \
+X("Start Range Selection",				u8"ç¯„å›²é¸æŠã‚’é–‹å§‹") \
+X("End Range Selection",				u8"ç¯„å›²é¸æŠã‚’çµ‚äº†") \
+X("From Range Selection",				u8"ç¯„å›²é¸æŠä»¥å†…é …ç›®ã‚’é¸æŠ") \
+X("Shift selection Left",				u8"é¸æŠã‚’å·¦ã«ç§»å‹•") \
+X("Shift selection Right",				u8"é¸æŠã‚’å³ã«ç§»å‹•") \
+X("Select Item Pattern xo",				u8"ãƒ‘ã‚¿ãƒ¼ãƒ³é¸æŠ xo") \
+X("Select Item Pattern xoo",			u8"ãƒ‘ã‚¿ãƒ¼ãƒ³é¸æŠ xoo") \
+X("Select Item Pattern xooo",			u8"ãƒ‘ã‚¿ãƒ¼ãƒ³é¸æŠ xooo") \
+X("Select Item Pattern xxoo",			u8"ãƒ‘ã‚¿ãƒ¼ãƒ³é¸æŠ xxoo") \
+X("Add New Pattern...",					u8"æ–°è¦ãƒ‘ã‚¿ãƒ¼ãƒ³ã‚’è¿½åŠ ...") \
+X("Select Custom Pattern",				u8"ã‚«ã‚¹ã‚¿ãƒ ãƒ‘ã‚¿ãƒ¼ãƒ³") \
+X("Delete?",							u8"å‰Šé™¤ï¼Ÿ") \
+X("Flip Note Types",					u8"éŸ³ç¬¦ã®ç¨®é¡ã‚’å¤‰åŒ–") \
+X("Toggle Note Sizes",					u8"éŸ³ç¬¦ã®å¤§å°ã‚’å¤‰åŒ–") \
+X("Expand Items",						u8"é¸æŠã—ãŸé …ç›®ã‚’åºƒã’") \
+X("Compress Items",						u8"é¸æŠã—ãŸé …ç›®ã‚’ç¸®ã‚") \
+X("2:1 (8th to 4th)",					u8"2:1 (8åˆ† â†’ 4åˆ†)") \
+X("3:2 (12th to 8th)",					u8"3:2 (12åˆ† â†’ 8åˆ†)") \
+X("4:3 (16th to 12th)",					u8"4:3 (16åˆ† â†’ 12åˆ†)") \
+X("1:2 (4th to 8th)",					u8"1:2 (4åˆ† â†’ 8åˆ†)") \
+X("2:3 (8th to 12th)",					u8"2:3 (8åˆ† â†’ 12åˆ†)") \
+X("3:4 (12th to 16th)",					u8"3:4 (12åˆ† â†’ 16åˆ†)") \
+X("Toggle VSync",						u8"å‚ç›´åŒæœŸ") \
+X("Toggle Fullscreen",					u8"å…¨ç”»é¢è¡¨ç¤º") \
+X("Window Size",						u8"ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚µã‚¤ã‚º") \
+X("Resize to",							u8"ãƒªã‚µã‚¤ã‚º") \
+X("Current Size",						u8"ç¾åœ¨ã®ã‚µã‚¤ã‚º") \
+X("DPI Scale",							u8"è§£åƒåº¦ã‚¹ã‚±ãƒ¼ãƒ«") \
+X("Zoom In",							u8"æ‹¡å¤§") \
+X("Zoom Out",							u8"ç¸®å°") \
+X("Reset Zoom",							u8"ã‚ºãƒ¼ãƒ ã‚’ãƒªã‚»ãƒƒãƒˆ") \
+X(" Reset ",							u8" ãƒªã‚»ãƒƒãƒˆ ") \
+X("Current Scale",						u8"ç¾åœ¨ã®ã‚¹ã‚±ãƒ¼ãƒ«") \
+X("Test Menu",							u8"ãƒ†ã‚¹ãƒˆ") \
+X("Show Audio Test",					u8"ã‚ªãƒ¼ãƒ‡ã‚£ã‚ªãƒ†ã‚¹ãƒˆè¡¨ç¤º") \
+X("Show TJA Import Test",				u8"TJAã‚¤ãƒ³ãƒãƒ¼ãƒˆãƒ†ã‚¹ãƒˆè¡¨ç¤º") \
+X("Show TJA Export View",				u8"TJAã‚¨ã‚¯ã‚¹ãƒãƒ¼ãƒˆãƒ†ã‚¹ãƒˆè¡¨ç¤º") \
+X("Show ImGui Demo",					u8"ImGui Demoè¡¨ç¤º") \
+X("Show ImGui Style Editor",			u8"ImGui Style Editorè¡¨ç¤º") \
+X("Reset Style Colors",					u8"Style Colorsã‚’ãƒªã‚»ãƒƒãƒˆ") \
 X("Copyright (c) 2022",					u8"Copyright (c) 2022") \
-X("Build Time:",						u8"ƒrƒ‹ƒh‚ÌŠÔ:") \
-X("Build Date:",						u8"ƒrƒ‹ƒh‚Ì“ú•t:") \
-X("Build Configuration:",				u8"ƒrƒ‹ƒh‚Ì\¬:") \
-X("Debug",								u8"ƒfƒoƒbƒO") \
-X("Release",							u8"ƒŠƒŠ[ƒX") \
-X("Courses",							u8"ƒR[ƒX") \
-X("Add New",							u8"’Ç‰Á") \
-X("Edit...",							u8"•ÒW...") \
-X("Open Audio Device",					u8"ƒI[ƒfƒBƒIƒfƒoƒCƒX‚ğŠJ‚­") \
-X("Close Audio Device",					u8"ƒI[ƒfƒBƒIƒfƒoƒCƒX‚ğ•Â‚¶‚é") \
-X("Average: ",							u8"•½‹Ï’l: ") \
-X("Min: ",								u8"Å¬’l: ") \
-X("Max: ",								u8"Å‘å’l: ") \
-X("Use %s",								u8"%s‚ğg—p") \
-X("Peepo Drum Kit - Unsaved Changes",	u8"Peepo Drum Kit - •Û‘¶‚³‚ê‚Ä‚¢‚È‚¢•ÏX") \
-X("Save changes to the current file?",	u8"‚±‚Ìƒtƒ@ƒCƒ‹‚Ì•ÏX“à—e‚ğ•Û‘¶‚µ‚Ü‚·‚©H") \
-X("Save Changes",						u8"•Û‘¶") \
-X("Discard Changes",					u8"•Û‘¶‚µ‚È‚¢") \
-X("Cancel",								u8"ƒLƒƒƒ“ƒZƒ‹") \
-X("Tempo",								u8"ƒeƒ“ƒ|") \
-X("Time Signature",						u8"”q‹L†") \
-X("Notes",								u8"‰¹•„") \
-X("Notes (Expert)",						u8"‰¹•„ (Œºl)") \
-X("Notes (Master)",						u8"‰¹•„ (’Bl)") \
-X("Scroll Speed",						u8"ƒXƒNƒ[ƒ‹ƒXƒs[ƒh") \
-X("Scroll Speed Tempo",					u8"ƒXƒNƒ[ƒ‹ƒXƒs[ƒh‚Ìƒeƒ“ƒ|") \
-X("Bar Line Visibility",				u8"¬ßü‚Ì•\¦") \
-X("Go-Go Time",							u8"ƒS[ƒS[ƒ^ƒCƒ€") \
-X("Lyrics",								u8"‰ÌŒ") \
-X("Sync",								u8"ƒ^ƒCƒ~ƒ“ƒO") \
-X("Chart Duration",						u8"•ˆ–Ê‚ÌI—¹ŠÔ") \
-X("Song Demo Start",					u8"‰¹Œ¹‚ÌƒvƒŒƒrƒ…[ŠÔ") \
-X("Song Offset",						u8"‰¹Œ¹‚ÌÄ¶ŠJnŠÔ") \
-X("Selection to Scroll Changes",		u8"‘I‘ğ‚µ‚½€–Ú‚ğƒXƒNƒ[ƒ‹ƒXƒs[ƒh‚É•Ï‰»") \
-X("Set Cursor",							u8"ƒJ[ƒ\ƒ‹‚Åİ’è") \
-X("Add",								u8"’Ç‰Á") \
-X("Remove",								u8"íœ") \
-X("Clear",								u8"ƒNƒŠƒA") \
-X("Set from Range Selection",			u8"”ÍˆÍ‘I‘ğ‚Å’Ç‰Á") \
-X("Chart",								u8"‘nì•ˆ–Ê") \
-X("Chart Title",						u8"‹È‚Ìƒ^ƒCƒgƒ‹") \
-X("Chart Subtitle",						u8"‹È‚ÌƒTƒuƒ^ƒCƒgƒ‹") \
-X("Chart Creator",						u8"•ˆ–Ê‚ÌìÒ–¼") \
-X("Song File Name",						u8"‰¹Œ¹‚Ìƒtƒ@ƒCƒ‹–¼") \
-X("Song Volume",						u8"‰¹Œ¹‚Ì‰¹—Ê") \
-X("Sound Effect Volume",				u8"‰¹F‚Ì‰¹—Ê") \
-X("Selected Course",					u8"Œ»İ‚ÌƒR[ƒX") \
-X("Difficulty Type",					u8"“ïˆÕ“x") \
-X("Difficulty Level",					u8"“ïˆÕ“x‚ÌƒŒƒxƒ‹") \
-X("Selected Items",						u8"‘I‘ğ‚µ‚½€–Ú") \
-X("( Nothing Selected )",				u8"( ‘I‘ğ‚È‚µ )") \
-X("Selected ",							u8"‘I‘ğ‚µ‚½") \
-X("Items",								u8"€–Ú") \
-X("Tempos",								u8"ƒeƒ“ƒ|") \
-X("Time Signatures",					u8"”q‹L†") \
-X("Scroll Speeds",						u8"ƒXƒNƒ[ƒ‹ƒXƒs[ƒh") \
-X("Bar Lines",							u8"¬ßü‚Ì•\¦") \
-X("Go-Go Ranges",						u8"ƒS[ƒS[ƒ^ƒCƒ€") \
-X("Bar Line Visible",					u8"¬ßü‚Ì•\¦") \
-X("Visible",							u8"•\¦") \
-X("Hidden",								u8"”ñ•\¦") \
-X("Balloon Pop Count",					u8"•—‘D‚Ì˜A‘Å”") \
-X("Interpolate: Scroll Speed",			u8"•âŠÔ: ƒXƒNƒ[ƒ‹ƒXƒs[ƒh") \
-X("Interpolate: Scroll Speed Tempo",	u8"•âŠÔ: ƒXƒNƒ[ƒ‹ƒXƒs[ƒh‚Ìƒeƒ“ƒ|") \
-X("Time Offset",						u8"ŠÔ‚ÌƒIƒtƒZƒbƒg") \
-X("Note Type",							u8"‰¹•„‚Ìí—Ş") \
-X("Note Type Size",						u8"‰¹•„‚Ì‘å¬") \
-X("Don",								u8"ƒhƒ“") \
-X("DON",								u8"ƒhƒ“ (‘å)") \
-X("Ka",									u8"ƒJƒb") \
-X("KA",									u8"ƒJƒb (‘å)") \
-X("Drumroll",							u8"˜A‘Å") \
-X("DRUMROLL",							u8"˜A‘Å (‘å)") \
-X("Balloon",							u8"•—‘D") \
-X("BALLOON",							u8"•—‘D (‘å)") \
-X("Small",								u8"¬") \
-X("Big",								u8"‘å") \
-X("Easy",								u8"‚©‚ñ‚½‚ñ") \
-X("Normal",								u8"‚Ó‚Â‚¤") \
-X("Hard",								u8"‚Ş‚¸‚©‚µ‚¢") \
-X("Oni",								u8"‚¨‚É") \
-X("Oni-Ura",							u8"‚¨‚É (— )") \
-X("Single",								u8"ˆêl") \
-X("Double",								u8"“ñl") \
-X("Description",						u8"‹Lq") \
-X("Time",								u8"ŠÔ") \
-X("Initial State",						u8"‰Šúó‘Ô") \
-X("Lyrics Overview",					u8"‰ÌŒ‚ÌŠT—v") \
-X("Edit Line",							u8"•ÒW") \
-X("(No Lyrics)",						u8"(‰ÌŒ‚È‚µ)") \
-X("Reset",								u8"ƒŠƒZƒbƒg") \
-X("Tap",								u8"’@‚¢‚Ä") \
-X(" First Beat ",						u8"ˆê”") \
-X("Nearest Whole",						u8"•½‹Ïi®”•”j") \
-X("Nearest",							u8"•½‹Ï") \
-X("Min and Max",						u8"Å¬‚ÆÅ‘å") \
-X("Timing Taps",						u8"’@‚¢‚½”") \
-X("First Beat",							u8"Å‰‚Ì”") \
-X("%d Taps",							u8"%d ”") \
+X("Build Time:",						u8"ãƒ“ãƒ«ãƒ‰ã®æ™‚é–“:") \
+X("Build Date:",						u8"ãƒ“ãƒ«ãƒ‰ã®æ—¥ä»˜:") \
+X("Build Configuration:",				u8"ãƒ“ãƒ«ãƒ‰ã®æ§‹æˆ:") \
+X("Debug",								u8"ãƒ‡ãƒãƒƒã‚°") \
+X("Release",							u8"ãƒªãƒªãƒ¼ã‚¹") \
+X("Courses",							u8"ã‚³ãƒ¼ã‚¹") \
+X("Add New",							u8"è¿½åŠ ") \
+X("Edit...",							u8"ç·¨é›†...") \
+X("Open Audio Device",					u8"ã‚ªãƒ¼ãƒ‡ã‚£ã‚ªãƒ‡ãƒã‚¤ã‚¹ã‚’é–‹ã") \
+X("Close Audio Device",					u8"ã‚ªãƒ¼ãƒ‡ã‚£ã‚ªãƒ‡ãƒã‚¤ã‚¹ã‚’é–‰ã˜ã‚‹") \
+X("Average: ",							u8"å¹³å‡å€¤: ") \
+X("Min: ",								u8"æœ€å°å€¤: ") \
+X("Max: ",								u8"æœ€å¤§å€¤: ") \
+X("Use %s",								u8"%sã‚’ä½¿ç”¨") \
+X("Peepo Drum Kit - Unsaved Changes",	u8"Peepo Drum Kit - ä¿å­˜ã•ã‚Œã¦ã„ãªã„å¤‰æ›´") \
+X("Save changes to the current file?",	u8"ã“ã®ãƒ•ã‚¡ã‚¤ãƒ«ã®å¤‰æ›´å†…å®¹ã‚’ä¿å­˜ã—ã¾ã™ã‹ï¼Ÿ") \
+X("Save Changes",						u8"ä¿å­˜") \
+X("Discard Changes",					u8"ä¿å­˜ã—ãªã„") \
+X("Cancel",								u8"ã‚­ãƒ£ãƒ³ã‚»ãƒ«") \
+X("Tempo",								u8"ãƒ†ãƒ³ãƒ") \
+X("Time Signature",						u8"æ‹å­è¨˜å·") \
+X("Notes",								u8"éŸ³ç¬¦") \
+X("Notes (Expert)",						u8"éŸ³ç¬¦ (ç„äºº)") \
+X("Notes (Master)",						u8"éŸ³ç¬¦ (é”äºº)") \
+X("Scroll Speed",						u8"ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã‚¹ãƒ”ãƒ¼ãƒ‰") \
+X("Scroll Speed Tempo",					u8"ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã‚¹ãƒ”ãƒ¼ãƒ‰ã®ãƒ†ãƒ³ãƒ") \
+X("Bar Line Visibility",				u8"å°ç¯€ç·šã®è¡¨ç¤º") \
+X("Go-Go Time",							u8"ã‚´ãƒ¼ã‚´ãƒ¼ã‚¿ã‚¤ãƒ ") \
+X("Lyrics",								u8"æ­Œè©") \
+X("Sync",								u8"ã‚¿ã‚¤ãƒŸãƒ³ã‚°") \
+X("Chart Duration",						u8"è­œé¢ã®çµ‚äº†æ™‚é–“") \
+X("Song Demo Start",					u8"éŸ³æºã®ãƒ—ãƒ¬ãƒ“ãƒ¥ãƒ¼æ™‚é–“") \
+X("Song Offset",						u8"éŸ³æºã®å†ç”Ÿé–‹å§‹æ™‚é–“") \
+X("Selection to Scroll Changes",		u8"é¸æŠã—ãŸé …ç›®ã‚’ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã‚¹ãƒ”ãƒ¼ãƒ‰ã«å¤‰åŒ–") \
+X("Set Cursor",							u8"ã‚«ãƒ¼ã‚½ãƒ«ã§è¨­å®š") \
+X("Add",								u8"è¿½åŠ ") \
+X("Remove",								u8"å‰Šé™¤") \
+X("Clear",								u8"ã‚¯ãƒªã‚¢") \
+X("Set from Range Selection",			u8"ç¯„å›²é¸æŠã§è¿½åŠ ") \
+X("Chart",								u8"å‰µä½œè­œé¢") \
+X("Chart Title",						u8"æ›²ã®ã‚¿ã‚¤ãƒˆãƒ«") \
+X("Chart Subtitle",						u8"æ›²ã®ã‚µãƒ–ã‚¿ã‚¤ãƒˆãƒ«") \
+X("Chart Creator",						u8"è­œé¢ã®ä½œè€…å") \
+X("Song File Name",						u8"éŸ³æºã®ãƒ•ã‚¡ã‚¤ãƒ«å") \
+X("Song Volume",						u8"éŸ³æºã®éŸ³é‡") \
+X("Sound Effect Volume",				u8"éŸ³è‰²ã®éŸ³é‡") \
+X("Selected Course",					u8"ç¾åœ¨ã®ã‚³ãƒ¼ã‚¹") \
+X("Difficulty Type",					u8"é›£æ˜“åº¦") \
+X("Difficulty Level",					u8"é›£æ˜“åº¦ã®ãƒ¬ãƒ™ãƒ«") \
+X("Selected Items",						u8"é¸æŠã—ãŸé …ç›®") \
+X("( Nothing Selected )",				u8"( é¸æŠãªã— )") \
+X("Selected ",							u8"é¸æŠã—ãŸ") \
+X("Items",								u8"é …ç›®") \
+X("Tempos",								u8"ãƒ†ãƒ³ãƒ") \
+X("Time Signatures",					u8"æ‹å­è¨˜å·") \
+X("Scroll Speeds",						u8"ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã‚¹ãƒ”ãƒ¼ãƒ‰") \
+X("Bar Lines",							u8"å°ç¯€ç·šã®è¡¨ç¤º") \
+X("Go-Go Ranges",						u8"ã‚´ãƒ¼ã‚´ãƒ¼ã‚¿ã‚¤ãƒ ") \
+X("Bar Line Visible",					u8"å°ç¯€ç·šã®è¡¨ç¤º") \
+X("Visible",							u8"è¡¨ç¤º") \
+X("Hidden",								u8"éè¡¨ç¤º") \
+X("Balloon Pop Count",					u8"é¢¨èˆ¹ã®é€£æ‰“æ•°") \
+X("Interpolate: Scroll Speed",			u8"è£œé–“: ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã‚¹ãƒ”ãƒ¼ãƒ‰") \
+X("Interpolate: Scroll Speed Tempo",	u8"è£œé–“: ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã‚¹ãƒ”ãƒ¼ãƒ‰ã®ãƒ†ãƒ³ãƒ") \
+X("Time Offset",						u8"æ™‚é–“ã®ã‚ªãƒ•ã‚»ãƒƒãƒˆ") \
+X("Note Type",							u8"éŸ³ç¬¦ã®ç¨®é¡") \
+X("Note Type Size",						u8"éŸ³ç¬¦ã®å¤§å°") \
+X("Don",								u8"ãƒ‰ãƒ³") \
+X("DON",								u8"ãƒ‰ãƒ³ (å¤§)") \
+X("Ka",									u8"ã‚«ãƒƒ") \
+X("KA",									u8"ã‚«ãƒƒ (å¤§)") \
+X("Drumroll",							u8"é€£æ‰“") \
+X("DRUMROLL",							u8"é€£æ‰“ (å¤§)") \
+X("Balloon",							u8"é¢¨èˆ¹") \
+X("BALLOON",							u8"é¢¨èˆ¹ (å¤§)") \
+X("Small",								u8"å°") \
+X("Big",								u8"å¤§") \
+X("Easy",								u8"ã‹ã‚“ãŸã‚“") \
+X("Normal",								u8"ãµã¤ã†") \
+X("Hard",								u8"ã‚€ãšã‹ã—ã„") \
+X("Oni",								u8"ãŠã«") \
+X("Oni-Ura",							u8"ãŠã« (è£)") \
+X("Single",								u8"ä¸€äºº") \
+X("Double",								u8"äºŒäºº") \
+X("Description",						u8"è¨˜è¿°") \
+X("Time",								u8"æ™‚é–“") \
+X("Initial State",						u8"åˆæœŸçŠ¶æ…‹") \
+X("Lyrics Overview",					u8"æ­Œè©ã®æ¦‚è¦") \
+X("Edit Line",							u8"ç·¨é›†") \
+X("(No Lyrics)",						u8"(æ­Œè©ãªã—)") \
+X("Reset",								u8"ãƒªã‚»ãƒƒãƒˆ") \
+X("Tap",								u8"å©ã„ã¦") \
+X(" First Beat ",						u8"ä¸€æ‹") \
+X("Nearest Whole",						u8"å¹³å‡ï¼ˆæ•´æ•°éƒ¨ï¼‰") \
+X("Nearest",							u8"å¹³å‡") \
+X("Min and Max",						u8"æœ€å°ã¨æœ€å¤§") \
+X("Timing Taps",						u8"å©ã„ãŸæ•°") \
+X("First Beat",							u8"æœ€åˆã®æ‹") \
+X("%d Taps",							u8"%d æ‹") \
 X("",									u8"") \
 
 #define UI_Str(in) i18n::HashToString(i18n::CompileTimeValidate<i18n::Hash(in)>(), SelectedGuiLanguage)

@@ -145,13 +145,20 @@ namespace PeepoDrumKit
 		Gui::PushStyleColor(ImGuiCol_TabActive, Gui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
 		if (Gui::BeginTabBar("TJATestTabs", ImGuiTabBarFlags_None))
 		{
-			auto beginEndTabItem = [&](cstr label, auto func)
+			auto beginEndTabItem = [&, thisTabIndex = 0](cstr label, auto func) mutable
 			{
-				if (Gui::BeginTabItem(label)) { Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding); func(); Gui::PopStyleVar(); Gui::EndTabItem(); }
+				if (Gui::BeginTabItem(label, nullptr, (TabIndexToSelectThisFrame == thisTabIndex++) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None))
+				{
+					Gui::PushStyleVar(ImGuiStyleVar_FramePadding, originalFramePadding); func(); Gui::PopStyleVar();
+					Gui::EndTabItem();
+				}
 			};
-			beginEndTabItem("Parsed", [this] { DrawGuiParsedTabContent(); });
-			beginEndTabItem("Tokens", [this] { DrawGuiTokensTabContent(); });
-			beginEndTabItem("File Content", [this] { DrawGuiFileContentTabContent(); });
+
+			beginEndTabItem("Parsed", [this]() { DrawGuiParsedTabContent(); });
+			beginEndTabItem("Tokens", [this]() { DrawGuiTokensTabContent(); });
+			beginEndTabItem("File Content", [this]() { DrawGuiFileContentTabContent(); });
+			TabIndexToSelectThisFrame = -1;
+
 			Gui::EndTabBar();
 		}
 		Gui::PopStyleColor(2);

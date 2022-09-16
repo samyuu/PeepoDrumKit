@@ -1,7 +1,7 @@
 #pragma once
 #include "core_types.h"
 #include "core_io.h"
-#include "tja_file_format.h"
+#include "file_format_tja.h"
 #include "imgui/imgui_include.h"
 #include "imgui/3rdparty_extension/ImGuiColorTextEdit/TextEditor.h"
 
@@ -66,6 +66,7 @@ namespace PeepoDrumKit
 		
 		b8 IsFirstFrame = true;
 		b8 WasTJAEditedThisFrame = false;
+		i32 TabIndexToSelectThisFrame = -1;
 
 	public:
 		void DrawGui();

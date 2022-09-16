@@ -1,4 +1,4 @@
-#include "tja_file_format.h"
+#include "file_format_tja.h"
 #include <algorithm>
 
 namespace TJA

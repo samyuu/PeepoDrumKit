@@ -2,7 +2,7 @@
 #include "core_types.h"
 #include "core_string.h"
 #include "core_beat.h"
-#include "tja_file_format.h"
+#include "file_format_tja.h"
 #include <unordered_map>
 
 namespace PeepoDrumKit

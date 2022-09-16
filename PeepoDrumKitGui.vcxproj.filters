@@ -78,12 +78,6 @@
     <ClCompile Include="src\peepo_drum_kit\chart.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tja_file_format.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\fumen_file_format.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\core_undo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -115,6 +109,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\peepo_drum_kit\chart_editor_main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\file_format_fumen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\file_format_tja.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -203,12 +203,6 @@
     <ClInclude Include="src\peepo_drum_kit\chart_editor_context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\tja_file_format.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\fumen_file_format.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\core_build_info.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -237,6 +231,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\peepo_drum_kit\chart_editor_i18n.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\file_format_fumen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\file_format_tja.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

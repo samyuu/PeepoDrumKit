@@ -115,7 +115,7 @@
     <ClCompile Include="src\core_beat.cpp" />
     <ClCompile Include="src\core_types.cpp" />
     <ClCompile Include="src\core_undo.cpp" />
-    <ClCompile Include="src\fumen_file_format.cpp" />
+    <ClCompile Include="src\file_format_fumen.cpp" />
     <ClCompile Include="src\imgui\3rdparty\imgui.cpp" />
     <ClCompile Include="src\imgui\3rdparty\imgui_demo.cpp" />
     <ClCompile Include="src\imgui\3rdparty\imgui_draw.cpp" />
@@ -138,7 +138,7 @@
     <ClCompile Include="src\peepo_drum_kit\chart_editor_settings.cpp" />
     <ClCompile Include="src\peepo_drum_kit\test_gui_audio.cpp" />
     <ClCompile Include="src\peepo_drum_kit\test_gui_tja.cpp" />
-    <ClCompile Include="src\tja_file_format.cpp" />
+    <ClCompile Include="src\file_format_tja.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\peepo_drum_kit\chart_editor_i18n.h" />
@@ -155,7 +155,7 @@
     <ClInclude Include="src\core_string.h" />
     <ClInclude Include="src\core_beat.h" />
     <ClInclude Include="src\core_types.h" />
-    <ClInclude Include="src\fumen_file_format.h" />
+    <ClInclude Include="src\file_format_fumen.h" />
     <ClInclude Include="src\imgui\3rdparty\imconfig.h" />
     <ClInclude Include="src\imgui\3rdparty\imgui.h" />
     <ClInclude Include="src\imgui\3rdparty\imgui_internal.h" />
@@ -180,7 +180,7 @@
     <ClInclude Include="src\peepo_drum_kit\test_gui_tja.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_undo.h" />
     <ClInclude Include="src\core_undo.h" />
-    <ClInclude Include="src\tja_file_format.h" />
+    <ClInclude Include="src\file_format_tja.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src_res\Resource.rc">
