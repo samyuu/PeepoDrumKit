@@ -107,6 +107,7 @@ namespace PeepoDrumKit
 	inline u32 NoteColorYellow = 0xFF00B7F6;
 	inline u32 NoteColorWhite = 0xFFDEEDF5;
 	inline u32 NoteColorBlack = 0xFF1E1E1E; // Alternatively to make it a bit darker: 0xFF161616;
+	inline u32 NoteColorDrumrollHit = 0xFF0000F6;
 	inline u32 NoteBalloonTextColor = 0xFF000000;
 	inline u32 NoteBalloonTextColorShadow = 0xFFFFFFFF;
 	inline u32* NoteTypeToColorMap[EnumCount<NoteType>] =
@@ -216,21 +217,30 @@ namespace PeepoDrumKit
 		DrawTimelineRectBaseWithStartEndTriangles(drawList, DrawTimelineRectBaseParam { tl, br, 1.0f, 0.0f, selected ? TimelineLyricsBackgroundColorBorderSelected : TimelineLyricsBackgroundColorBorder, TimelineLyricsBackgroundColorOuter, TimelineLyricsBackgroundColorInner });
 	}
 
-	inline void DrawGamePreviewNote(const GameCamera& camera, ImDrawList* drawList, vec2 refSpaceCenter, NoteType noteType)
+	inline u32 InterpolateDrumrollHitColor(NoteType noteType, f32 hitPercentage)
+	{
+		u32 hitNoteColor = *NoteTypeToColorMap[EnumToIndex(noteType)];
+		if (hitPercentage > 0.0f)
+			hitNoteColor = Gui::ColorConvertFloat4ToU32(ImLerp(Gui::ColorConvertU32ToFloat4(hitNoteColor), Gui::ColorConvertU32ToFloat4(NoteColorDrumrollHit), hitPercentage));
+		return hitNoteColor;
+	}
+
+	inline void DrawGamePreviewNote(const GameCamera& camera, ImDrawList* drawList, vec2 refSpaceCenter, NoteType noteType, const u32* colorOverride = nullptr)
 	{
 		const auto radii = IsBigNote(noteType) ? GameRefNoteRadiiBig : GameRefNoteRadiiSmall;
 		drawList->AddCircleFilled(camera.RefToScreenSpace(refSpaceCenter), camera.RefToScreenScale(radii.BlackOuter), NoteColorBlack);
 		drawList->AddCircleFilled(camera.RefToScreenSpace(refSpaceCenter), camera.RefToScreenScale(radii.WhiteInner), NoteColorWhite);
-		drawList->AddCircleFilled(camera.RefToScreenSpace(refSpaceCenter), camera.RefToScreenScale(radii.ColorInner), *NoteTypeToColorMap[EnumToIndex(noteType)]);
+		drawList->AddCircleFilled(camera.RefToScreenSpace(refSpaceCenter), camera.RefToScreenScale(radii.ColorInner), (colorOverride != nullptr) ? *colorOverride : *NoteTypeToColorMap[EnumToIndex(noteType)]);
 	}
 
-	inline void DrawGamePreviewNoteDuration(const GameCamera& camera, ImDrawList* drawList, vec2 refSpaceCenterHead, vec2 refSpaceCenterTail, NoteType noteType)
+	inline void DrawGamePreviewNoteDuration(const GameCamera& camera, ImDrawList* drawList, vec2 refSpaceCenterHead, vec2 refSpaceCenterTail, NoteType noteType, const u32* colorOverride = nullptr)
 	{
 		const auto radii = IsBigNote(noteType) ? GameRefNoteRadiiBig : GameRefNoteRadiiSmall;
-		DrawGamePreviewNote(camera, drawList, refSpaceCenterHead, noteType);
-		DrawGamePreviewNote(camera, drawList, refSpaceCenterTail, noteType);
+		DrawGamePreviewNote(camera, drawList, refSpaceCenterHead, noteType, colorOverride);
+		DrawGamePreviewNote(camera, drawList, refSpaceCenterTail, noteType, colorOverride);
+
 		drawList->AddRectFilled(camera.RefToScreenSpace(refSpaceCenterHead - vec2(0.0f, radii.BlackOuter)), camera.RefToScreenSpace(refSpaceCenterTail + vec2(0.0f, radii.BlackOuter)), NoteColorBlack);
 		drawList->AddRectFilled(camera.RefToScreenSpace(refSpaceCenterHead - vec2(0.0f, radii.WhiteInner)), camera.RefToScreenSpace(refSpaceCenterTail + vec2(0.0f, radii.WhiteInner)), NoteColorWhite);
-		drawList->AddRectFilled(camera.RefToScreenSpace(refSpaceCenterHead - vec2(0.0f, radii.ColorInner)), camera.RefToScreenSpace(refSpaceCenterTail + vec2(0.0f, radii.ColorInner)), *NoteTypeToColorMap[EnumToIndex(noteType)]);
+		drawList->AddRectFilled(camera.RefToScreenSpace(refSpaceCenterHead - vec2(0.0f, radii.ColorInner)), camera.RefToScreenSpace(refSpaceCenterTail + vec2(0.0f, radii.ColorInner)), (colorOverride != nullptr) ? *colorOverride : *NoteTypeToColorMap[EnumToIndex(noteType)]);
 	}
 }

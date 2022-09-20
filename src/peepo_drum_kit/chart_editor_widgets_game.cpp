@@ -333,32 +333,83 @@ namespace PeepoDrumKit
 				{
 					const f32 refLaneHeadX = TimeToNoteLaneRefSpaceX(cursorTimeOrAnimated, it.TimeHead, it.Tempo, it.ScrollSpeed);
 					const f32 refLaneTailX = TimeToNoteLaneRefSpaceX(cursorTimeOrAnimated, it.TimeTail, it.Tempo, it.ScrollSpeed);
-					const Time timeSinceHit = TimeSinceNoteHit(it.TimeHead, cursorTimeOrAnimated);
-					if (it.OriginalNote->BeatDuration <= Beat::Zero() && timeSinceHit >= Time::Zero())
+					const Time timeSinceHeadHit = TimeSinceNoteHit(it.TimeHead, cursorTimeOrAnimated);
+					const Time timeSinceTailHit = TimeSinceNoteHit(it.TimeTail, cursorTimeOrAnimated);
+					if (it.OriginalNote->BeatDuration <= Beat::Zero() && timeSinceHeadHit >= Time::Zero())
 					{
-						if (timeSinceHit <= NoteHitAnimationDuration)
-							ReverseNoteDrawBuffer.push_back(DeferredNoteDrawData { ClampBot(refLaneHeadX, 0.0f), ClampBot(refLaneTailX, 0.0f), it.OriginalNote, it.TimeHead });
+						if (timeSinceHeadHit <= NoteHitAnimationDuration)
+							ReverseNoteDrawBuffer.push_back(DeferredNoteDrawData { ClampBot(refLaneHeadX, 0.0f), ClampBot(refLaneTailX, 0.0f), it.OriginalNote, it.TimeHead, it.TimeTail });
 					}
 					else
 					{
-						if (Camera.IsRangeVisibleOnLane(refLaneHeadX, refLaneTailX))
-							ReverseNoteDrawBuffer.push_back(DeferredNoteDrawData { refLaneHeadX, refLaneTailX, it.OriginalNote, it.TimeHead });
+						if (Camera.IsRangeVisibleOnLane(refLaneHeadX, refLaneTailX) || (timeSinceHeadHit >= Time::Zero() && timeSinceTailHit <= NoteHitAnimationDuration))
+							ReverseNoteDrawBuffer.push_back(DeferredNoteDrawData { refLaneHeadX, refLaneTailX, it.OriginalNote, it.TimeHead, it.TimeTail });
 					}}
 				);
 
+				const Beat drummrollHitInterval = GetGridBeatSnap(*Settings.General.DrumrollAutoHitBarDivision);
 				for (auto it = ReverseNoteDrawBuffer.rbegin(); it != ReverseNoteDrawBuffer.rend(); it++)
 				{
+					const Time timeSinceHit = TimeSinceNoteHit(it->NoteStartTime, cursorTimeOrAnimated);
+
 					// BUG: Wrong drawing order for long notes? (noticable at high scroll speeds)
 					if (it->OriginalNote->BeatDuration > Beat::Zero())
 					{
-						DrawGamePreviewNoteDuration(Camera, drawList,
-							GameRefHitCircleCenter + vec2(it->RefLaneHeadX, 0.0f),
-							GameRefHitCircleCenter + vec2(it->RefLaneTailX, 0.0f), it->OriginalNote->Type);
-						DrawGamePreviewNote(Camera, drawList, GameRefHitCircleCenter + vec2(it->RefLaneHeadX, 0.0f), it->OriginalNote->Type);
+						if (IsBalloonNote(it->OriginalNote->Type))
+						{
+							if (cursorTimeOrAnimated <= it->NoteEndTime)
+							{
+								DrawGamePreviewNoteDuration(Camera, drawList,
+									GameRefHitCircleCenter + vec2(ClampBot(it->RefLaneHeadX, 0.0f), 0.0f),
+									GameRefHitCircleCenter + vec2(ClampBot(it->RefLaneTailX, 0.0f), 0.0f), it->OriginalNote->Type);
+
+								DrawGamePreviewNote(Camera, drawList, GameRefHitCircleCenter + vec2(ClampBot(it->RefLaneHeadX, 0.0f), 0.0f), it->OriginalNote->Type);
+							}
+						}
+						else
+						{
+							const i32 maxHitCount = (it->OriginalNote->BeatDuration.Ticks / drummrollHitInterval.Ticks);
+							const Beat hitIntervalRoundedDuration = (drummrollHitInterval * maxHitCount);
+
+							i32 drumrollHitsSoFar = 0;
+							if (timeSinceHit >= Time::Zero())
+							{
+								for (Beat subBeat = hitIntervalRoundedDuration; subBeat >= Beat::Zero(); subBeat -= drummrollHitInterval)
+								{
+									const Time subHitTime = context.BeatToTime(it->OriginalNote->BeatTime + subBeat) + it->OriginalNote->TimeOffset;
+									if (subHitTime <= cursorTimeOrAnimated)
+										drumrollHitsSoFar++;
+								}
+							}
+
+							const f32 hitPercentage = ConvertRangeClampOutput(0.0f, static_cast<f32>(ClampBot(maxHitCount, 4)), 0.0f, 1.0f, static_cast<f32>(drumrollHitsSoFar));
+							const u32 hitNoteColor = InterpolateDrumrollHitColor(it->OriginalNote->Type, hitPercentage);
+							DrawGamePreviewNoteDuration(Camera, drawList,
+								GameRefHitCircleCenter + vec2(it->RefLaneHeadX, 0.0f),
+								GameRefHitCircleCenter + vec2(it->RefLaneTailX, 0.0f), it->OriginalNote->Type, &hitNoteColor);
+							DrawGamePreviewNote(Camera, drawList, GameRefHitCircleCenter + vec2(it->RefLaneHeadX, 0.0f), it->OriginalNote->Type, &hitNoteColor);
+
+							if (timeSinceHit >= Time::Zero())
+							{
+								for (Beat subBeat = hitIntervalRoundedDuration; subBeat >= Beat::Zero(); subBeat -= drummrollHitInterval)
+								{
+									const Time subHitTime = context.BeatToTime(it->OriginalNote->BeatTime + subBeat) + it->OriginalNote->TimeOffset;
+									const Time timeSinceSubHit = TimeSinceNoteHit(subHitTime, cursorTimeOrAnimated);
+									if (timeSinceSubHit > Time::Zero() && timeSinceSubHit <= NoteHitAnimationDuration)
+									{
+										const auto hitAnimation = GetNoteHitPathAnimation(timeSinceSubHit);
+										const vec2 refSpaceCenter = GameRefHitCircleCenter + vec2(ClampBot(it->RefLaneHeadX, 0.0f), 0.0f) + hitAnimation.RefSpaceOffset;
+
+										if (hitAnimation.AlphaFadeOut >= 1.0f)
+											DrawGamePreviewNote(Camera, drawList, refSpaceCenter, ToBigNoteIf(NoteType::Don, IsBigNote(it->OriginalNote->Type)));
+									}
+								}
+							}
+						}
 					}
 					else
 					{
-						const auto hitAnimation = GetNoteHitPathAnimation(TimeSinceNoteHit(it->NoteTime, cursorTimeOrAnimated));
+						const auto hitAnimation = GetNoteHitPathAnimation(timeSinceHit);
 						const vec2 refSpaceCenter = GameRefHitCircleCenter + vec2(it->RefLaneHeadX, 0.0f) + hitAnimation.RefSpaceOffset;
 
 						if (hitAnimation.AlphaFadeOut >= 1.0f)

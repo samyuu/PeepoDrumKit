@@ -98,7 +98,7 @@ namespace PeepoDrumKit
 	{
 		GameCamera Camera = {};
 
-		struct DeferredNoteDrawData { f32 RefLaneHeadX, RefLaneTailX; const Note* OriginalNote; Time NoteTime; };
+		struct DeferredNoteDrawData { f32 RefLaneHeadX, RefLaneTailX; const Note* OriginalNote; Time NoteStartTime, NoteEndTime; };
 		std::vector<DeferredNoteDrawData> ReverseNoteDrawBuffer;
 
 		void DrawGui(ChartContext& context, Time animatedCursorTime);

@@ -104,6 +104,7 @@ namespace PeepoDrumKit
 				{ "Note Yellow", &NoteColorYellow },
 				{ "Note White", &NoteColorWhite },
 				{ "Note Black", &NoteColorBlack },
+				{ "Note Drumroll Hit", &NoteColorDrumrollHit },
 				{ "Note Balloon Text", &NoteBalloonTextColor },
 				{ "Note Balloon Text (Shadow)", &NoteBalloonTextColorShadow },
 				NamedColorU32Pointer {},
