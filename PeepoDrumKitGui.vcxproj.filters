@@ -239,6 +239,12 @@
     <ClInclude Include="src\file_format_tja.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\imgui\backend\shader_imgui_default_ps.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\backend\shader_imgui_default_vs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src_res\Resource.rc">
@@ -247,5 +253,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src_res\Resource.aps" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="src\imgui\backend\shader_imgui_default_vs.hlsl" />
+    <FxCompile Include="src\imgui\backend\shader_imgui_default_ps.hlsl" />
   </ItemGroup>
 </Project>
