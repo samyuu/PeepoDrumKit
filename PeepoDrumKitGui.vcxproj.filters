@@ -245,6 +245,15 @@
     <ClInclude Include="src\imgui\backend\shader_imgui_default_vs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\imgui\backend\shader_imgui_waveform_ps.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\backend\shader_imgui_waveform_vs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\imgui\backend\imgui_custom_draw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="src_res\Resource.rc">
@@ -257,5 +266,7 @@
   <ItemGroup>
     <FxCompile Include="src\imgui\backend\shader_imgui_default_vs.hlsl" />
     <FxCompile Include="src\imgui\backend\shader_imgui_default_ps.hlsl" />
+    <FxCompile Include="src\imgui\backend\shader_imgui_waveform_ps.hlsl" />
+    <FxCompile Include="src\imgui\backend\shader_imgui_waveform_vs.hlsl" />
   </ItemGroup>
 </Project>
