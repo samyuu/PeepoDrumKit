@@ -64,7 +64,7 @@ namespace Audio
 			if (outBuffer.InterleavedSamples == nullptr)
 				return DecodeFileResult::Sadge;
 
-			// TODO: Prevent copy by.. overwriting malloc? or manually read chuncks
+			// TODO: Prevent copy by.. overwriting malloc? or manually read chunks
 			::memcpy(outBuffer.InterleavedSamples.get(), outSamplesI16, totalSampleCount * sizeof(i16));
 		} break;
 
@@ -87,7 +87,7 @@ namespace Audio
 			if (outBuffer.InterleavedSamples == nullptr)
 				return DecodeFileResult::Sadge;
 
-			// TODO: Prevent copy by passing down custom allocator or manually read chuncks
+			// TODO: Prevent copy by passing down custom allocator or manually read chunks
 			::memcpy(outBuffer.InterleavedSamples.get(), outSamplesI16, totalSampleCount * sizeof(i16));
 		} break;
 
@@ -110,7 +110,7 @@ namespace Audio
 			if (outBuffer.InterleavedSamples == nullptr)
 				return DecodeFileResult::Sadge;
 
-			// TODO: Prevent copy by passing down custom allocator or manually read chuncks
+			// TODO: Prevent copy by passing down custom allocator or manually read chunks
 			::memcpy(outBuffer.InterleavedSamples.get(), outSamplesI16, totalSampleCount * sizeof(i16));
 		} break;
 
@@ -132,7 +132,7 @@ namespace Audio
 			if (outBuffer.InterleavedSamples == nullptr)
 				return DecodeFileResult::Sadge;
 
-			// TODO: Prevent copy by passing down custom allocator or manually read chuncks
+			// TODO: Prevent copy by passing down custom allocator or manually read chunks
 			::memcpy(outBuffer.InterleavedSamples.get(), outSamplesI16, totalSampleCount * sizeof(i16));
 		} break;
 

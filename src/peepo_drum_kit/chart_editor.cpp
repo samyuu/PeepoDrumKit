@@ -46,7 +46,7 @@ namespace PeepoDrumKit
 		{
 			course->TempoMap.Tempo.Sorted = { TempoChange(Beat::Zero(), Tempo(160.0f)) };
 			course->TempoMap.Signature.Sorted = { TimeSignatureChange(Beat::Zero(), TimeSignature(4, 4)) };
-			course->TempoMap.RebuildAccelerationStructure();;
+			course->TempoMap.RebuildAccelerationStructure();
 		}
 	}
 

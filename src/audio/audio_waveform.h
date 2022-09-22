@@ -15,6 +15,11 @@ namespace Audio
 		f64 SamplesPerSecond = {};
 		std::vector<i16> AbsoluteSamples {};
 
+		inline Time GetDuration() const
+		{
+			return Time::FromSec(static_cast<f64>(AbsoluteSamples.size()) / SamplesPerSecond);
+		}
+
 		inline i16 SampleAtIndexOrZero(size_t sampleIndex) const
 		{
 			return (sampleIndex < AbsoluteSamples.size()) ? AbsoluteSamples[sampleIndex] : static_cast<i16>(0);
@@ -64,15 +69,11 @@ namespace Audio
 		static constexpr size_t MinMipSampleCount = 256;
 
 		WaveformMip AllMips[MaxMipLevels] {};
+		Time Duration {};
 
 		inline b8 IsEmpty() const
 		{
 			return AllMips[0].PowerOfTwoSampleCount == 0;
-		}
-
-		inline Time GetDuration() const
-		{
-			return Time::FromSec(static_cast<f64>(AllMips[0].AbsoluteSamples.size()) / AllMips[0].SamplesPerSecond);
 		}
 
 		inline i32 GetUsedMipCount() const
@@ -107,6 +108,7 @@ namespace Audio
 		{
 			assert(inSampleBuffer.InterleavedSamples != nullptr && channelIndex < inSampleBuffer.ChannelCount);
 
+			Duration = FramesToTime(inSampleBuffer.FrameCount, inSampleBuffer.SampleRate);
 			if (AllMips[0].PowerOfTwoSampleCount != 0)
 				for (auto& mip : AllMips) mip.Clear();
 

@@ -394,11 +394,6 @@ namespace PeepoDrumKit
 		return 1.0f;
 	}
 
-	static void DrawSingleWaveformLine(ImDrawList* drawList, vec2 screenSpaceCenter, f32 halfLineHeight, u32 waveformColor)
-	{
-		drawList->AddLine(screenSpaceCenter - vec2(0.0f, halfLineHeight), screenSpaceCenter + vec2(0.0f, halfLineHeight), waveformColor);
-	}
-
 	static void DrawTimelineContentWaveform(const ChartTimeline& timeline, ImDrawList* drawList, Time chartSongOffset, const Audio::WaveformMipChain& waveformL, const Audio::WaveformMipChain& waveformR, f32 waveformAnimation)
 	{
 		const f32 waveformAnimationScale = Clamp(waveformAnimation, 0.0f, 1.0f);
@@ -406,11 +401,12 @@ namespace PeepoDrumKit
 		const u32 waveformColor = Gui::ColorU32WithAlpha(TimelineWaveformBaseColor, waveformAnimationAlpha * 0.215f * (waveformR.IsEmpty() ? 2.0f : 1.0f));
 
 		const Time waveformTimePerPixel = timeline.Camera.LocalSpaceXToTime(1.0f) - timeline.Camera.LocalSpaceXToTime(0.0f);
-		const Time waveformDuration = waveformL.GetDuration();
+		const Time waveformDuration = waveformL.Duration;
 
 		const Rect contentRect = timeline.Regions.Content;
-		const f32 halfHeight = GetTotalTimelineRowsHeight(timeline) * 0.5f;
+		const f32 rowsHeight = GetTotalTimelineRowsHeight(timeline);
 
+		const f32 minAmplitude = (2.0f / rowsHeight);
 		for (size_t waveformIndex = 0; waveformIndex < 2; waveformIndex++)
 		{
 			const auto& waveform = (waveformIndex == 0) ? waveformL : waveformR;
@@ -418,15 +414,21 @@ namespace PeepoDrumKit
 				continue;
 
 			const auto& waveformMip = waveform.FindClosestMip(waveformTimePerPixel);
-			for (i32 visiblePixel = 0; visiblePixel < contentRect.GetWidth(); visiblePixel++)
+			for (i32 visiblePixel = 0; visiblePixel < contentRect.GetWidth(); /*visiblePixel++*/)
 			{
-				const vec2 localCenter = vec2(static_cast<f32>(visiblePixel), halfHeight);
-				const vec2 screenCenter = timeline.LocalToScreenSpace(localCenter);
-				const Time timeAtPixel = timeline.Camera.LocalSpaceXToTime(localCenter.x) - chartSongOffset;
-				if (timeAtPixel < Time::Zero()) continue;
-				if (timeAtPixel > waveformDuration) break;
-				DrawSingleWaveformLine(drawList,
-					screenCenter, waveformAnimationScale * Clamp(waveform.GetAmplitudeAt(waveformMip, timeAtPixel, waveformTimePerPixel) * halfHeight, 1.0f, halfHeight), waveformColor);
+				CustomDraw::WaveformChunk chunk;
+				const Rect chunkRect = Rect::FromTLSize(timeline.LocalToScreenSpace(vec2(static_cast<f32>(visiblePixel), 0.5f)), vec2(static_cast<f32>(CustomDraw::WaveformPixelsPerChunk), rowsHeight));
+
+				for (i32 chunkPixel = 0; chunkPixel < CustomDraw::WaveformPixelsPerChunk; chunkPixel++)
+				{
+					const Time timeAtPixel = timeline.Camera.LocalSpaceXToTime(static_cast<f32>(visiblePixel)) - chartSongOffset;
+					const b8 outOfBounds = (timeAtPixel < Time::Zero() || (timeAtPixel > waveformDuration));
+
+					chunk.PerPixelAmplitude[chunkPixel] = outOfBounds ? 0.0f : (waveformAnimationScale * ClampBot(waveform.GetAmplitudeAt(waveformMip, timeAtPixel, waveformTimePerPixel), minAmplitude));
+					visiblePixel++;
+				}
+
+				CustomDraw::DrawWaveformChunk(drawList, chunkRect, waveformColor, chunk);
 			}
 		}
 	}
@@ -663,11 +665,12 @@ namespace PeepoDrumKit
 		const u32 waveformColor = Gui::ColorU32WithAlpha(TimelineWaveformBaseColor, waveformAnimationAlpha * 0.5f * (waveformR.IsEmpty() ? 2.0f : 1.0f));
 
 		const Time waveformTimePerPixel = Time::FromSec(chartDuration.ToSec() / ClampBot(timeline.Regions.ContentScrollbarX.GetWidth(), 1.0f));
-		const Time waveformDuration = waveformL.GetDuration();
+		const Time waveformDuration = waveformL.Duration;
 
 		const Rect scrollbarRect = timeline.Regions.ContentScrollbarX;
-		const f32 scrollbarHalfHeight = scrollbarRect.GetHeight() * 0.5f;
+		const f32 scrollbarHeight = scrollbarRect.GetHeight();
 
+		const f32 minAmplitude = (2.0f / scrollbarHeight);
 		for (size_t waveformIndex = 0; waveformIndex < 2; waveformIndex++)
 		{
 			const auto& waveform = (waveformIndex == 0) ? waveformL : waveformR;
@@ -675,15 +678,21 @@ namespace PeepoDrumKit
 				continue;
 
 			const auto& waveformMip = waveform.FindClosestMip(waveformTimePerPixel);
-			for (i32 visiblePixel = 0; visiblePixel < scrollbarRect.GetWidth(); visiblePixel++)
+			for (i32 visiblePixel = 0; visiblePixel < scrollbarRect.GetWidth(); /*visiblePixel++*/)
 			{
-				const vec2 localCenter = vec2(static_cast<f32>(visiblePixel), scrollbarHalfHeight);
-				const vec2 screenCenter = timeline.LocalToScreenSpace_ScrollbarX(localCenter);
-				const Time timeAtPixel = (waveformTimePerPixel * static_cast<f64>(visiblePixel)) - chartSongOffset;
-				if (timeAtPixel < Time::Zero()) continue;
-				if (timeAtPixel > waveformDuration) break;
-				DrawSingleWaveformLine(drawList,
-					screenCenter, Clamp(waveform.GetAmplitudeAt(waveformMip, timeAtPixel, waveformTimePerPixel) * scrollbarHalfHeight, 1.0f, scrollbarHalfHeight), waveformColor);
+				CustomDraw::WaveformChunk chunk;
+				const Rect chunkRect = Rect::FromTLSize(timeline.LocalToScreenSpace_ScrollbarX(vec2(static_cast<f32>(visiblePixel), 0.5f)), vec2(static_cast<f32>(CustomDraw::WaveformPixelsPerChunk), scrollbarHeight));
+
+				for (i32 chunkPixel = 0; chunkPixel < CustomDraw::WaveformPixelsPerChunk; chunkPixel++)
+				{
+					const Time timeAtPixel = (waveformTimePerPixel * static_cast<f64>(visiblePixel)) - chartSongOffset;
+					const b8 outOfBounds = (timeAtPixel < Time::Zero() || (timeAtPixel > waveformDuration));
+
+					chunk.PerPixelAmplitude[chunkPixel] = outOfBounds ? 0.0f : (waveformAnimationScale * ClampBot(waveform.GetAmplitudeAt(waveformMip, timeAtPixel, waveformTimePerPixel), minAmplitude));
+					visiblePixel++;
+				}
+
+				CustomDraw::DrawWaveformChunk(drawList, chunkRect, waveformColor, chunk);
 			}
 		}
 	}

@@ -279,7 +279,7 @@ namespace PeepoDrumKit
 		Gui::PopStyleColor();
 		Gui::EndDisabled();
 
-		static constexpr f32 buttonMargin = 8.0f;;
+		static constexpr f32 buttonMargin = 8.0f;
 		Camera.ScreenSpaceContentRect = Gui::GetItemRect();
 		Camera.RefToScreenScaleFactor = ClampBot((Camera.ScreenSpaceContentRect.GetWidth() - (buttonMargin * 2.0f)) / GameRefLaneSize.x, 0.1f);
 		Camera.ScreenSpaceLaneRect = Rect::FromTLSize(vec2(Camera.ScreenSpaceContentRect.TL.x + buttonMargin, Camera.ScreenSpaceContentRect.GetCenter().y - Camera.RefToScreenScale(GameRefLaneContentHeight * 0.5f)), Camera.RefToScreenScale(GameRefLaneSize));
