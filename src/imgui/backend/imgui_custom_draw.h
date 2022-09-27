@@ -7,7 +7,32 @@
 //		 but explictiply implemented for each render backend and made accessible here
 namespace CustomDraw
 {
-	// TODO: Implement custom dynamic streaming texture API here too
+	enum class GPUPixelFormat : u8 { RGBA, BGRA, Count };
+	enum class GPUAccessType : u8 { Static, Dynamic, Count };
+
+	struct GPUTextureDesc
+	{
+		GPUPixelFormat Format;
+		GPUAccessType Access;
+		ivec2 Size;
+		const void* InitialPixels;
+	};
+
+	struct GPUTextureHandle { u32 SlotIndex, GenerationID; };
+
+	struct GPUTexture
+	{
+		GPUTextureHandle Handle = {};
+
+		void Load(const GPUTextureDesc& desc);
+		void Unload();
+		void UpdateDynamic(ivec2 size, const void* newPixels);
+		b8 IsValid() const;
+		ivec2 GetSize() const;
+		vec2 GetSizeF32() const;
+		GPUPixelFormat GetFormat() const;
+		ImTextureID GetTexID() const;
+	};
 
 	constexpr i32 WaveformPixelsPerChunk = 256;
 	struct WaveformChunk { f32 PerPixelAmplitude[WaveformPixelsPerChunk]; };
