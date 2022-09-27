@@ -46,6 +46,8 @@ namespace File
 	{
 		std::unique_ptr<u8[]> Content;
 		size_t Size;
+
+		inline std::string_view AsString() const { return std::string_view(reinterpret_cast<const char*>(Content.get()), Size); }
 	};
 
 	UniqueFileContent ReadAllBytes(std::string_view filePath);

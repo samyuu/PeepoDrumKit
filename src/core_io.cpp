@@ -142,9 +142,7 @@ namespace File
 			return UniqueFileContent {};
 
 		const size_t fileSize = static_cast<size_t>(largeIntegerFileSize.QuadPart);
-		// NOTE: Zero initialization from std::make_unique adds significant performance overhead (~30% slower when reading a ~10MB file from my SSD)
-		// auto fileContent = std::make_unique<u8[]>(fileSize);
-		auto fileContent = std::unique_ptr<u8[]>(new u8[fileSize]);
+		auto fileContent = std::unique_ptr<u8[]>(new u8[fileSize + 1]);
 
 		if (fileContent == nullptr)
 			return UniqueFileContent {};
@@ -155,6 +153,7 @@ namespace File
 			return UniqueFileContent {};
 
 		assert(bytesRead == fileSize);
+		fileContent[fileSize] = '\0';
 
 		return UniqueFileContent { std::move(fileContent), fileSize };
 	}
