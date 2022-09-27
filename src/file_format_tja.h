@@ -88,6 +88,11 @@ namespace TJA
 		Course_BALLOONEXP,
 		Course_BALLOONMAS,
 		Course_STYLE,
+		Course_NOTESDESIGNER0,
+		Course_NOTESDESIGNER1,
+		Course_NOTESDESIGNER2,
+		Course_NOTESDESIGNER3,
+		Course_NOTESDESIGNER4,
 		Course_EXAM1,
 		Course_EXAM2,
 		Course_EXAM3,
@@ -312,6 +317,7 @@ namespace TJA
 		i32 SCOREINIT = 0;
 		i32 SCOREDIFF = 0;
 		StyleMode STYLE = StyleMode::Single;
+		std::string NOTESDESIGNER;
 		std::string EXAM1;
 		std::string EXAM2;
 		std::string EXAM3;

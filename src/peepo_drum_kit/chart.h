@@ -206,6 +206,7 @@ namespace PeepoDrumKit
 	{
 		DifficultyType Type = DifficultyType::Oni;
 		DifficultyLevel Level = DifficultyLevel { 1 };
+		std::string CourseCreator;
 
 		SortedTempoMap TempoMap;
 

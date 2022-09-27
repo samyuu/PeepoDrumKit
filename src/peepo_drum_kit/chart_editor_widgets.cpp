@@ -1,4 +1,4 @@
-#include "chart_editor_widgets.h"
+﻿#include "chart_editor_widgets.h"
 #include "chart_editor_settings.h"
 #include "chart_editor_undo.h"
 #include "chart_editor_common.h"
@@ -117,7 +117,7 @@ namespace PeepoDrumKit
 		Gui::PushStyleColor(ImGuiCol_FrameBgHovered, Gui::GetStyleColorVec4(ImGuiCol_FrameBg));
 		Gui::PushStyleColor(ImGuiCol_FrameBgActive, Gui::GetStyleColorVec4(ImGuiCol_FrameBg));
 		if (i32 v = static_cast<i32>(*inOutLevel); Gui::SliderInt(label, &v,
-			static_cast<i32>(DifficultyLevel::Min), static_cast<i32>(DifficultyLevel::Max), "x%d", ImGuiSliderFlags_AlwaysClamp))
+			static_cast<i32>(DifficultyLevel::Min), static_cast<i32>(DifficultyLevel::Max), u8"★ %d", ImGuiSliderFlags_AlwaysClamp))
 		{
 			*inOutLevel = static_cast<DifficultyLevel>(v);
 			valueWasChanged = true;
@@ -1435,6 +1435,13 @@ namespace PeepoDrumKit
 				Gui::Property::PropertyTextValueFunc("Score Init (TODO)", [&] { Gui::Text("%d", course.ScoreInit); });
 				Gui::Property::PropertyTextValueFunc("Score Diff (TODO)", [&] { Gui::Text("%d", course.ScoreDiff); });
 #endif
+				Gui::Property::PropertyTextValueFunc(UI_Str("Course Creator"), [&]
+				{
+					const cstr hint = (course.CourseCreator.empty() && !chart.ChartCreator.empty()) ? chart.ChartCreator.c_str() : "n/a";
+					Gui::SetNextItemWidth(-1.0f);
+					if (Gui::InputTextWithHint("##CourseCreator", hint, &course.CourseCreator))
+						context.Undo.NotifyChangesWereMade();
+				});
 				Gui::Property::EndTable();
 			}
 		}

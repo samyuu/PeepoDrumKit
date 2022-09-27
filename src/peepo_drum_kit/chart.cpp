@@ -44,6 +44,21 @@ namespace PeepoDrumKit
 		}
 	}
 
+	Beat FindCourseMaxUsedBeat(const ChartCourse& course)
+	{
+		// NOTE: Technically only need to look at the last item of each sorted list **but just to be sure**, in case there is something wonky going on with out-of-order durations or something
+		Beat maxBeat = Beat::Zero();
+		for (const auto& v : course.TempoMap.Tempo) maxBeat = Max(maxBeat, v.Beat);
+		for (const auto& v : course.TempoMap.Signature) maxBeat = Max(maxBeat, v.Beat);
+		for (size_t i = 0; i < EnumCount<BranchType>; i++)
+			for (const auto& v : course.GetNotes(static_cast<BranchType>(i))) maxBeat = Max(maxBeat, v.BeatTime + Max(Beat::Zero(), v.BeatDuration));
+		for (const auto& v : course.GoGoRanges) maxBeat = Max(maxBeat, v.BeatTime + Max(Beat::Zero(), v.BeatDuration));
+		for (const auto& v : course.ScrollChanges) maxBeat = Max(maxBeat, v.BeatTime);
+		for (const auto& v : course.BarLineChanges) maxBeat = Max(maxBeat, v.BeatTime);
+		for (const auto& v : course.Lyrics) maxBeat = Max(maxBeat, v.BeatTime);
+		return maxBeat;
+	}
+
 	b8 CreateChartProjectFromTJA(const TJA::ParsedTJA& inTJA, ChartProject& out)
 	{
 		out.ChartDuration = Time::Zero();
@@ -78,6 +93,7 @@ namespace PeepoDrumKit
 			// HACK: Write proper enum conversion functions
 			outCourse.Type = Clamp(static_cast<DifficultyType>(inCourse.CourseMetadata.COURSE), DifficultyType {}, DifficultyType::Count);
 			outCourse.Level = Clamp(static_cast<DifficultyLevel>(inCourse.CourseMetadata.LEVEL), DifficultyLevel::Min, DifficultyLevel::Max);
+			outCourse.CourseCreator = inCourse.CourseMetadata.NOTESDESIGNER;
 
 			outCourse.TempoMap.Tempo.Sorted = { TempoChange(Beat::Zero(), inTJA.Metadata.BPM) };
 			outCourse.TempoMap.Signature.Sorted = { TimeSignatureChange(Beat::Zero(), TimeSignature(4, 4)) };
@@ -162,21 +178,6 @@ namespace PeepoDrumKit
 		return true;
 	}
 
-	Beat FindCourseMaxUsedBeat(const ChartCourse& course)
-	{
-		// NOTE: Technically only need to look at the last item of each sorted list **but just to be sure**, in case there is something wonky going on with out-of-order durations or something
-		Beat maxBeat = Beat::Zero();
-		for (const auto& v : course.TempoMap.Tempo) maxBeat = Max(maxBeat, v.Beat);
-		for (const auto& v : course.TempoMap.Signature) maxBeat = Max(maxBeat, v.Beat);
-		for (size_t i = 0; i < EnumCount<BranchType>; i++)
-			for (const auto& v : course.GetNotes(static_cast<BranchType>(i))) maxBeat = Max(maxBeat, v.BeatTime + Max(Beat::Zero(), v.BeatDuration));
-		for (const auto& v : course.GoGoRanges) maxBeat = Max(maxBeat, v.BeatTime + Max(Beat::Zero(), v.BeatDuration));
-		for (const auto& v : course.ScrollChanges) maxBeat = Max(maxBeat, v.BeatTime);
-		for (const auto& v : course.BarLineChanges) maxBeat = Max(maxBeat, v.BeatTime);
-		for (const auto& v : course.Lyrics) maxBeat = Max(maxBeat, v.BeatTime);
-		return maxBeat;
-	}
-
 	b8 ConvertChartProjectToTJA(const ChartProject& in, TJA::ParsedTJA& out, b8 includePeepoDrumKitComment)
 	{
 		static constexpr cstr FallbackTJAChartTitle = "Untitled Chart";
@@ -228,6 +229,7 @@ namespace PeepoDrumKit
 			// HACK: Write proper enum conversion functions
 			outCourse.Metadata.COURSE = static_cast<TJA::DifficultyType>(inCourse.Type);
 			outCourse.Metadata.LEVEL = static_cast<i32>(inCourse.Level);
+			outCourse.Metadata.NOTESDESIGNER = inCourse.CourseCreator;
 			for (const Note& inNote : inCourse.Notes_Normal) if (IsBalloonNote(inNote.Type)) { outCourse.Metadata.BALLOON.push_back(inNote.BalloonPopCount); }
 			outCourse.Metadata.SCOREINIT = inCourse.ScoreInit;
 			outCourse.Metadata.SCOREDIFF = inCourse.ScoreDiff;

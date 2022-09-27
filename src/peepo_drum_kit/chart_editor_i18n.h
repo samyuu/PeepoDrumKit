@@ -86,9 +86,9 @@ X("Show ImGui Demo",					u8"ImGui Demo表示") \
 X("Show ImGui Style Editor",			u8"ImGui Style Editor表示") \
 X("Reset Style Colors",					u8"Style Colorsをリセット") \
 X("Copyright (c) 2022",					u8"Copyright (c) 2022") \
-X("Build Time:",						u8"ビルドの時間:") \
-X("Build Date:",						u8"ビルドの日付:") \
-X("Build Configuration:",				u8"ビルドの構成:") \
+X("Build Time:",						u8"ビルド時間:") \
+X("Build Date:",						u8"ビルド日付:") \
+X("Build Configuration:",				u8"ビルド構成:") \
 X("Debug",								u8"デバッグ") \
 X("Release",							u8"リリース") \
 X("Courses",							u8"コース") \
@@ -135,6 +135,7 @@ X("Sound Effect Volume",				u8"音色の音量") \
 X("Selected Course",					u8"現在のコース") \
 X("Difficulty Type",					u8"難易度") \
 X("Difficulty Level",					u8"難易度のレベル") \
+X("Course Creator",						u8"コースの作者名") \
 X("Selected Items",						u8"選択した項目") \
 X("( Nothing Selected )",				u8"( 選択なし )") \
 X("Selected ",							u8"選択した") \

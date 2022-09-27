@@ -6,7 +6,7 @@ namespace TJA
 	// NOTE: Comment marker stored in the format: "// PeepoDrumKit yyyy/MM/dd"
 	static constexpr std::string_view PeepoDrumKitCommentMarkerPrefix = "PeepoDrumKit";
 
-	static constexpr std::string_view KeyStrings[EnumCount<Key>] =
+	static constexpr std::string_view KeyStrings[] =
 	{
 		"",
 
@@ -52,6 +52,11 @@ namespace TJA
 		"BALLOONEXP",
 		"BALLOONMAS",
 		"STYLE",
+		"NOTESDESIGNER0",
+		"NOTESDESIGNER1",
+		"NOTESDESIGNER2",
+		"NOTESDESIGNER3",
+		"NOTESDESIGNER4",
 		"EXAM1",
 		"EXAM2",
 		"EXAM3",
@@ -86,6 +91,8 @@ namespace TJA
 		"SUDDEN",
 		"JPOSSCROLL",
 	};
+
+	static_assert(ArrayCount(KeyStrings) == EnumCount<Key>);
 
 	struct LinePrefixCommentSuffixSplit { std::string_view LinePrefix, CommentSuffix; };
 
@@ -466,6 +473,11 @@ namespace TJA
 					case Key::Course_BALLOONEXP: { if (!tryParseCommaSeapratedI32s(in, &out.BALLOON_Expert)) { outErrors.Push(lineIndex, "Invalid int in comma separated list '%.*s'", FmtStrViewArgs(in)); } } break;
 					case Key::Course_BALLOONMAS: { if (!tryParseCommaSeapratedI32s(in, &out.BALLOON_Master)) { outErrors.Push(lineIndex, "Invalid int in comma separated list '%.*s'", FmtStrViewArgs(in)); } } break;
 					case Key::Course_STYLE: { if (!tryParseStyleMode(in, &out.STYLE)) { outErrors.Push(lineIndex, "Unknown style mode '%.*s'", FmtStrViewArgs(in)); } } break;
+					case Key::Course_NOTESDESIGNER0: { out.NOTESDESIGNER = in; } break;
+					case Key::Course_NOTESDESIGNER1: { out.NOTESDESIGNER = in; } break;
+					case Key::Course_NOTESDESIGNER2: { out.NOTESDESIGNER = in; } break;
+					case Key::Course_NOTESDESIGNER3: { out.NOTESDESIGNER = in; } break;
+					case Key::Course_NOTESDESIGNER4: { out.NOTESDESIGNER = in; } break;
 					case Key::Course_EXAM1: { out.EXAM1 = in; } break;
 					case Key::Course_EXAM2: { out.EXAM2 = in; } break;
 					case Key::Course_EXAM3: { out.EXAM3 = in; } break;
@@ -831,6 +843,17 @@ namespace TJA
 			appendProperyLine(out, Key::Course_SCOREINIT, (course.Metadata.SCOREINIT == 0) ? "" : std::string_view(buffer, sprintf_s(buffer, "%d", course.Metadata.SCOREINIT)));
 			appendProperyLine(out, Key::Course_SCOREDIFF, (course.Metadata.SCOREDIFF == 0) ? "" : std::string_view(buffer, sprintf_s(buffer, "%d", course.Metadata.SCOREDIFF)));
 			// TODO: Key::Course_STYLE;
+			if (!course.Metadata.NOTESDESIGNER.empty())
+			{
+				switch (course.Metadata.COURSE)
+				{
+				case DifficultyType::Easy: { appendProperyLine(out, Key::Course_NOTESDESIGNER0, course.Metadata.NOTESDESIGNER); } break;
+				case DifficultyType::Normal: { appendProperyLine(out, Key::Course_NOTESDESIGNER1, course.Metadata.NOTESDESIGNER); } break;
+				case DifficultyType::Hard: { appendProperyLine(out, Key::Course_NOTESDESIGNER2, course.Metadata.NOTESDESIGNER); } break;
+				case DifficultyType::Oni: { appendProperyLine(out, Key::Course_NOTESDESIGNER3, course.Metadata.NOTESDESIGNER); } break;
+				case DifficultyType::OniUra: { appendProperyLine(out, Key::Course_NOTESDESIGNER4, course.Metadata.NOTESDESIGNER); } break;
+				}
+			}
 			// TODO: Key::Course_EXAM1;
 			// TODO: Key::Course_EXAM2;
 			// TODO: Key::Course_EXAM3;
