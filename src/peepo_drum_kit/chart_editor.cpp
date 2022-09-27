@@ -65,6 +65,18 @@ namespace PeepoDrumKit
 		Audio::Engine.SetMasterVolume(0.75f);
 		if (*Settings.Audio.OpenDeviceOnStartup)
 			Audio::Engine.OpenStartStream();
+
+#if 0 // DEBUG: TJA bug hunting
+		tjaTestWindow.TabIndexToSelectThisFrame = 2;
+		context.Chart.ChartDuration = Time::FromSec(2.0);
+		for (auto& course : context.Chart.Courses)
+		{
+			course->Notes_Normal.Sorted = { Note { Beat::FromTicks(0) }, Note { Beat::FromTicks(48) }, };
+			course->TempoMap.Tempo.Sorted = { TempoChange(Beat::Zero(), Tempo(240.0f)) };
+			course->TempoMap.Signature.Sorted = { TimeSignatureChange(Beat::Zero(), TimeSignature(7, 8)) };
+			course->TempoMap.RebuildAccelerationStructure();
+		}
+#endif
 	}
 
 	ChartEditor::~ChartEditor()
@@ -789,9 +801,23 @@ namespace PeepoDrumKit
 			// DEBUG: LIVE PREVIEW PagMan
 			if (PersistentApp.LastSession.ShowWindow_TJAExportTest)
 			{
-				if (Gui::Begin(UI_WindowName("TJA Export Debug View"), &PersistentApp.LastSession.ShowWindow_TJAExportTest))
+				if (Gui::Begin(UI_WindowName("TJA Export Debug View"), &PersistentApp.LastSession.ShowWindow_TJAExportTest, ImGuiWindowFlags_MenuBar))
 				{
-					static struct { b8 Update = true; i32 Changes = -1, Undos = 0, Redos = 0;  std::string Text; ::TextEditor Editor = CreateImGuiColorTextEditWithNiceTheme(); } exportDebugViewData;
+					static struct { b8 RoundTripCheck = false, Update = true; i32 Changes = -1, Undos = 0, Redos = 0; std::string Text, DebugLog; ChartProject DebugChart; ::TextEditor Editor = CreateImGuiColorTextEditWithNiceTheme(); } exportDebugViewData;
+
+					if (Gui::BeginMenuBar())
+					{
+						Gui::MenuItem("Round-trip Conversion Check", nullptr, &exportDebugViewData.RoundTripCheck);
+						Gui::EndMenuBar();
+					}
+
+					if (exportDebugViewData.RoundTripCheck)
+					{
+						Gui::PushStyleColor(ImGuiCol_Text, 0xFF42AEF7);
+						Gui::InputTextMultilineWithHint("##DebugLog", "No errors detected " UTF8_PeepoHappy, &exportDebugViewData.DebugLog, vec2(-1.0f, Gui::GetFrameHeight() * 4.0f), ImGuiInputTextFlags_ReadOnly);
+						Gui::PopStyleColor();
+					}
+
 					if (context.Undo.NumberOfChangesMade != exportDebugViewData.Changes) { exportDebugViewData.Update = true; exportDebugViewData.Changes = context.Undo.NumberOfChangesMade; }
 					if (context.Undo.UndoStack.size() != exportDebugViewData.Undos) { exportDebugViewData.Update = true; exportDebugViewData.Undos = static_cast<i32>(context.Undo.UndoStack.size()); }
 					if (context.Undo.RedoStack.size() != exportDebugViewData.Redos) { exportDebugViewData.Update = true; exportDebugViewData.Redos = static_cast<i32>(context.Undo.RedoStack.size()); }
@@ -803,6 +829,16 @@ namespace PeepoDrumKit
 						exportDebugViewData.Text.clear();
 						TJA::ConvertParsedToText(tja, exportDebugViewData.Text, TJA::Encoding::Unknown);
 						exportDebugViewData.Editor.SetText(exportDebugViewData.Text);
+
+						// DEBUG: TJA bug hunting
+						if (exportDebugViewData.RoundTripCheck)
+						{
+							std::vector<TJA::Token> tempTokens = TJA::TokenizeLines(TJA::SplitLines(exportDebugViewData.Text));
+							TJA::ErrorList tempErrors;
+							TJA::ParsedTJA tempTJA = TJA::ParseTokens(tempTokens, tempErrors);
+							exportDebugViewData.DebugChart = {}; CreateChartProjectFromTJA(tempTJA, exportDebugViewData.DebugChart); exportDebugViewData.DebugLog.clear();
+							DebugCompareCharts(context.Chart, exportDebugViewData.DebugChart, [](std::string_view message, void*) { exportDebugViewData.DebugLog += message; exportDebugViewData.DebugLog += '\n'; });
+						}
 					}
 					const f32 buttonHeight = Gui::GetFrameHeight();
 					exportDebugViewData.Editor.SetReadOnly(true);

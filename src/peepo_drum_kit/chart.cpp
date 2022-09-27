@@ -4,6 +4,66 @@
 
 namespace PeepoDrumKit
 {
+	void DebugCompareCharts(const ChartProject& chartA, const ChartProject& chartB, DebugCompareChartsOnMessageFunc onMessageFunc, void* userData)
+	{
+		auto logf = [onMessageFunc, userData](cstr fmt, ...)
+		{
+			char buffer[512];
+			va_list args;
+			va_start(args, fmt);
+			onMessageFunc(std::string_view(buffer, _vsnprintf_s(buffer, ArrayCount(buffer), fmt, args)), userData);
+			va_end(args);
+		};
+
+		if (chartA.Courses.size() != chartB.Courses.size()) { logf("Course count mismatch (%zu != %zu)", chartA.Courses.size(), chartB.Courses.size()); return; }
+
+		for (size_t i = 0; i < chartA.Courses.size(); i++)
+		{
+			const ChartCourse& courseA = *chartA.Courses[i];
+			const ChartCourse& courseB = *chartB.Courses[i];
+
+			for (GenericList list = {}; list < GenericList::Count; IncrementEnum(list))
+			{
+				const size_t countA = GetGenericListCount(courseA, list);
+				const size_t countB = GetGenericListCount(courseB, list);
+				if (countA != countB) { logf("%s count mismatch (%zu != %zu)", GenericListNames[EnumToIndex(list)], countA, countB); continue; }
+
+				for (size_t itemIndex = 0; itemIndex < countA; itemIndex++)
+				{
+					for (GenericMember member = {}; member < GenericMember::Count; IncrementEnum(member))
+					{
+						GenericMemberUnion valueA {}, valueB {};
+						const b8 hasValueA = TryGetGeneric(courseA, list, itemIndex, member, valueA);
+						const b8 hasValueB = TryGetGeneric(courseB, list, itemIndex, member, valueB);
+						assert(hasValueA == hasValueB);
+						if (!hasValueA || member == GenericMember::B8_IsSelected)
+							continue;
+
+						static constexpr auto safeCStrAreSame = [](cstr a, cstr b) -> b8 { if ((a == nullptr) || (b == nullptr) && a != b) return false; return (strcmp(a, b) == 0); };
+						cstr memberName = ""; b8 isSame = false;
+						switch (member)
+						{
+						case GenericMember::B8_IsSelected: { memberName = "IsSelected"; isSame = (valueA.B8 == valueB.B8); } break;
+						case GenericMember::B8_BarLineVisible: { memberName = "IsVisible"; isSame = (valueA.B8 == valueB.B8); } break;
+						case GenericMember::I16_BalloonPopCount: { memberName = "BalloonPopCount"; isSame = (valueA.I16 == valueB.I16); } break;
+						case GenericMember::F32_ScrollSpeed: { memberName = "ScrollSpeed"; isSame = ApproxmiatelySame(valueA.F32, valueB.F32); } break;
+						case GenericMember::Beat_Start: { memberName = "BeatStart"; isSame = (valueA.Beat == valueB.Beat); } break;
+						case GenericMember::Beat_Duration: { memberName = "BeatDuration"; isSame = (valueA.Beat == valueB.Beat); } break;
+						case GenericMember::Time_Offset: { memberName = "TimeOffset"; isSame = ApproxmiatelySame(valueA.Time.Seconds, valueB.Time.Seconds); } break;
+						case GenericMember::NoteType_V: { memberName = "NoteType"; isSame = (valueA.NoteType == valueB.NoteType); } break;
+						case GenericMember::Tempo_V: { memberName = "Tempo"; isSame = ApproxmiatelySame(valueA.Tempo.BPM, valueB.Tempo.BPM); } break;
+						case GenericMember::TimeSignature_V: { memberName = "TimeSignature"; isSame = (valueA.TimeSignature == valueB.TimeSignature); } break;
+						case GenericMember::CStr_Lyric: { memberName = "Lyric"; isSame = safeCStrAreSame(valueA.CStr, valueB.CStr); } break;
+						}
+
+						if (!isSame)
+							logf("%s[%zu].%s value mismatch", GenericListNames[EnumToIndex(list)], itemIndex, memberName);
+					}
+				}
+			}
+		}
+	}
+
 	struct TempTimedDelayCommand { Beat Beat; Time Delay; };
 	static constexpr Beat GetBeat(const TempTimedDelayCommand& v) { return v.Beat; }
 
