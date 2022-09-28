@@ -141,6 +141,8 @@
     <ClCompile Include="src\file_format_tja.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="3rdparty\thorvg\thorvg.h" />
+    <ClCompile Include="3rdparty\thorvg\thorvg.cpp" />
     <ClInclude Include="src\imgui\backend\imgui_custom_draw.h" />
     <ClInclude Include="src\imgui\backend\shader_imgui_default_ps.h" />
     <ClInclude Include="src\imgui\backend\shader_imgui_default_vs.h" />

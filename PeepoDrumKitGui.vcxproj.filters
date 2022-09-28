@@ -117,6 +117,9 @@
     <ClCompile Include="src\file_format_tja.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="3rdparty\thorvg\thorvg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\imgui\3rdparty\imconfig.h">
@@ -252,6 +255,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\imgui\backend\imgui_custom_draw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="3rdparty\thorvg\thorvg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
