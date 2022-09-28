@@ -150,6 +150,7 @@
     <ClInclude Include="src\imgui\backend\shader_imgui_waveform_vs.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_i18n.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_settings_gui.h" />
+    <ClInclude Include="src\peepo_drum_kit\chart_editor_theme.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_widgets.h" />
     <ClInclude Include="src_res\resource.h" />
     <ClInclude Include="src\audio\audio_common.h" />
@@ -176,7 +177,6 @@
     <ClInclude Include="src\imgui\extension\imgui_common.h" />
     <ClInclude Include="src\imgui\extension\imgui_input_binding.h" />
     <ClInclude Include="src\imgui\imgui_include.h" />
-    <ClInclude Include="src\peepo_drum_kit\chart_editor_common.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_context.h" />
     <ClInclude Include="src\peepo_drum_kit\chart_editor_sound.h" />
     <ClInclude Include="src\peepo_drum_kit\test_gui_audio.h" />

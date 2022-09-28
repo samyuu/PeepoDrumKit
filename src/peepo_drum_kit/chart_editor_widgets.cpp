@@ -1,7 +1,6 @@
 ﻿#include "chart_editor_widgets.h"
 #include "chart_editor_settings.h"
 #include "chart_editor_undo.h"
-#include "chart_editor_common.h"
 #include "chart_editor_i18n.h"
 
 // TODO: Populate char[U8Max] lookup table using provided flags and index into instead of using a switch (?)

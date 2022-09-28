@@ -561,6 +561,8 @@ void ImGui_ImplDX11_Shutdown()
 	IM_ASSERT(bd != nullptr && "No renderer backend to shutdown, or already shutdown?");
 	ImGuiIO& io = ImGui::GetIO();
 
+	CustomDraw::DX11ReleaseDeferedResources(bd);
+
 	ImGui_ImplDX11_ShutdownPlatformInterface();
 	ImGui_ImplDX11_InvalidateDeviceObjects();
 	if (bd->DXGIFactory) { bd->DXGIFactory->Release(); }

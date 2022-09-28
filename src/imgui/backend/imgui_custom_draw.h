@@ -16,6 +16,7 @@ namespace CustomDraw
 		GPUAccessType Access;
 		ivec2 Size;
 		const void* InitialPixels;
+		// TODO: Custom stride with "0" meainig "default use width"
 	};
 
 	struct GPUTextureHandle { u32 SlotIndex, GenerationID; };

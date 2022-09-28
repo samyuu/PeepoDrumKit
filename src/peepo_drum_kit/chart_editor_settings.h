@@ -8,8 +8,6 @@ namespace PeepoDrumKit
 {
 	constexpr std::string_view PeepoDrumKitApplicationTitle = PEEPO_DEBUG ? "Peepo Drum Kit (Debug)" : "Peepo Drum Kit";
 
-	void GuiStyleColorPeepoDrumKit(ImGuiStyle* destination = nullptr);
-
 	struct RecentFilesList
 	{
 		// NOTE: Default 9 to match the keyboard number row key count

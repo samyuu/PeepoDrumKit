@@ -1,6 +1,6 @@
 #include "chart_editor_timeline.h"
 #include "chart_editor_undo.h"
-#include "chart_editor_common.h"
+#include "chart_editor_theme.h"
 #include "chart_editor_i18n.h"
 
 namespace PeepoDrumKit
@@ -392,6 +392,80 @@ namespace PeepoDrumKit
 		}
 
 		return 1.0f;
+	}
+
+	static void DrawTimelineNote(ImDrawList* drawList, vec2 center, f32 scale, NoteType noteType, f32 alpha = 1.0f)
+	{
+		const auto radii = GuiScaleNoteRadii(IsBigNote(noteType) ? TimelineNoteRadiiBig : TimelineNoteRadiiSmall);
+		drawList->AddCircleFilled(center, scale * radii.BlackOuter, Gui::ColorU32WithAlpha(NoteColorBlack, alpha));
+		drawList->AddCircleFilled(center, scale * radii.WhiteInner, Gui::ColorU32WithAlpha(NoteColorWhite, alpha));
+		drawList->AddCircleFilled(center, scale * radii.ColorInner, Gui::ColorU32WithAlpha(*NoteTypeToColorMap[EnumToIndex(noteType)], alpha));
+	}
+
+	static void DrawTimelineNoteDuration(ImDrawList* drawList, vec2 centerHead, vec2 centerTail, NoteType noteType, f32 alpha = 1.0f)
+	{
+		// BUG: Ugly full-circle clipping when zoomed out and not drawing a regular head note to cover it up
+		const auto radii = GuiScaleNoteRadii(IsBigNote(noteType) ? TimelineNoteRadiiBig : TimelineNoteRadiiSmall);
+		DrawTimelineNote(drawList, centerHead, 1.0f, noteType, alpha);
+		DrawTimelineNote(drawList, centerTail, 1.0f, noteType, alpha);
+		drawList->AddRectFilled(centerHead - vec2(0.0f, radii.BlackOuter), centerTail + vec2(0.0f, radii.BlackOuter), Gui::ColorU32WithAlpha(NoteColorBlack, alpha));
+		drawList->AddRectFilled(centerHead - vec2(0.0f, radii.WhiteInner), centerTail + vec2(0.0f, radii.WhiteInner), Gui::ColorU32WithAlpha(NoteColorWhite, alpha));
+		drawList->AddRectFilled(centerHead - vec2(0.0f, radii.ColorInner), centerTail + vec2(0.0f, radii.ColorInner), Gui::ColorU32WithAlpha(*NoteTypeToColorMap[EnumToIndex(noteType)], alpha));
+	}
+
+	static void DrawTimelineNoteBalloonPopCount(ImDrawList* drawList, vec2 center, f32 scale, i32 popCount)
+	{
+		char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, "%d", popCount));
+		const ImFont* font = FontLarge_EN;
+		const f32 fontSize = (font->FontSize * scale);
+		const vec2 textSize = font->CalcTextSizeA(fontSize, F32Max, -1.0f, Gui::StringViewStart(text), Gui::StringViewEnd(text));
+		const vec2 textPosition = (center - (textSize * 0.5f)) - vec2(0.0f, 1.0f);
+
+		Gui::DisableFontPixelSnap(true);
+		Gui::AddTextWithDropShadow(drawList, font, fontSize, textPosition, NoteBalloonTextColor, text, 0.0f, nullptr, NoteBalloonTextColorShadow);
+		Gui::DisableFontPixelSnap(false);
+	}
+
+	struct DrawTimelineRectBaseParam { vec2 TL, BR; f32 TriScaleL, TriScaleR; u32 ColorBorder, ColorOuter, ColorInner; };
+	static void DrawTimelineRectBaseWithStartEndTriangles(ImDrawList* drawList, DrawTimelineRectBaseParam param)
+	{
+		const f32 outerOffset = ClampBot(GuiScale(2.0f), 1.0f);
+		const f32 innerOffset = ClampBot(GuiScale(5.0f), 1.0f);
+		const Rect borderRect = Rect(param.TL, param.BR);
+		Rect outerRect = Rect(param.TL + vec2(outerOffset), param.BR - vec2(outerOffset)); if (outerRect.GetWidth() < outerOffset) outerRect.BR.x = outerRect.TL.x + outerOffset;
+		Rect innerRect = Rect(param.TL + vec2(innerOffset), param.BR - vec2(innerOffset)); if (innerRect.GetWidth() < outerOffset) innerRect.BR.x = innerRect.TL.x + outerOffset;
+
+		drawList->AddRectFilled(borderRect.TL, borderRect.BR, param.ColorBorder);
+		drawList->AddRectFilled(outerRect.TL, outerRect.BR, param.ColorOuter);
+		drawList->AddRectFilled(innerRect.TL, innerRect.BR, param.ColorInner);
+
+		if (outerRect.GetWidth() > outerOffset)
+		{
+			const f32 triH = (param.BR.y - param.TL.y) - innerOffset;
+			const f32 triW = ClampTop(triH, (param.BR.x - param.TL.x) - innerOffset);
+			if (param.TriScaleL > 0.0f)
+				drawList->AddTriangleFilled(outerRect.TL, outerRect.TL + vec2(triW, triH), outerRect.TL + vec2(0.0f, triH), param.ColorOuter);
+			else if (param.TriScaleL < 0.0f)
+				drawList->AddTriangleFilled(outerRect.TL, outerRect.TL + vec2(triW, 0.0f), outerRect.TL + vec2(0.0f, triH), param.ColorOuter);
+
+			if (param.TriScaleR > 0.0f)
+				drawList->AddTriangleFilled(outerRect.BR, outerRect.BR - vec2(triW, 0.0f), outerRect.BR - vec2(0.0f, triH), param.ColorOuter);
+			else if (param.TriScaleR < 0.0f)
+				drawList->AddTriangleFilled(outerRect.BR, outerRect.BR - vec2(triW, triH), outerRect.BR - vec2(0.0f, triH), param.ColorOuter);
+		}
+	}
+
+	static void DrawTimelineGoGoTimeBackground(ImDrawList* drawList, vec2 tl, vec2 br, f32 animationScale, b8 selected)
+	{
+		const f32 centerX = (br.x + tl.x) * 0.5f;
+		tl.x = Lerp(centerX, tl.x, animationScale);
+		br.x = Lerp(centerX, br.x, animationScale);
+		DrawTimelineRectBaseWithStartEndTriangles(drawList, DrawTimelineRectBaseParam { tl, br, 1.0f, 1.0f, selected ? TimelineGoGoBackgroundColorBorderSelected : TimelineGoGoBackgroundColorBorder, TimelineGoGoBackgroundColorOuter, TimelineGoGoBackgroundColorInner });
+	}
+
+	static void DrawTimelineLyricsBackground(ImDrawList* drawList, vec2 tl, vec2 br, b8 selected)
+	{
+		DrawTimelineRectBaseWithStartEndTriangles(drawList, DrawTimelineRectBaseParam { tl, br, 1.0f, 0.0f, selected ? TimelineLyricsBackgroundColorBorderSelected : TimelineLyricsBackgroundColorBorder, TimelineLyricsBackgroundColorOuter, TimelineLyricsBackgroundColorInner });
 	}
 
 	static void DrawTimelineContentWaveform(const ChartTimeline& timeline, ImDrawList* drawList, Time chartSongOffset, const Audio::WaveformMipChain& waveformL, const Audio::WaveformMipChain& waveformR, f32 waveformAnimation)

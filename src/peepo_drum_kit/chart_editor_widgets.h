@@ -4,7 +4,7 @@
 #include "chart.h"
 #include "chart_editor_timeline.h"
 #include "chart_editor_context.h"
-#include "chart_editor_common.h"
+#include "chart_editor_theme.h"
 #include "imgui/imgui_include.h"
 
 namespace PeepoDrumKit
@@ -92,6 +92,24 @@ namespace PeepoDrumKit
 		b8 IsAllLyricsInputActiveThisFrame, IsAllLyricsInputActiveLastFrame;
 
 		void DrawGui(ChartContext& context, ChartTimeline& timeline);
+	};
+
+	constexpr f32 TimeToNoteLaneRefSpaceX(Time cursorTime, Time noteTime, Tempo tempo, f32 scrollSpeed)
+	{
+		return ((tempo.BPM * scrollSpeed) / 60.0f) * (noteTime - cursorTime).ToSec_F32() * GameRefLaneDistancePerBeat;
+	}
+
+	struct GameCamera
+	{
+		Rect ScreenSpaceContentRect {};
+		Rect ScreenSpaceLaneRect {};
+		f32 RefToScreenScaleFactor = 1.0f;
+
+		constexpr f32 RefToScreenScale(f32 refScale) const { return refScale * RefToScreenScaleFactor; }
+		constexpr vec2 RefToScreenScale(vec2 refSpace) const { return refSpace * RefToScreenScaleFactor; }
+		constexpr vec2 RefToScreenSpace(vec2 refSpace) const { return ScreenSpaceLaneRect.TL + (refSpace * RefToScreenScaleFactor); }
+		constexpr b8 IsPointVisibleOnLane(f32 refX, f32 refThreshold = 280.0f) const { return (refX >= -refThreshold) && (refX <= (GameRefLaneSize.x + refThreshold)); }
+		constexpr b8 IsRangeVisibleOnLane(f32 refHeadX, f32 refTailX, f32 refThreshold = 280.0f) const { return (refTailX >= -refThreshold) && (refHeadX <= (GameRefLaneSize.x + refThreshold)); }
 	};
 
 	struct ChartGamePreview

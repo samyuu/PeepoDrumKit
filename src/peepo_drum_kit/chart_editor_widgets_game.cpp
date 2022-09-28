@@ -57,55 +57,6 @@ namespace PeepoDrumKit
 {
 	static constexpr f32 FrameToTime(f32 frame, f32 fps = 60.0f) { return (frame / fps); }
 	struct TimeLeftCenterRight { f32 Time; vec2 Left, Center, Right; };
-#if 0
-	static constexpr TimeLeftCenterRight HitPath[] =
-	{
-		{ FrameToTime(0.0f),  vec2(),				 vec2(618.0f, 386.0f),  vec2(663.0f, 293.0f) },
-		{ FrameToTime(6.0f),  vec2(695.0f, 229.0f),	 vec2(792.0f, 153.0f),  vec2(850.0f, 99.0f) },
-		{ FrameToTime(14.0f), vec2(1039.0f, -13.0f), vec2(1188.0f, -22.0f), vec2(1268.0f, -23.0f) },
-		{ FrameToTime(23.0f), vec2(1420.0f, -30.0f), vec2(1568.0f, 41.0f),  vec2(1661.0f, 90.0f) },
-		{ FrameToTime(29.0f), vec2(1815.0f, 189.0f), vec2(1836.0f, 244.0f), vec2() },
-	};
-	static constexpr BezierKeyFrame RefSpaceNoteHitPathX[] =
-	{
-		{ HitPath[0].Time, HitPath[0].Center.x, HitPath[0].Left.x, HitPath[0].Right.x },
-		{ HitPath[1].Time, HitPath[1].Center.x, HitPath[1].Left.x, HitPath[1].Right.x },
-		{ HitPath[2].Time, HitPath[2].Center.x, HitPath[2].Left.x, HitPath[2].Right.x },
-		{ HitPath[3].Time, HitPath[3].Center.x, HitPath[3].Left.x, HitPath[3].Right.x },
-		{ HitPath[4].Time, HitPath[4].Center.x, HitPath[4].Left.x, HitPath[4].Right.x },
-	};
-	static constexpr BezierKeyFrame RefSpaceNoteHitPathY[] =
-	{
-		{ HitPath[0].Time, HitPath[0].Center.y, HitPath[0].Left.y, HitPath[0].Right.y },
-		{ HitPath[1].Time, HitPath[1].Center.y, HitPath[1].Left.y, HitPath[1].Right.y },
-		{ HitPath[2].Time, HitPath[2].Center.y, HitPath[2].Left.y, HitPath[2].Right.y },
-		{ HitPath[3].Time, HitPath[3].Center.y, HitPath[3].Left.y, HitPath[3].Right.y },
-		{ HitPath[4].Time, HitPath[4].Center.y, HitPath[4].Left.y, HitPath[4].Right.y },
-	};
-#elif 0
-	static constexpr TimeLeftCenterRight HitPath[] =
-	{
-		{ FrameToTime(0),  vec2(), vec2(616, 386),  vec2(692, 222) },
-		{ FrameToTime(10), vec2(818, 118), vec2(954, 43),  vec2(1200, -50) },
-		{ FrameToTime(22), vec2(1420, -30), vec2(1526, 16), vec2(1676, 72) },
-		{ FrameToTime(30), vec2(1774, 169), vec2(1836, 246), vec2() },
-	};
-	static constexpr BezierKeyFrame RefSpaceNoteHitPathX[] =
-	{
-		{ HitPath[0].Time, HitPath[0].Center.x, HitPath[0].Left.x, HitPath[0].Right.x },
-		{ HitPath[1].Time, HitPath[1].Center.x, HitPath[1].Left.x, HitPath[1].Right.x },
-		{ HitPath[2].Time, HitPath[2].Center.x, HitPath[2].Left.x, HitPath[2].Right.x },
-		{ HitPath[3].Time, HitPath[3].Center.x, HitPath[3].Left.x, HitPath[3].Right.x },
-	};
-	static constexpr BezierKeyFrame RefSpaceNoteHitPathY[] =
-	{
-		{ HitPath[0].Time, HitPath[0].Center.y, HitPath[0].Left.y, HitPath[0].Right.y },
-		{ HitPath[1].Time, HitPath[1].Center.y, HitPath[1].Left.y, HitPath[1].Right.y },
-		{ HitPath[2].Time, HitPath[2].Center.y, HitPath[2].Left.y, HitPath[2].Right.y },
-		{ HitPath[3].Time, HitPath[3].Center.y, HitPath[3].Left.y, HitPath[3].Right.y },
-	};
-#elif 1
-
 	constexpr TimeLeftCenterRight LinearKey(f32 frame, vec2 c) { return TimeLeftCenterRight { FrameToTime(frame), c, c, c }; }
 	static constexpr TimeLeftCenterRight HitPath[] =
 	{
@@ -169,7 +120,6 @@ namespace PeepoDrumKit
 		NoteHitPathBezierKeyAt({ 25 }, 1), NoteHitPathBezierKeyAt({ 26 }, 1), NoteHitPathBezierKeyAt({ 27 }, 1), NoteHitPathBezierKeyAt({ 28 }, 1), NoteHitPathBezierKeyAt({ 29 }, 1),
 		NoteHitPathBezierKeyAt({ 30 }, 1),
 	};
-#endif
 	static constexpr BezierKeyFrame NoteHitFadeIn[] =
 	{
 		{ FrameToTime(30.0f), 0.0f, 0.0f, 0.0f },
@@ -210,6 +160,33 @@ namespace PeepoDrumKit
 
 namespace PeepoDrumKit
 {
+	static u32 InterpolateDrumrollHitColor(NoteType noteType, f32 hitPercentage)
+	{
+		u32 hitNoteColor = *NoteTypeToColorMap[EnumToIndex(noteType)];
+		if (hitPercentage > 0.0f)
+			hitNoteColor = Gui::ColorConvertFloat4ToU32(ImLerp(Gui::ColorConvertU32ToFloat4(hitNoteColor), Gui::ColorConvertU32ToFloat4(NoteColorDrumrollHit), hitPercentage));
+		return hitNoteColor;
+	}
+
+	static void DrawGamePreviewNote(const GameCamera& camera, ImDrawList* drawList, vec2 refSpaceCenter, NoteType noteType, const u32* colorOverride = nullptr)
+	{
+		const auto radii = IsBigNote(noteType) ? GameRefNoteRadiiBig : GameRefNoteRadiiSmall;
+		drawList->AddCircleFilled(camera.RefToScreenSpace(refSpaceCenter), camera.RefToScreenScale(radii.BlackOuter), NoteColorBlack);
+		drawList->AddCircleFilled(camera.RefToScreenSpace(refSpaceCenter), camera.RefToScreenScale(radii.WhiteInner), NoteColorWhite);
+		drawList->AddCircleFilled(camera.RefToScreenSpace(refSpaceCenter), camera.RefToScreenScale(radii.ColorInner), (colorOverride != nullptr) ? *colorOverride : *NoteTypeToColorMap[EnumToIndex(noteType)]);
+	}
+
+	static void DrawGamePreviewNoteDuration(const GameCamera& camera, ImDrawList* drawList, vec2 refSpaceCenterHead, vec2 refSpaceCenterTail, NoteType noteType, const u32* colorOverride = nullptr)
+	{
+		const auto radii = IsBigNote(noteType) ? GameRefNoteRadiiBig : GameRefNoteRadiiSmall;
+		DrawGamePreviewNote(camera, drawList, refSpaceCenterHead, noteType, colorOverride);
+		DrawGamePreviewNote(camera, drawList, refSpaceCenterTail, noteType, colorOverride);
+
+		drawList->AddRectFilled(camera.RefToScreenSpace(refSpaceCenterHead - vec2(0.0f, radii.BlackOuter)), camera.RefToScreenSpace(refSpaceCenterTail + vec2(0.0f, radii.BlackOuter)), NoteColorBlack);
+		drawList->AddRectFilled(camera.RefToScreenSpace(refSpaceCenterHead - vec2(0.0f, radii.WhiteInner)), camera.RefToScreenSpace(refSpaceCenterTail + vec2(0.0f, radii.WhiteInner)), NoteColorWhite);
+		drawList->AddRectFilled(camera.RefToScreenSpace(refSpaceCenterHead - vec2(0.0f, radii.ColorInner)), camera.RefToScreenSpace(refSpaceCenterTail + vec2(0.0f, radii.ColorInner)), (colorOverride != nullptr) ? *colorOverride : *NoteTypeToColorMap[EnumToIndex(noteType)]);
+	}
+
 	struct ForEachBarLaneData
 	{
 		Time Time;
