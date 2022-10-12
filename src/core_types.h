@@ -362,7 +362,7 @@ template <typename T> constexpr T ClampBot(T value, T min) { return Max<T>(value
 template <typename T> constexpr T ClampTop(T value, T max) { return Min<T>(value, max); }
 
 template <typename T>
-constexpr T Lerp(T start, T end, f32 t) { return (1.0f - t) * start + (t * end); }
+constexpr T Lerp(T start, T end, f32 t) { return start * (1.0f - t) + (end * t); }
 
 template <typename T>
 constexpr T LerpClamped(T start, T end, f32 t) { return Lerp<T>(start, end, Clamp(t, 0.0f, 1.0f)); }
