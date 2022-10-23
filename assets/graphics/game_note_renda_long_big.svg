@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160">
+  <g id="renda_back_big">
+    <path id="Circle_Outter" data-name="Circle Outter" d="M80,160C35.817,160,0,124.183,0,80S35.817,0,80,0h80c44.183,0,80,35.817,80,80s-35.817,80-80,80H80Z" fill="#1d1d1d"/>
+    <path id="Circle_Inner" data-name="Circle Inner" d="M80,155.213c-41.421,0-75-33.674-75-75.213S38.579,4.787,80,4.787h80c41.421,0,75,33.674,75,75.213s-33.579,75.213-75,75.213H80Z" fill="#f4b713"/>
+  </g>
+</svg>

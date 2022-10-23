@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 160 160">
+  <defs>
+    <radialGradient id="radial-gradient" cx="80" cy="80" fx="80" fy="80" r="75.107" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff100"/>
+      <stop offset="1" stop-color="#e09f26"/>
+    </radialGradient>
+  </defs>
+  <g id="fuusen_big">
+    <circle id="Circle_Outter" data-name="Circle Outter" cx="80" cy="80" r="80" fill="#1d1d1d"/>
+    <ellipse id="Circle_Middle" data-name="Circle Middle" cx="80" cy="80" rx="75" ry="75.213" fill="url(#radial-gradient)"/>
+    <g id="Circle_Inner_Lines" data-name="Circle Inner Lines">
+      <path d="M7.044,61.352c7.007-5.773,33.439-26.14,72.791-25.912,40.256,.234,66.845,21.862,73.582,27.692" fill="none" stroke="#ef6d14" stroke-miterlimit="10"/>
+      <path d="M5.857,89.637c3.472,4.155,19.582,34.418,74.176,34.418,60.527,0,71.337-32.484,74.571-36.593" fill="none" stroke="#ef6d14" stroke-miterlimit="10"/>
+      <path d="M5.264,79.945c49.846,.066,99.692,.132,149.538,.198" fill="none" stroke="#ef6d14" stroke-miterlimit="10"/>
+      <path d="M80.231,5.374c-23.458,.112-45.495,31.253-45.495,73.187,0,41.143,21.492,76.25,44.901,76.549,23.507,.3,45.297-39.758,45.297-75.363,0-37.582-21.195-74.486-44.703-74.374Z" fill="none" stroke="#ef6d14" stroke-miterlimit="10"/>
+      <path d="M80,5.571c.066,49.582-.066,99.165,0,148.747" fill="none" stroke="#ef6d14" stroke-miterlimit="10" stroke-width="3"/>
+    </g>
+    <g id="Circle_Inner_Highlights" data-name="Circle Inner Highlights">
+      <ellipse cx="80" cy="66" rx="69" ry="60.75" fill="#fff32e" opacity=".46"/>
+      <ellipse cx="79.791" cy="26.088" rx="28.286" ry="21.066" fill="#fff" opacity=".42"/>
+      <ellipse cx="79.046" cy="23.714" rx="16.068" ry="11.967" fill="#fff" opacity=".42"/>
+    </g>
+    <path id="Mouth" d="M53.173,100c2.668,4.848,7.612,8.092,12.808,8,6.626-.117,12.644-4.781,13.945-12.056,1.469,7.426,7.69,12.106,14.341,12.056,5.019-.038,9.73-3.338,12.363-8" fill="none" stroke="#262626" stroke-linejoin="bevel" stroke-width="2.5"/>
+    <line id="Eye_Brow_Right" data-name="Eye Brow Right" x1="109.501" y1="53.154" x2="99.474" y2="67.718" fill="none" stroke="#252525" stroke-miterlimit="10" stroke-width="1.5"/>
+    <line id="Eye_Brow_Left" data-name="Eye Brow Left" x1="50.287" y1="53.682" x2="60.315" y2="68.246" fill="none" stroke="#252525" stroke-miterlimit="10" stroke-width="1.5"/>
+    <path id="Eye_Left" data-name="Eye Left" d="M122.849,66.934c-7.055,3.297-13.959,6.009-21.014,9.306,.649,6.727,5.882,12.381,11.915,12.584,7.677,.26,13.174-7.469,12.791-13.978-.232-3.935-2.572-6.739-3.692-7.912Z" fill="#252525"/>
+    <path id="Eye_Left-2" data-name="Eye Left" d="M36.736,67.132c7.055,3.297,13.959,6.009,21.014,9.306-.649,6.727-5.882,12.381-11.915,12.584-7.677,.26-13.174-7.469-12.791-13.978,.232-3.935,2.572-6.739,3.692-7.912Z" fill="#252525"/>
+  </g>
+</svg>

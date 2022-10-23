@@ -23,6 +23,16 @@ namespace PeepoDrumKit
 		Count
 	};
 
+	enum class NoteSEType : u8
+	{
+		Do, Don, DonBig,
+		// TODO: Ko,
+		Ka, Katsu, KatsuBig,
+		Drumroll, DrumrollBig,
+		Balloon, BalloonSpecial,
+		Count
+	};
+
 	constexpr b8 IsDonNote(NoteType v) { return (v == NoteType::Don) || (v == NoteType::DonBig); }
 	constexpr b8 IsKaNote(NoteType v) { return (v == NoteType::Ka) || (v == NoteType::KaBig); }
 	constexpr b8 IsSmallNote(NoteType v) { return (v == NoteType::Don) || (v == NoteType::Ka) || (v == NoteType::Drumroll) || (v == NoteType::Balloon); }
@@ -123,6 +133,8 @@ namespace PeepoDrumKit
 		i16 BalloonPopCount;
 		f32 ClickAnimationTimeRemaining;
 		f32 ClickAnimationTimeDuration;
+		// NOTE: Temp inline storage for rendering
+		mutable NoteSEType TempSEType;
 
 		constexpr Beat GetStart() const { return BeatTime; }
 		constexpr Beat GetEnd() const { return BeatTime + BeatDuration; }

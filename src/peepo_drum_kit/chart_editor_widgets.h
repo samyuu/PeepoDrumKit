@@ -94,29 +94,33 @@ namespace PeepoDrumKit
 		void DrawGui(ChartContext& context, ChartTimeline& timeline);
 	};
 
-	constexpr f32 TimeToNoteLaneRefSpaceX(Time cursorTime, Time noteTime, Tempo tempo, f32 scrollSpeed)
-	{
-		return ((tempo.BPM * scrollSpeed) / 60.0f) * (noteTime - cursorTime).ToSec_F32() * GameRefLaneDistancePerBeat;
-	}
-
 	struct GameCamera
 	{
-		Rect ScreenSpaceContentRect {};
-		Rect ScreenSpaceLaneRect {};
-		f32 RefToScreenScaleFactor = 1.0f;
+		Rect ScreenSpaceViewportRect {};
+		f32 WorldToScreenScaleFactor = 1.0f;
+		vec2 WorldSpaceSize {};
+		Rect LaneRect {};
 
-		constexpr f32 RefToScreenScale(f32 refScale) const { return refScale * RefToScreenScaleFactor; }
-		constexpr vec2 RefToScreenScale(vec2 refSpace) const { return refSpace * RefToScreenScaleFactor; }
-		constexpr vec2 RefToScreenSpace(vec2 refSpace) const { return ScreenSpaceLaneRect.TL + (refSpace * RefToScreenScaleFactor); }
-		constexpr b8 IsPointVisibleOnLane(f32 refX, f32 refThreshold = 280.0f) const { return (refX >= -refThreshold) && (refX <= (GameRefLaneSize.x + refThreshold)); }
-		constexpr b8 IsRangeVisibleOnLane(f32 refHeadX, f32 refTailX, f32 refThreshold = 280.0f) const { return (refTailX >= -refThreshold) && (refHeadX <= (GameRefLaneSize.x + refThreshold)); }
+		constexpr f32 LaneWidth() const { return LaneRect.GetWidth(); }
+		constexpr f32 ExtendedLaneWidthFactor() const { return LaneRect.GetWidth() / GameLaneStandardWidth; }
+
+		constexpr f32 WorldToScreenScale(f32 worldScale) const { return worldScale * WorldToScreenScaleFactor; }
+		constexpr vec2 WorldToScreenScale(vec2 worldScale) const { return worldScale * WorldToScreenScaleFactor; }
+		constexpr vec2 WorldToScreenSpace(vec2 worldSpace) const { return ScreenSpaceViewportRect.TL + (worldSpace * WorldToScreenScaleFactor); }
+
+		// NOTE: Same scale as world space but with (0,0) starting at the hit-circle center point
+		constexpr f32 TimeToLaneSpaceX(Time cursorTime, Time noteTime, Tempo tempo, f32 scrollSpeed) const { return ((tempo.BPM * scrollSpeed) / 60.0f) * (noteTime - cursorTime).ToSec_F32() * GameWorldSpaceDistancePerLaneBeat; }
+		constexpr vec2 LaneXToWorldSpace(f32 laneX) { return (LaneRect.TL + GameHitCircle.Center + vec2(laneX, 0.0f)); }
+
+		constexpr b8 IsPointVisibleOnLane(f32 laneX, f32 threshold = 280.0f) const { return (laneX >= -threshold) && (laneX <= (LaneWidth() + threshold)); }
+		constexpr b8 IsRangeVisibleOnLane(f32 laneHeadX, f32 laneTailX, f32 threshold = 280.0f) const { return (laneTailX >= -threshold) && (laneHeadX <= (LaneWidth() + threshold)); }
 	};
 
 	struct ChartGamePreview
 	{
 		GameCamera Camera = {};
 
-		struct DeferredNoteDrawData { f32 RefLaneHeadX, RefLaneTailX; const Note* OriginalNote; Time NoteStartTime, NoteEndTime; };
+		struct DeferredNoteDrawData { f32 LaneHeadX, LaneTailX; const Note* OriginalNote; Time NoteStartTime, NoteEndTime; };
 		std::vector<DeferredNoteDrawData> ReverseNoteDrawBuffer;
 
 		void DrawGui(ChartContext& context, Time animatedCursorTime);

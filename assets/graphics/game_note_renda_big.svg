@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <g id="don_big">
+    <circle id="Circle_Outter" data-name="Circle Outter" cx="80" cy="80" r="80" fill="#1d1d1d"/>
+    <circle id="Circle_Middle" data-name="Circle Middle" cx="80" cy="80" r="75" fill="#f5eddc"/>
+    <circle id="Circle_Inner" data-name="Circle Inner" cx="80" cy="80" r="60" fill="#f4b713"/>
+    <path id="Mouth_Open" data-name="Mouth Open" d="M44.762,76.279c.866,.947,7.089,7.141,17.143,6.593,11.924-.649,17.825-10.306,18.158-10.921,4.017,7.275,11.452,11.088,19.424,11.053,9.49-.041,14.937-6.524,15.877-7.596-2.756,35.354-17.247,56.523-33.757,56.985-16.808,.47-35.79-23.081-36.845-56.114Z" fill="#d2020d" stroke="#262626" stroke-miterlimit="10" stroke-width="3"/>
+    <line id="Eye_Brow_Right" data-name="Eye Brow Right" x1="101.525" y1="40.66" x2="96.232" y2="57.531" fill="none" stroke="#252525" stroke-miterlimit="10" stroke-width="1.5"/>
+    <line id="Eye_Brow_Left" data-name="Eye Brow Left" x1="58.456" y1="40.66" x2="63.75" y2="57.531" fill="none" stroke="#252525" stroke-miterlimit="10" stroke-width="1.5"/>
+    <path id="Eye_Right" data-name="Eye Right" d="M121.034,49.106l-19.929,15.899s3.363,5.934,10.286,5.934,12.61-4.945,12.61-13.5c.148-5.143-2.967-8.333-2.967-8.333Z" fill="#252525"/>
+    <path id="Eye_Left" data-name="Eye Left" d="M38.995,49.106l19.929,15.899s-3.363,5.934-10.286,5.934-12.61-4.945-12.61-13.5c-.148-5.143,2.967-8.333,2.967-8.333Z" fill="#252525"/>
+  </g>
+</svg>

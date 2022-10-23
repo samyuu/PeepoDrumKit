@@ -19,25 +19,34 @@ namespace PeepoDrumKit
 	inline f32 TimelineSelectedNoteHitBoxSizeSmall = (16.0f * 2.0f) + 2.0f;
 	inline f32 TimelineSelectedNoteHitBoxSizeBig = (22.0f * 2.0f) + 2.0f;
 
-	struct NoteRadii { f32 BlackOuter, WhiteInner, ColorInner; };
-	inline NoteRadii GameRefNoteRadiiSmall = { 54.0f, 48.0f, 38.0f };
-	inline NoteRadii GameRefNoteRadiiBig = { 81.0f, 75.0f, 60.0f };
-	inline NoteRadii GuiScaleNoteRadii(NoteRadii radii) { return NoteRadii { GuiScale(radii.BlackOuter), GuiScale(radii.WhiteInner), GuiScale(radii.ColorInner) }; }
-
-	// NOTE: All "Game Preview" coordinates are defined in this "Ref-Space" and then scaled to Screen-Space before rendering
-	constexpr vec2 GameRefScale = vec2(1920.0f, 1080.0f);
-	constexpr vec2 GameRefLanePerSideBorderSize = vec2(6.0f, 12.0f);
-	constexpr vec2 GameRefLaneSize = vec2(1428.0f - GameRefLanePerSideBorderSize.x, 264.0f - (GameRefLanePerSideBorderSize.y * 2.0f));
-	constexpr f32 GameRefLaneContentHeight = 195.0f;
-	constexpr f32 GameRefLaneFooterHeight = 39.0f;
-	constexpr f32 GameRefLaneDistancePerBeat = 356.0f;
-	constexpr f32 GameRefBarLineThickness = 3.0f;
-	constexpr vec2 GameRefHitCircleCenter = vec2(120.0f, 98.0f);
-	constexpr f32 GameRefHitCircleInnerFillRadius = (78.0f / 2.0f);
-	constexpr f32 GameRefHitCircleInnerOutlineRadius = (100.0f / 2.0f);
-	constexpr f32 GameRefHitCircleInnerOutlineThickness = 5.0f;
-	constexpr f32 GameRefHitCircleOuterOutlineRadius = (154.0f / 2.0f);
-	constexpr f32 GameRefHitCircleOuterOutlineThickness = 5.0f;
+	// NOTE: All game coordinates are defined in world space
+	constexpr f32 GameWorldSpaceDistancePerLaneBeat = 356.0f;
+	constexpr f32 GameLaneStandardWidth = 1422.0f;
+	constexpr f32 GameLaneBarLineThickness = 3.0f;
+	constexpr struct
+	{
+		f32 TopBorder = 12.0f;
+		f32 Content = 195.0f;
+		f32 MidBorder = 6.0f;
+		f32 Footer = 39.0f;
+		f32 BotBorder = 12.0f;
+		constexpr f32 ContentCenterY() const { return TopBorder + (Content / 2.0f); }
+		constexpr f32 FooterCenterY() const { return TopBorder + Content + MidBorder + (Footer / 2.0f); }
+		constexpr f32 TotalHeight() const { return TopBorder + Content + MidBorder + Footer + BotBorder; }
+	} GameLaneSlice;
+	constexpr f32 GameLanePaddingL = 6.0f;
+	constexpr f32 GameLanePaddingR = 6.0f;
+	constexpr f32 GameLanePaddingTop = 64.0f;
+	constexpr f32 GameLanePaddingBot = 32.0f;
+	constexpr struct
+	{
+		vec2 Center = vec2(120.0f, GameLaneSlice.ContentCenterY());
+		f32 InnerFillRadius = (78.0f / 2.0f);
+		f32 InnerOutlineRadius = (100.0f / 2.0f);
+		f32 InnerOutlineThickness = 5.0f;
+		f32 OuterOutlineRadius = (154.0f / 2.0f);
+		f32 OuterOutlineThickness = 5.0f;
+	} GameHitCircle;
 
 	inline u32 DragTextHoveredColor = 0xFFBCDDDB;
 	inline u32 DragTextActiveColor = 0xFFC3F5F2;

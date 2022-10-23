@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="fuusen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 120">
+  <g id="Body">
+    <path id="Body_Outter" data-name="Body Outter" d="M383.779,102.125c-14.471,0-28.251-6.88-40.41-12.949-9.755-4.871-18.97-9.676-26.578-9.676h-26.791v4.5h-28V36h28v5h26.791c7.587,0,16.794-4.443,26.542-9.544,12.165-6.366,25.953-13.581,40.446-13.581,26.682,0,48.39,18.897,48.39,42.125s-21.708,42.125-48.39,42.125Z" fill="#1d1d1d"/>
+    <path id="Body_Inner" data-name="Body Inner" d="M383.779,97.875c-13.468,0-26.771-6.641-38.508-12.5l-1.422-.71c-9.677-4.842-18.816-9.415-27.059-9.415h-29.291v-30h29.291c8.636,0,18.415-4.744,28.513-10.028,11.731-6.139,25.027-13.097,38.476-13.097,24.339,0,44.14,16.991,44.14,37.875s-19.801,37.875-44.14,37.875Z" fill="#f94310"/>
+    <polygon id="Neck_Inner" data-name="Neck Inner" points="269 79.25 285.5 79.25 285.5 40.75 269 40.75 262 60 269 79.25" fill="#f96b12"/>
+  </g>
+  <circle id="Circle_Outter" data-name="Circle Outter" cx="220" cy="60" r="52.5" fill="#1d1d1d"/>
+  <circle id="Circle_Middle" data-name="Circle Middle" cx="220" cy="60" r="48" fill="#f5eddc"/>
+  <circle id="Circle_Inner" data-name="Circle Inner" cx="220" cy="60" r="39" fill="#f96b12"/>
+  <path id="Mouth" d="M202.875,72.563c1.93,3.096,5.388,4.855,8.875,4.5,4.083-.415,7.509-2.781,8.25-7.063,.973,4.596,4.799,6.973,9,7.063,5.002,.107,7.912-4.325,8.062-4.563" fill="none" stroke="#262626" stroke-linejoin="bevel" stroke-width="2"/>
+  <ellipse id="Eye_Right" data-name="Eye Right" cx="242" cy="56" rx="8.5" ry="9" fill="#252525"/>
+  <ellipse id="Eye_Left" data-name="Eye Left" cx="198" cy="56" rx="8.5" ry="9" fill="#252525"/>
+</svg>

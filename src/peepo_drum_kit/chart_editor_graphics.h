@@ -7,6 +7,7 @@ namespace PeepoDrumKit
 	enum class SprGroup : u8
 	{
 		Timeline,
+		Game,
 		Count
 	};
 
@@ -24,6 +25,29 @@ namespace PeepoDrumKit
 		Timeline_Note_BalloonSpecial,
 		Timeline_Note_BalloonLong,
 		Timeline_Note_BalloonLongSpecial,
+
+		Game_Note_Don,
+		Game_Note_DonBig,
+		Game_Note_Ka,
+		Game_Note_KaBig,
+		Game_Note_Drumroll,
+		Game_Note_DrumrollBig,
+		Game_Note_DrumrollLong,
+		Game_Note_DrumrollLongBig,
+		Game_Note_Balloon,
+		Game_Note_BalloonSpecial,
+		Game_NoteTxt_Do,
+		Game_NoteTxt_Don,
+		Game_NoteTxt_DonBig,
+		Game_NoteTxt_Ka,
+		Game_NoteTxt_Katsu,
+		Game_NoteTxt_KatsuBig,
+		Game_NoteTxt_Drumroll,
+		Game_NoteTxt_DrumrollBig,
+		Game_NoteTxt_Balloon,
+		Game_NoteTxt_BalloonSpecial,
+		// TODO: Split into individual sprites to correctly handle padding (?)
+		Game_Font_Numerical,
 
 		Count
 	};
@@ -43,6 +67,29 @@ namespace PeepoDrumKit
 		{ SprID::Timeline_Note_BalloonSpecial,		SprGroup::Timeline, u8"assets/graphics/timeline_note_fuusen_big.svg" },
 		{ SprID::Timeline_Note_BalloonLong,			SprGroup::Timeline, u8"assets/graphics/timeline_note_fuusen_long.svg" },
 		{ SprID::Timeline_Note_BalloonLongSpecial,	SprGroup::Timeline, u8"assets/graphics/timeline_note_fuusen_long_big.svg" },
+
+		{ SprID::Game_Note_Don,						SprGroup::Game, u8"assets/graphics/game_note_don.svg" },
+		{ SprID::Game_Note_DonBig,					SprGroup::Game, u8"assets/graphics/game_note_don_big.svg" },
+		{ SprID::Game_Note_Ka,						SprGroup::Game, u8"assets/graphics/game_note_ka.svg" },
+		{ SprID::Game_Note_KaBig,					SprGroup::Game, u8"assets/graphics/game_note_ka_big.svg" },
+		{ SprID::Game_Note_Drumroll,				SprGroup::Game, u8"assets/graphics/game_note_renda.svg" },
+		{ SprID::Game_Note_DrumrollBig,				SprGroup::Game, u8"assets/graphics/game_note_renda_big.svg" },
+		{ SprID::Game_Note_DrumrollLong,			SprGroup::Game, u8"assets/graphics/game_note_renda_long.svg" },
+		{ SprID::Game_Note_DrumrollLongBig,			SprGroup::Game, u8"assets/graphics/game_note_renda_long_big.svg" },
+		{ SprID::Game_Note_Balloon,					SprGroup::Game, u8"assets/graphics/game_note_fuusen.svg" },
+		{ SprID::Game_Note_BalloonSpecial,			SprGroup::Game, u8"assets/graphics/game_note_fuusen_big.svg" },
+		{ SprID::Game_NoteTxt_Do,					SprGroup::Game, u8"assets/graphics/game_note_txt_do.svg" },
+		{ SprID::Game_NoteTxt_Don,					SprGroup::Game, u8"assets/graphics/game_note_txt_don.svg" },
+		{ SprID::Game_NoteTxt_DonBig,				SprGroup::Game, u8"assets/graphics/game_note_txt_don_big.svg" },
+		{ SprID::Game_NoteTxt_Ka,					SprGroup::Game, u8"assets/graphics/game_note_txt_ka.svg" },
+		{ SprID::Game_NoteTxt_Katsu,				SprGroup::Game, u8"assets/graphics/game_note_txt_katsu.svg" },
+		{ SprID::Game_NoteTxt_KatsuBig,				SprGroup::Game, u8"assets/graphics/game_note_txt_katsu_big.svg" },
+		{ SprID::Game_NoteTxt_Drumroll,				SprGroup::Game, u8"assets/graphics/game_note_txt_renda.svg" },
+		{ SprID::Game_NoteTxt_DrumrollBig,			SprGroup::Game, u8"assets/graphics/game_note_txt_renda_big.svg" },
+		{ SprID::Game_NoteTxt_Balloon,				SprGroup::Game, u8"assets/graphics/game_note_txt_fuusen.svg" },
+		{ SprID::Game_NoteTxt_BalloonSpecial,		SprGroup::Game, u8"assets/graphics/game_note_txt_fuusen_big.svg" },
+		// TODO: ...
+		{ SprID::Game_Font_Numerical,				SprGroup::Game, u8"assets/graphics/game_font_numerical.svg", 0.5f },
 	};
 
 	constexpr SprGroup GetSprGroup(SprID spr) { return (spr < SprID::Count) ? SprDescTable[EnumToIndex(spr)].Group : SprGroup::Count; }

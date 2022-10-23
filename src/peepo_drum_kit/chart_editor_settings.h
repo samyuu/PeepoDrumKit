@@ -133,6 +133,9 @@ namespace PeepoDrumKit
 			WithDefault<b8> ConvertSelectionToScrollChanges_UnselectOld = false;
 			WithDefault<b8> ConvertSelectionToScrollChanges_SelectNew = true;
 			WithDefault<CustomSelectionPatternList> CustomSelectionPatterns = {};
+			// TODO: ...
+			static inline WithDefault<vec2> GameViewportAspectRatioMin = vec2(0.0f, 0.0f);
+			static inline WithDefault<vec2> GameViewportAspectRatioMax = vec2(0.0f, 0.0f);
 		} General;
 
 		struct AudioData
