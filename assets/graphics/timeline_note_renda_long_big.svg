@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 66 44">
+  <g id="timeline_note_renda_long_big">
+    <g id="Circle_Outter" data-name="Circle Outter">
+      <path d="M22,42.5C10.696,42.5,1.5,33.304,1.5,22S10.696,1.5,22,1.5h22c11.304,0,20.5,9.196,20.5,20.5s-9.196,20.5-20.5,20.5H22Z" fill="#f5edde"/>
+      <path d="M44,3c10.477,0,19,8.523,19,19s-8.523,19-19,19H22c-10.477,0-19-8.523-19-19S11.523,3,22,3h22m0-3H22C9.85,0,0,9.85,0,22s9.85,22,22,22h22c12.15,0,22-9.85,22-22S56.15,0,44,0h0Z" fill="#1e1e1e"/>
+    </g>
+    <g id="Circle_Inner" data-name="Circle Inner">
+      <path d="M22,37c-8.284,0-15-6.716-15-15S13.716,7,22,7h22c8.284,0,15,6.716,15,15s-6.716,15-15,15H22Z" fill="#f4b713"/>
+    </g>
+  </g>
+</svg>

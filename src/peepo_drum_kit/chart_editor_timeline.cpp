@@ -165,20 +165,6 @@ namespace PeepoDrumKit
 				{ "TimelineSongDemoStartMarkerHeight", &TimelineSongDemoStartMarkerHeight, },
 				{ "TimelineSelectedNoteHitBoxSizeSmall", &TimelineSelectedNoteHitBoxSizeSmall, },
 				{ "TimelineSelectedNoteHitBoxSizeBig", &TimelineSelectedNoteHitBoxSizeBig, },
-				NamedVariablePtr {},
-				{ "TimelineNoteRadiiSmall.BlackOuter", &TimelineNoteRadiiSmall.BlackOuter, },
-				{ "TimelineNoteRadiiSmall.WhiteInner", &TimelineNoteRadiiSmall.WhiteInner, },
-				{ "TimelineNoteRadiiSmall.ColorInner", &TimelineNoteRadiiSmall.ColorInner, },
-				{ "TimelineNoteRadiiBig.BlackOuter", &TimelineNoteRadiiBig.BlackOuter,	 },
-				{ "TimelineNoteRadiiBig.WhiteInner", &TimelineNoteRadiiBig.WhiteInner,	 },
-				{ "TimelineNoteRadiiBig.ColorInner", &TimelineNoteRadiiBig.ColorInner,	 },
-				NamedVariablePtr {},
-				{ "GameRefNoteRadiiSmall.BlackOuter", &GameRefNoteRadiiSmall.BlackOuter, },
-				{ "GameRefNoteRadiiSmall.WhiteInner", &GameRefNoteRadiiSmall.WhiteInner, },
-				{ "GameRefNoteRadiiSmall.ColorInner", &GameRefNoteRadiiSmall.ColorInner, },
-				{ "GameRefNoteRadiiBig.BlackOuter", &GameRefNoteRadiiBig.BlackOuter,	 },
-				{ "GameRefNoteRadiiBig.WhiteInner", &GameRefNoteRadiiBig.WhiteInner,	 },
-				{ "GameRefNoteRadiiBig.ColorInner", &GameRefNoteRadiiBig.ColorInner,	 },
 			};
 
 			if (static b8 firstFrame = true; firstFrame) { for (auto& e : namedVariables) { e.Default = (e.ValuePtr != nullptr) ? *e.ValuePtr : 0.0f; } firstFrame = false; }
@@ -394,26 +380,54 @@ namespace PeepoDrumKit
 		return 1.0f;
 	}
 
-	static void DrawTimelineNote(ImDrawList* drawList, vec2 center, f32 scale, NoteType noteType, f32 alpha = 1.0f)
+	static void DrawTimelineNote(ChartGraphicsResources& gfx, ImDrawList* drawList, vec2 center, f32 scale, NoteType noteType, f32 alpha = 1.0f)
 	{
-		const auto radii = GuiScaleNoteRadii(IsBigNote(noteType) ? TimelineNoteRadiiBig : TimelineNoteRadiiSmall);
-		drawList->AddCircleFilled(center, scale * radii.BlackOuter, Gui::ColorU32WithAlpha(NoteColorBlack, alpha));
-		drawList->AddCircleFilled(center, scale * radii.WhiteInner, Gui::ColorU32WithAlpha(NoteColorWhite, alpha));
-		drawList->AddCircleFilled(center, scale * radii.ColorInner, Gui::ColorU32WithAlpha(*NoteTypeToColorMap[EnumToIndex(noteType)], alpha));
+		SprID spr = SprID::Count;
+		switch (noteType)
+		{
+		case NoteType::Don: { spr = SprID::Timeline_Note_Don; } break;
+		case NoteType::DonBig: { spr = SprID::Timeline_Note_DonBig; } break;
+		case NoteType::Ka: { spr = SprID::Timeline_Note_Ka; } break;
+		case NoteType::KaBig: { spr = SprID::Timeline_Note_KaBig; } break;
+		case NoteType::Drumroll: { spr = SprID::Timeline_Note_Drumroll; } break;
+		case NoteType::DrumrollBig: { spr = SprID::Timeline_Note_DrumrollBig; } break;
+		case NoteType::Balloon: { spr = SprID::Timeline_Note_Balloon; } break;
+		case NoteType::BalloonSpecial: { spr = SprID::Timeline_Note_BalloonSpecial; } break;
+		}
+
+		gfx.DrawSprite(drawList, spr, SprTransform::FromCenter(center, vec2(scale * GuiScaleFactorCurrent)), ImColor(1.0f, 1.0f, 1.0f, alpha));
 	}
 
-	static void DrawTimelineNoteDuration(ImDrawList* drawList, vec2 centerHead, vec2 centerTail, NoteType noteType, f32 alpha = 1.0f)
+	static void DrawTimelineNoteDuration(ChartGraphicsResources& gfx, ImDrawList* drawList, vec2 centerHead, vec2 centerTail, NoteType noteType, f32 alpha = 1.0f)
 	{
-		// BUG: Ugly full-circle clipping when zoomed out and not drawing a regular head note to cover it up
-		const auto radii = GuiScaleNoteRadii(IsBigNote(noteType) ? TimelineNoteRadiiBig : TimelineNoteRadiiSmall);
-		DrawTimelineNote(drawList, centerHead, 1.0f, noteType, alpha);
-		DrawTimelineNote(drawList, centerTail, 1.0f, noteType, alpha);
-		drawList->AddRectFilled(centerHead - vec2(0.0f, radii.BlackOuter), centerTail + vec2(0.0f, radii.BlackOuter), Gui::ColorU32WithAlpha(NoteColorBlack, alpha));
-		drawList->AddRectFilled(centerHead - vec2(0.0f, radii.WhiteInner), centerTail + vec2(0.0f, radii.WhiteInner), Gui::ColorU32WithAlpha(NoteColorWhite, alpha));
-		drawList->AddRectFilled(centerHead - vec2(0.0f, radii.ColorInner), centerTail + vec2(0.0f, radii.ColorInner), Gui::ColorU32WithAlpha(*NoteTypeToColorMap[EnumToIndex(noteType)], alpha));
+		SprID spr = SprID::Count;
+		switch (noteType)
+		{
+		case NoteType::Don: { spr = SprID::Timeline_Note_DrumrollLong; } break;
+		case NoteType::DonBig: { spr = SprID::Timeline_Note_DrumrollLongBig; } break;
+		case NoteType::Ka: { spr = SprID::Timeline_Note_DrumrollLong; } break;
+		case NoteType::KaBig: { spr = SprID::Timeline_Note_DrumrollLongBig; } break;
+		case NoteType::Drumroll: { spr = SprID::Timeline_Note_DrumrollLong; } break;
+		case NoteType::DrumrollBig: { spr = SprID::Timeline_Note_DrumrollLongBig; } break;
+		case NoteType::Balloon: { spr = SprID::Timeline_Note_BalloonLong; } break;
+		case NoteType::BalloonSpecial: { spr = SprID::Timeline_Note_BalloonLongSpecial; } break;
+		}
+
+		const SprInfo sprInfo = gfx.GetInfo(spr);
+
+		const f32 longL = Min(centerHead.x, centerTail.x);
+		const f32 longR = Max(centerHead.x, centerTail.x);
+		const f32 midScaleX = ((longR - longL) / (sprInfo.SourceSize.x)) * 3.0f;
+
+		const SprStretchtOut split = StretchMultiPartSpr(gfx, spr,
+			SprTransform::FromCenter((centerHead + centerTail) / 2.0f, vec2(GuiScaleFactorCurrent)), ImColor(1.0f, 1.0f, 1.0f, alpha),
+			SprStretchtParam { 1.0f, midScaleX / GuiScaleFactorCurrent, 1.0f }, 3);
+
+		for (size_t i = 0; i < 3; i++)
+			gfx.DrawSprite(drawList, split.Quads[i]);
 	}
 
-	static void DrawTimelineNoteBalloonPopCount(ImDrawList* drawList, vec2 center, f32 scale, i32 popCount)
+	static void DrawTimelineNoteBalloonPopCount(ChartGraphicsResources& gfx, ImDrawList* drawList, vec2 center, f32 scale, i32 popCount)
 	{
 		char buffer[32]; const auto text = std::string_view(buffer, sprintf_s(buffer, "%d", popCount));
 		const ImFont* font = FontLarge_EN;
@@ -549,14 +563,14 @@ namespace PeepoDrumKit
 				{
 					const vec2 localTR = vec2(timeline.Camera.TimeToLocalSpaceX(endTime), rowIt.LocalY);
 					const vec2 localCenterEnd = localTR + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-					DrawTimelineNoteDuration(drawListContent, timeline.LocalToScreenSpace(localCenter), timeline.LocalToScreenSpace(localCenterEnd), it.Type);
+					DrawTimelineNoteDuration(context.Gfx, drawListContent, timeline.LocalToScreenSpace(localCenter), timeline.LocalToScreenSpace(localCenterEnd), it.Type);
 				}
 
 				const f32 noteScaleFactor = GetTimelineNoteScaleFactor(param.IsPlayback, param.CursorTime, param.CursorBeatOnPlaybackStart, it, startTime);
-				DrawTimelineNote(drawListContent, timeline.LocalToScreenSpace(localCenter), noteScaleFactor, it.Type);
+				DrawTimelineNote(context.Gfx, drawListContent, timeline.LocalToScreenSpace(localCenter), noteScaleFactor, it.Type);
 
 				if (IsBalloonNote(it.Type) || it.BalloonPopCount > 0)
-					DrawTimelineNoteBalloonPopCount(drawListContent, timeline.LocalToScreenSpace(localCenter), noteScaleFactor, it.BalloonPopCount);
+					DrawTimelineNoteBalloonPopCount(context.Gfx, drawListContent, timeline.LocalToScreenSpace(localCenter), noteScaleFactor, it.BalloonPopCount);
 
 				if (it.IsSelected)
 				{
@@ -585,7 +599,7 @@ namespace PeepoDrumKit
 					const vec2 localCenter = localTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
 
 					const f32 noteScaleFactor = ConvertRange(0.0f, NoteDeleteAnimationDuration, 1.0f, 0.0f, ClampBot(data.ElapsedTimeSec, 0.0f));
-					DrawTimelineNote(drawListContent, timeline.LocalToScreenSpace(localCenter), noteScaleFactor, data.OriginalNote.Type);
+					DrawTimelineNote(context.Gfx, drawListContent, timeline.LocalToScreenSpace(localCenter), noteScaleFactor, data.OriginalNote.Type);
 					// TODO: Also animate duration fading out or "collapsing" some other way (?)
 				}
 			}
@@ -608,11 +622,11 @@ namespace PeepoDrumKit
 				const vec2 localCenter = localTL + vec2(0.0f, rowIt.LocalHeight * 0.5f);
 				const vec2 localTR = vec2(timeline.Camera.TimeToLocalSpaceX(context.BeatToTime(maxBeat)), rowIt.LocalY);
 				const vec2 localCenterEnd = localTR + vec2(0.0f, rowIt.LocalHeight * 0.5f);
-				DrawTimelineNoteDuration(drawListContent, timeline.LocalToScreenSpace(localCenter), timeline.LocalToScreenSpace(localCenterEnd), timeline.LongNotePlacement.NoteType, 0.7f);
-				DrawTimelineNote(drawListContent, timeline.LocalToScreenSpace(localCenter), 1.0f, timeline.LongNotePlacement.NoteType, 0.7f);
+				DrawTimelineNoteDuration(context.Gfx, drawListContent, timeline.LocalToScreenSpace(localCenter), timeline.LocalToScreenSpace(localCenterEnd), timeline.LongNotePlacement.NoteType, 0.7f);
+				DrawTimelineNote(context.Gfx, drawListContent, timeline.LocalToScreenSpace(localCenter), 1.0f, timeline.LongNotePlacement.NoteType, 0.7f);
 
 				if (IsBalloonNote(timeline.LongNotePlacement.NoteType))
-					DrawTimelineNoteBalloonPopCount(drawListContent, timeline.LocalToScreenSpace(localCenter), 1.0f, DefaultBalloonPopCount(maxBeat - minBeat, timeline.CurrentGridBarDivision));
+					DrawTimelineNoteBalloonPopCount(context.Gfx, drawListContent, timeline.LocalToScreenSpace(localCenter), 1.0f, DefaultBalloonPopCount(maxBeat - minBeat, timeline.CurrentGridBarDivision));
 			}
 		}
 		else if constexpr (std::is_same_v<T, GoGoRange>)
@@ -2433,6 +2447,9 @@ namespace PeepoDrumKit
 
 	void ChartTimeline::DrawAllAtEndOfFrame(ChartContext& context)
 	{
+		if (!context.Gfx.IsAsyncLoading())
+			context.Gfx.Rasterize(SprGroup::Timeline, GuiScaleFactorTarget);
+
 		const b8 isPlayback = context.GetIsPlayback();
 		const BeatAndTime cursorBeatAndTime = context.GetCursorBeatAndTime();
 		const Time cursorTime = cursorBeatAndTime.Time;

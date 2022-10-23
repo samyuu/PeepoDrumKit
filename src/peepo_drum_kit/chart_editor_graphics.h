@@ -6,17 +6,43 @@ namespace PeepoDrumKit
 {
 	enum class SprGroup : u8
 	{
+		Timeline,
 		Count
 	};
 
 	enum class SprID : u8
 	{
+		Timeline_Note_Don,
+		Timeline_Note_DonBig,
+		Timeline_Note_Ka,
+		Timeline_Note_KaBig,
+		Timeline_Note_Drumroll,
+		Timeline_Note_DrumrollBig,
+		Timeline_Note_DrumrollLong,
+		Timeline_Note_DrumrollLongBig,
+		Timeline_Note_Balloon,
+		Timeline_Note_BalloonSpecial,
+		Timeline_Note_BalloonLong,
+		Timeline_Note_BalloonLongSpecial,
+
 		Count
 	};
 
 	struct SprTypeDesc { SprID Spr; SprGroup Group; cstr FilePath; f32 BaseScale; };
 	constexpr SprTypeDesc SprDescTable[] =
 	{
+		{ SprID::Timeline_Note_Don,					SprGroup::Timeline, u8"assets/graphics/timeline_note_don.svg" },
+		{ SprID::Timeline_Note_DonBig,				SprGroup::Timeline, u8"assets/graphics/timeline_note_don_big.svg" },
+		{ SprID::Timeline_Note_Ka,					SprGroup::Timeline, u8"assets/graphics/timeline_note_ka.svg" },
+		{ SprID::Timeline_Note_KaBig,				SprGroup::Timeline, u8"assets/graphics/timeline_note_ka_big.svg" },
+		{ SprID::Timeline_Note_Drumroll,			SprGroup::Timeline, u8"assets/graphics/timeline_note_renda.svg" },
+		{ SprID::Timeline_Note_DrumrollBig,			SprGroup::Timeline, u8"assets/graphics/timeline_note_renda_big.svg" },
+		{ SprID::Timeline_Note_DrumrollLong,		SprGroup::Timeline, u8"assets/graphics/timeline_note_renda_long.svg" },
+		{ SprID::Timeline_Note_DrumrollLongBig,		SprGroup::Timeline, u8"assets/graphics/timeline_note_renda_long_big.svg" },
+		{ SprID::Timeline_Note_Balloon,				SprGroup::Timeline, u8"assets/graphics/timeline_note_fuusen.svg" },
+		{ SprID::Timeline_Note_BalloonSpecial,		SprGroup::Timeline, u8"assets/graphics/timeline_note_fuusen_big.svg" },
+		{ SprID::Timeline_Note_BalloonLong,			SprGroup::Timeline, u8"assets/graphics/timeline_note_fuusen_long.svg" },
+		{ SprID::Timeline_Note_BalloonLongSpecial,	SprGroup::Timeline, u8"assets/graphics/timeline_note_fuusen_long_big.svg" },
 	};
 
 	constexpr SprGroup GetSprGroup(SprID spr) { return (spr < SprID::Count) ? SprDescTable[EnumToIndex(spr)].Group : SprGroup::Count; }

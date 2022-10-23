@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44">
+  <g id="timeline_note_ka_big">
+    <g id="Circle_Outter" data-name="Circle Outter">
+      <circle cx="22" cy="22" r="22" fill="#1e1e1e"/>
+    </g>
+    <g id="Circle_Middle" data-name="Circle Middle">
+      <circle cx="22" cy="22" r="19" fill="#f5edde"/>
+    </g>
+    <g id="Circle_Inner" data-name="Circle Inner">
+      <circle cx="22" cy="22" r="15" fill="#51c2c2"/>
+    </g>
+  </g>
+</svg>

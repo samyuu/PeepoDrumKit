@@ -20,8 +20,6 @@ namespace PeepoDrumKit
 	inline f32 TimelineSelectedNoteHitBoxSizeBig = (22.0f * 2.0f) + 2.0f;
 
 	struct NoteRadii { f32 BlackOuter, WhiteInner, ColorInner; };
-	inline NoteRadii TimelineNoteRadiiSmall = { 16.0f, 14.0f, 10.0f };
-	inline NoteRadii TimelineNoteRadiiBig = { 22.0f, 19.0f, 15.0f };
 	inline NoteRadii GameRefNoteRadiiSmall = { 54.0f, 48.0f, 38.0f };
 	inline NoteRadii GameRefNoteRadiiBig = { 81.0f, 75.0f, 60.0f };
 	inline NoteRadii GuiScaleNoteRadii(NoteRadii radii) { return NoteRadii { GuiScale(radii.BlackOuter), GuiScale(radii.WhiteInner), GuiScale(radii.ColorInner) }; }
@@ -101,10 +99,10 @@ namespace PeepoDrumKit
 	inline u32 GameLaneHitCircleInnerOutlineColor = 0xFF888888;
 	inline u32 GameLaneHitCircleOuterOutlineColor = 0xFF646464;
 
-	inline u32 NoteColorRed = 0xFF2746F5;
-	inline u32 NoteColorBlue = 0xFFC0C044;
+	inline u32 NoteColorRed = 0xFF2B41F3;
+	inline u32 NoteColorBlue = 0xFFC2C351;
 	inline u32 NoteColorOrange = 0xFF0078FD;
-	inline u32 NoteColorYellow = 0xFF00B7F6;
+	inline u32 NoteColorYellow = 0xFF13B7F4;
 	inline u32 NoteColorWhite = 0xFFDEEDF5;
 	inline u32 NoteColorBlack = 0xFF1E1E1E;
 	inline u32 NoteColorDrumrollHit = 0xFF0000F6;

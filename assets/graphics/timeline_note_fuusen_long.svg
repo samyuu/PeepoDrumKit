@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 32">
+  <g id="timeline_note_fuusen_long">
+    <g id="Circle_Outter" data-name="Circle Outter">
+      <path d="M16,31c-8.271,0-15-6.729-15-15S7.729,1,16,1h16c8.271,0,15,6.729,15,15s-6.729,15-15,15H16Z" fill="#f5edde"/>
+      <path d="M32,2c7.72,0,14,6.28,14,14s-6.28,14-14,14H16c-7.72,0-14-6.28-14-14S8.28,2,16,2h16m0-2H16C7.163,0,0,7.163,0,16s7.163,16,16,16h16c8.837,0,16-7.163,16-16S40.837,0,32,0h0Z" fill="#1e1e1e"/>
+    </g>
+    <g id="Circle_Inner" data-name="Circle Inner">
+      <path d="M16,26c-5.523,0-10-4.477-10-10S10.477,6,16,6h16c5.523,0,10,4.477,10,10s-4.477,10-10,10H16Z" fill="#fa750f"/>
+    </g>
+  </g>
+</svg>
