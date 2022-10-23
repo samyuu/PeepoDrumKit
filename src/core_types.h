@@ -214,6 +214,9 @@ struct vec2
 	constexpr vec2(const vec2& other) : x(other.x), y(other.y) {}
 	explicit constexpr vec2(const ivec2& other) : x(static_cast<f32>(other.x)), y(static_cast<f32>(other.y)) {}
 
+	constexpr b8 operator==(const vec2& other) const { return (x == other.x) && (y == other.y); }
+	constexpr b8 operator!=(const vec2& other) const { return !(*this == other); }
+
 	constexpr vec2 operator+(const vec2& other) const { return { (x + other.x), (y + other.y) }; }
 	constexpr vec2 operator-(const vec2& other) const { return { (x - other.x), (y - other.y) }; }
 	constexpr vec2 operator*(const vec2& other) const { return { (x * other.x), (y * other.y) }; }
@@ -305,7 +308,19 @@ struct Rect
 	constexpr b8 Contains(vec2 point) const { return (point.x >= TL.x) && (point.y >= TL.y) && (point.x < BR.x) && (point.y < BR.y); }
 	constexpr b8 Contains(const Rect& rect) const { return (rect.TL.x >= TL.x) && (rect.TL.y >= TL.y) && (rect.BR.x <= BR.x) && (rect.BR.y <= BR.y); }
 	constexpr b8 Overlaps(const Rect& rect) const { return (rect.TL.y < BR.y) && (rect.BR.y > TL.y) && (rect.TL.x < BR.x) && (rect.BR.x > TL.x); }
+
+	constexpr Rect operator+(vec2 offset) const { return Rect(TL + offset, BR + offset); }
+	constexpr Rect operator-(vec2 offset) const { return Rect(TL - offset, BR - offset); }
+	constexpr Rect& operator+=(vec2 offset) { TL += offset; BR += offset; return *this; }
+	constexpr Rect& operator-=(vec2 offset) { TL -= offset; BR -= offset; return *this; }
 };
+
+constexpr f32 GetAspectRatio(f32 width, f32 height) { return (height != 0.0f) ? (width / height) : 0.0f; }
+constexpr f32 GetAspectRatio(vec2 value) { return GetAspectRatio(value.x, value.y); }
+constexpr f32 GetAspectRatio(Rect value) { return GetAspectRatio(value.GetWidth(), value.GetHeight()); }
+
+Rect FitInsideFixedAspectRatio(Rect rectToFitInside, f32 targetAspectRatio);
+Rect FitInsideFixedAspectRatio(Rect rectToFitInside, vec2 targetSize);
 
 inline f32 Floor(f32 value) { return ::floorf(value); }
 inline f64 Floor(f64 value) { return ::floor(value); }
@@ -407,6 +422,64 @@ inline vec2 LookAtDirection(vec2 from, vec2 target) { return Normalize(target - 
 inline vec2 Reflect(vec2 value, vec2 normal) { ... }
 #endif
 
+template <typename T>
+struct BezierKeyFrame
+{
+	f32 Time; T Value, HandleL, HandleR;
+	static constexpr BezierKeyFrame Linear(f32 time, T value) { return BezierKeyFrame { time, value, value, value }; }
+};
+
+using BezierKeyFrame1D = BezierKeyFrame<f32>;
+using BezierKeyFrame2D = BezierKeyFrame<vec2>;
+
+template <typename T>
+constexpr T InterpolateCubicBezier(T pointA, T pointB, T pointC, T pointD, f32 t)
+{
+	const f32 invT = (1.0f - t);
+	return
+		(pointA * invT * invT * invT) +
+		(pointB * 3.0f * invT * invT * t) +
+		(pointC * 3.0f * invT * t * t) +
+		(pointD *  t * t * t);
+}
+
+template <typename T>
+constexpr T InterpolateCubicBezierKeys(const BezierKeyFrame<T>& left, const BezierKeyFrame<T>& right, f32 time)
+{
+	const f32 t = (time - left.Time) / ClampBot((right.Time - left.Time), 0.00001f);
+	return InterpolateCubicBezier<T>(left.Value, left.HandleR, right.HandleL, right.Value, t);
+}
+
+template <typename T>
+constexpr T SampleBezierFCurve(const BezierKeyFrame<T>* keys, size_t keyCount, f32 time)
+{
+	if (keyCount == 0) return T(0.0f);
+	if (keyCount == 1) return keys[0].Value;
+
+	const BezierKeyFrame<T>& first = keys[0];
+	const BezierKeyFrame<T>& last = keys[keyCount - 1];
+	if (time <= first.Time) return first.Value;
+	if (time >= last.Time) return last.Value;
+
+	const BezierKeyFrame<T>* keyL = &keys[0];
+	const BezierKeyFrame<T>* keyR = &keys[0];
+	for (size_t i = 1; i < keyCount; i++)
+	{
+		keyR = &keys[i];
+		if (keyR->Time >= time)
+			break;
+		keyL = keyR;
+	}
+
+	return InterpolateCubicBezierKeys<T>(*keyL, *keyR, time);
+}
+
+template <typename T, size_t KeyCount>
+constexpr T SampleBezierFCurve(const BezierKeyFrame<T>(&keys)[KeyCount], f32 time)
+{
+	return SampleBezierFCurve<T>(keys, KeyCount, time);
+}
+
 // NOTE: Just a quick wrapper for std::remove_if from <algorithm>, also breaking naming convention because this should really just be part of the standard
 template <typename T, typename Pred>
 inline void erase_remove_if(T& container, Pred pred)
@@ -442,8 +515,8 @@ struct Time
 	constexpr b8 operator<(const Time& other) const { return Seconds < other.Seconds; }
 	constexpr b8 operator>(const Time& other) const { return Seconds > other.Seconds; }
 
-	constexpr Time operator+(const Time other) const { return FromSec(Seconds + other.Seconds); }
-	constexpr Time operator-(const Time other) const { return FromSec(Seconds - other.Seconds); }
+	constexpr Time operator+(const Time& other) const { return FromSec(Seconds + other.Seconds); }
+	constexpr Time operator-(const Time& other) const { return FromSec(Seconds - other.Seconds); }
 
 	constexpr Time& operator+=(const Time& other) { Seconds += other.Seconds; return *this; }
 	constexpr Time& operator-=(const Time& other) { Seconds -= other.Seconds; return *this; }

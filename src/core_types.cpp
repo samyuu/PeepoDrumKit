@@ -10,6 +10,39 @@ static_assert((sizeof(u64) * BitsPerByte) == 64 && (sizeof(i64) * BitsPerByte) =
 static_assert((sizeof(f32) * BitsPerByte) == 32 && (sizeof(f64) * BitsPerByte) == 64);
 static_assert((sizeof(b8) * BitsPerByte) == 8);
 
+Rect FitInsideFixedAspectRatio(Rect rectToFitInside, f32 targetAspectRatio)
+{
+	static constexpr f32 roundingAdd = 0.0f; // 0.5f;
+
+	const vec2 rectSize = rectToFitInside.GetSize();
+	const f32 rectAspectRatio = (rectSize.x / rectSize.y);
+
+	// NOTE: Taller than wide -> bars on top / bottom
+	if (rectAspectRatio <= targetAspectRatio)
+	{
+		const f32 presentHeight = Round((rectSize.x / targetAspectRatio) + roundingAdd);
+		const f32 barHeight = Round((rectSize.y - presentHeight) / 2.0f);
+		rectToFitInside.TL.y += barHeight;
+		rectToFitInside.BR.y += barHeight;
+		rectToFitInside.BR.y = rectToFitInside.TL.y + presentHeight;
+	}
+	else // NOTE: Wider than tall -> bars on left / right
+	{
+		const f32 presentWidth = Floor((rectSize.y * targetAspectRatio) + roundingAdd);
+		const f32 barWidth = Floor((rectSize.x - presentWidth) / 2.0f);
+		rectToFitInside.TL.x += barWidth;
+		rectToFitInside.BR.x += barWidth;
+		rectToFitInside.BR.x = rectToFitInside.TL.x + presentWidth;
+	}
+
+	return rectToFitInside;
+}
+
+Rect FitInsideFixedAspectRatio(Rect rectToFitInside, vec2 targetSize)
+{
+	return FitInsideFixedAspectRatio(rectToFitInside, (targetSize.x / targetSize.y));
+}
+
 static constexpr Time RoundToMilliseconds(Time value) { return Time::FromSec((value.Seconds * 1000.0 + 0.5) * 0.001); }
 
 i32 Time::ToString(char* outBuffer, size_t bufferSize) const
