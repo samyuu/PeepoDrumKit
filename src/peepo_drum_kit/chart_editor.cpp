@@ -54,6 +54,7 @@ namespace PeepoDrumKit
 
 	ChartEditor::ChartEditor()
 	{
+		context.Gfx.StartAsyncLoading();
 		context.SongVoice = Audio::Engine.AddVoice(Audio::SourceHandle::Invalid, "ChartEditor SongVoice", false, 1.0f, true);
 		context.SfxVoicePool.StartAsyncLoadingAndAddVoices();
 
@@ -1257,6 +1258,7 @@ namespace PeepoDrumKit
 
 	void ChartEditor::InternalUpdateAsyncLoading()
 	{
+		context.Gfx.UpdateAsyncLoading();
 		context.SfxVoicePool.UpdateAsyncLoading();
 
 		if (importChartFuture.valid() && importChartFuture._Is_ready())

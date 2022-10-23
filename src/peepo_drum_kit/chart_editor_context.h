@@ -3,6 +3,7 @@
 #include "core_undo.h"
 #include "chart.h"
 #include "chart_editor_sound.h"
+#include "chart_editor_graphics.h"
 #include "audio/audio_engine.h"
 #include "audio/audio_waveform.h"
 
@@ -34,6 +35,7 @@ namespace PeepoDrumKit
 		Audio::Voice SongVoice = Audio::VoiceHandle::Invalid;
 		Audio::SourceHandle SongSource = Audio::SourceHandle::Invalid;
 		SoundEffectsVoicePool SfxVoicePool;
+		ChartGraphicsResources Gfx;
 
 		std::string SongSourceFilePath;
 		Audio::WaveformMipChain SongWaveformL;
